@@ -11,7 +11,12 @@
     "astro": "astro",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "wrangler d1 migrations apply tesoro-quotes-db --local",
-    "db:studio": "drizzle-kit studio"
+    "db:migrate:remote": "wrangler d1 execute tesoro-quotes-db --remote --file=./scripts/init-db.sql",
+    "db:studio": "drizzle-kit studio",
+    "setup": "bash scripts/setup-cloudflare.sh",
+    "deploy": "npm run build && wrangler pages deploy dist --project-name=tesoro-quotes",
+    "cf:login": "wrangler login",
+    "cf:tail": "wrangler pages deployment tail --project-name=tesoro-quotes"
   },
   "dependencies": {
     "@astrojs/check": "^0.9.4",
