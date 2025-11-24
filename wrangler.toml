@@ -1,5 +1,6 @@
 name = "tesoro-crm-quotes"
 compatibility_date = "2024-11-01"
+compatibility_flags = ["nodejs_compat"]
 pages_build_output_dir = "./dist"
 
 # D1 Database
