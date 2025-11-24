@@ -14,6 +14,7 @@ interface Env {
   ENVIRONMENT: string;
   APP_NAME: string;
   APP_URL: string;
+  SESSION_SECRET?: string;
   STRIPE_SECRET_KEY?: string;
   STRIPE_WEBHOOK_SECRET?: string;
   ANTHROPIC_API_KEY?: string;
@@ -22,6 +23,15 @@ interface Env {
 
 type Runtime = import('@astrojs/cloudflare').Runtime<Env>;
 
+interface User {
+  id: string;
+  email: string;
+  name: string;
+  role: string;
+}
+
 declare namespace App {
-  interface Locals extends Runtime {}
+  interface Locals extends Runtime {
+    user?: User;
+  }
 }

@@ -1,14 +1,53 @@
 ---
 import DashboardLayout from '../../layouts/DashboardLayout.astro';
+import { createDb, customers as customersTable, quotes } from '../../lib/db';
+import { desc, eq, sql } from 'drizzle-orm';
 
-// In production, fetch from database
-const customers = [
-  { id: '1', companyName: 'Bakkerij De Korenschoof', contactName: 'Jan Bakker', email: 'jan@korenschoof.nl', phone: '020-1234567', isTesoro: true, quotesCount: 3 },
-  { id: '2', companyName: 'Autogarage Jansen', contactName: 'Piet Jansen', email: 'piet@garagejansen.nl', phone: '030-7654321', isTesoro: true, quotesCount: 2 },
-  { id: '3', companyName: 'Hotel Zeezicht', contactName: 'Maria de Vries', email: 'maria@hotelzeezicht.nl', phone: '070-1112233', isTesoro: false, quotesCount: 5 },
-  { id: '4', companyName: 'Bloemenwinkel Roos', contactName: 'Sophie Roos', email: 'info@bloemenroos.nl', phone: '040-9998877', isTesoro: true, quotesCount: 1 },
-  { id: '5', companyName: 'Installatiebedrijf Groot', contactName: 'Henk Groot', email: 'henk@installatiegroot.nl', phone: '050-5556677', isTesoro: false, quotesCount: 4 },
-];
+// Fetch from database
+let customers: Array<{
+  id: string;
+  companyName: string;
+  contactName: string;
+  email: string;
+  phone: string | null;
+  isTesororClient: boolean | null;
+  quotesCount: number;
+}> = [];
+
+try {
+  const db = createDb(Astro.locals.runtime.env.DB);
+
+  // Get customers with quote count
+  const dbCustomers = await db
+    .select({
+      id: customersTable.id,
+      companyName: customersTable.companyName,
+      contactName: customersTable.contactName,
+      email: customersTable.email,
+      phone: customersTable.phone,
+      isTesororClient: customersTable.isTesororClient,
+    })
+    .from(customersTable)
+    .orderBy(desc(customersTable.createdAt));
+
+  // Get quote counts per customer
+  const quoteCounts = await db
+    .select({
+      customerId: quotes.customerId,
+      count: sql<number>`count(*)`.as('count'),
+    })
+    .from(quotes)
+    .groupBy(quotes.customerId);
+
+  const quoteCountMap = new Map(quoteCounts.map(q => [q.customerId, q.count]));
+
+  customers = dbCustomers.map(c => ({
+    ...c,
+    quotesCount: quoteCountMap.get(c.id) || 0,
+  }));
+} catch (error) {
+  console.error('Failed to fetch customers:', error);
+}
 ---
 
 <DashboardLayout title="Klanten">
@@ -51,73 +90,92 @@ const customers = [
 
     <!-- Table -->
     <div class="rounded-xl border bg-card overflow-hidden">
-      <table class="w-full">
-        <thead class="border-b bg-muted/50">
-          <tr>
-            <th class="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">Bedrijf</th>
-            <th class="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">Contact</th>
-            <th class="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">Telefoon</th>
-            <th class="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">Offertes</th>
-            <th class="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">Type</th>
-            <th class="px-6 py-3 text-right text-xs font-medium text-muted-foreground uppercase tracking-wider">Acties</th>
-          </tr>
-        </thead>
-        <tbody class="divide-y">
-          {customers.map((customer) => (
-            <tr class="hover:bg-muted/30 transition-colors">
-              <td class="px-6 py-4">
-                <a href={`/klanten/${customer.id}`} class="font-medium hover:text-tesoro-500">
-                  {customer.companyName}
-                </a>
-              </td>
-              <td class="px-6 py-4">
-                <div>
-                  <p class="text-sm">{customer.contactName}</p>
-                  <p class="text-xs text-muted-foreground">{customer.email}</p>
-                </div>
-              </td>
-              <td class="px-6 py-4 text-sm">
-                {customer.phone}
-              </td>
-              <td class="px-6 py-4">
-                <span class="inline-flex items-center justify-center h-6 w-6 rounded-full bg-muted text-xs font-medium">
-                  {customer.quotesCount}
-                </span>
-              </td>
-              <td class="px-6 py-4">
-                {customer.isTesoro ? (
-                  <span class="inline-flex items-center gap-1 rounded-full bg-tesoro-100 px-2.5 py-0.5 text-xs font-medium text-tesoro-700">
-                    <span class="h-1.5 w-1.5 rounded-full bg-tesoro-500"></span>
-                    Tesoro
-                  </span>
-                ) : (
-                  <span class="inline-flex rounded-full bg-gray-100 px-2.5 py-0.5 text-xs font-medium text-gray-600">
-                    Overig
-                  </span>
-                )}
-              </td>
-              <td class="px-6 py-4 text-right">
-                <div class="flex items-center justify-end gap-2">
-                  <a
-                    href={`/offertes/nieuw?customer=${customer.id}`}
-                    class="rounded-lg border px-3 py-1.5 text-sm transition-colors hover:bg-muted"
-                  >
-                    Offerte
-                  </a>
-                  <a
-                    href={`/klanten/${customer.id}`}
-                    class="rounded-lg p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground"
-                  >
-                    <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
-                    </svg>
-                  </a>
-                </div>
-              </td>
+      {customers.length === 0 ? (
+        <div class="p-12 text-center">
+          <svg class="mx-auto h-12 w-12 text-muted-foreground/50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+          </svg>
+          <h3 class="mt-4 text-lg font-medium">Nog geen klanten</h3>
+          <p class="mt-2 text-sm text-muted-foreground">Voeg je eerste klant toe om te beginnen.</p>
+          <button
+            id="add-first-customer-btn"
+            class="mt-4 inline-flex items-center gap-2 rounded-lg bg-tesoro-500 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-tesoro-600"
+          >
+            <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+            </svg>
+            Eerste klant toevoegen
+          </button>
+        </div>
+      ) : (
+        <table class="w-full">
+          <thead class="border-b bg-muted/50">
+            <tr>
+              <th class="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">Bedrijf</th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">Contact</th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">Telefoon</th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">Offertes</th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">Type</th>
+              <th class="px-6 py-3 text-right text-xs font-medium text-muted-foreground uppercase tracking-wider">Acties</th>
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+          <tbody class="divide-y">
+            {customers.map((customer) => (
+              <tr class="hover:bg-muted/30 transition-colors">
+                <td class="px-6 py-4">
+                  <a href={`/klanten/${customer.id}`} class="font-medium hover:text-tesoro-500">
+                    {customer.companyName}
+                  </a>
+                </td>
+                <td class="px-6 py-4">
+                  <div>
+                    <p class="text-sm">{customer.contactName}</p>
+                    <p class="text-xs text-muted-foreground">{customer.email}</p>
+                  </div>
+                </td>
+                <td class="px-6 py-4 text-sm">
+                  {customer.phone || '-'}
+                </td>
+                <td class="px-6 py-4">
+                  <span class="inline-flex items-center justify-center h-6 w-6 rounded-full bg-muted text-xs font-medium">
+                    {customer.quotesCount}
+                  </span>
+                </td>
+                <td class="px-6 py-4">
+                  {customer.isTesororClient ? (
+                    <span class="inline-flex items-center gap-1 rounded-full bg-tesoro-100 px-2.5 py-0.5 text-xs font-medium text-tesoro-700">
+                      <span class="h-1.5 w-1.5 rounded-full bg-tesoro-500"></span>
+                      Tesoro
+                    </span>
+                  ) : (
+                    <span class="inline-flex rounded-full bg-gray-100 px-2.5 py-0.5 text-xs font-medium text-gray-600">
+                      Overig
+                    </span>
+                  )}
+                </td>
+                <td class="px-6 py-4 text-right">
+                  <div class="flex items-center justify-end gap-2">
+                    <a
+                      href={`/offertes/nieuw?customer=${customer.id}`}
+                      class="rounded-lg border px-3 py-1.5 text-sm transition-colors hover:bg-muted"
+                    >
+                      Offerte
+                    </a>
+                    <a
+                      href={`/klanten/${customer.id}`}
+                      class="rounded-lg p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground"
+                    >
+                      <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                      </svg>
+                    </a>
+                  </div>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
     </div>
   </div>
 
@@ -206,6 +264,7 @@ const customers = [
 <script>
   const modal = document.getElementById('customer-modal');
   const addBtn = document.getElementById('add-customer-btn');
+  const addFirstBtn = document.getElementById('add-first-customer-btn');
   const closeBtn = document.getElementById('close-modal');
   const cancelBtn = document.getElementById('cancel-btn');
   const backdrop = document.getElementById('modal-backdrop');
@@ -220,6 +279,7 @@ const customers = [
   }
 
   addBtn?.addEventListener('click', showModal);
+  addFirstBtn?.addEventListener('click', showModal);
   closeBtn?.addEventListener('click', hideModal);
   cancelBtn?.addEventListener('click', hideModal);
   backdrop?.addEventListener('click', hideModal);
@@ -227,7 +287,7 @@ const customers = [
   form?.addEventListener('submit', async (e) => {
     e.preventDefault();
     const formData = new FormData(form);
-    const data = Object.fromEntries(formData.entries());
+    const data: Record<string, string | boolean> = Object.fromEntries(formData.entries()) as Record<string, string>;
     data.isTesororClient = formData.has('isTesororClient');
 
     try {

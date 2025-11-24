@@ -1,0 +1,272 @@
+---
+import DashboardLayout from '../../layouts/DashboardLayout.astro';
+import { createDb, customers, quotes } from '../../lib/db';
+import { eq, desc } from 'drizzle-orm';
+
+const { id } = Astro.params;
+
+if (!id) {
+  return Astro.redirect('/klanten');
+}
+
+type Customer = {
+  id: string;
+  companyName: string;
+  contactName: string;
+  email: string;
+  phone: string | null;
+  address: string | null;
+  city: string | null;
+  postalCode: string | null;
+  country: string | null;
+  btwNumber: string | null;
+  kvkNumber: string | null;
+  isTesororClient: boolean | null;
+  notes: string | null;
+  createdAt: Date;
+};
+
+type Quote = {
+  id: string;
+  quoteNumber: string;
+  title: string;
+  total: number;
+  status: string;
+  createdAt: Date;
+};
+
+let customer: Customer | null = null;
+let customerQuotes: Quote[] = [];
+
+try {
+  const db = createDb(Astro.locals.runtime.env.DB);
+
+  const result = await db
+    .select()
+    .from(customers)
+    .where(eq(customers.id, id))
+    .limit(1);
+
+  if (result.length > 0) {
+    customer = result[0];
+
+    // Get quotes for this customer
+    const quoteResults = await db
+      .select({
+        id: quotes.id,
+        quoteNumber: quotes.quoteNumber,
+        title: quotes.title,
+        total: quotes.total,
+        status: quotes.status,
+        createdAt: quotes.createdAt,
+      })
+      .from(quotes)
+      .where(eq(quotes.customerId, id))
+      .orderBy(desc(quotes.createdAt));
+
+    customerQuotes = quoteResults;
+  }
+} catch (error) {
+  console.error('Failed to fetch customer:', error);
+}
+
+if (!customer) {
+  return Astro.redirect('/klanten');
+}
+
+const statusColors: Record<string, string> = {
+  draft: 'bg-gray-100 text-gray-800',
+  sent: 'bg-blue-100 text-blue-800',
+  viewed: 'bg-purple-100 text-purple-800',
+  accepted: 'bg-green-100 text-green-800',
+  declined: 'bg-red-100 text-red-800',
+  expired: 'bg-orange-100 text-orange-800',
+  paid: 'bg-emerald-100 text-emerald-800',
+};
+
+const statusLabels: Record<string, string> = {
+  draft: 'Concept',
+  sent: 'Verstuurd',
+  viewed: 'Bekeken',
+  accepted: 'Geaccepteerd',
+  declined: 'Afgewezen',
+  expired: 'Verlopen',
+  paid: 'Betaald',
+};
+
+const formatCurrency = (amount: number) => {
+  return new Intl.NumberFormat('nl-NL', { style: 'currency', currency: 'EUR' }).format(amount);
+};
+---
+
+<DashboardLayout title={customer.companyName}>
+  <div class="space-y-6">
+    <!-- Header -->
+    <div class="flex items-center justify-between">
+      <div class="flex items-center gap-4">
+        <a href="/klanten" class="rounded-lg p-2 hover:bg-muted">
+          <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+          </svg>
+        </a>
+        <div>
+          <h1 class="text-2xl font-bold">{customer.companyName}</h1>
+          <p class="text-muted-foreground">{customer.contactName}</p>
+        </div>
+        {customer.isTesororClient && (
+          <span class="inline-flex items-center gap-1 rounded-full bg-tesoro-100 px-2.5 py-0.5 text-xs font-medium text-tesoro-700">
+            <span class="h-1.5 w-1.5 rounded-full bg-tesoro-500"></span>
+            Tesoro Klant
+          </span>
+        )}
+      </div>
+      <div class="flex gap-2">
+        <a
+          href={`/offertes/nieuw?customer=${customer.id}`}
+          class="inline-flex items-center gap-2 rounded-lg bg-tesoro-500 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-tesoro-600"
+        >
+          <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+          </svg>
+          Nieuwe Offerte
+        </a>
+      </div>
+    </div>
+
+    <div class="grid gap-6 lg:grid-cols-3">
+      <!-- Contact Info -->
+      <div class="rounded-xl border bg-card p-6">
+        <h2 class="font-semibold mb-4">Contactgegevens</h2>
+        <dl class="space-y-3 text-sm">
+          <div>
+            <dt class="text-muted-foreground">Email</dt>
+            <dd><a href={`mailto:${customer.email}`} class="text-tesoro-500 hover:underline">{customer.email}</a></dd>
+          </div>
+          {customer.phone && (
+            <div>
+              <dt class="text-muted-foreground">Telefoon</dt>
+              <dd><a href={`tel:${customer.phone}`} class="hover:underline">{customer.phone}</a></dd>
+            </div>
+          )}
+          {(customer.address || customer.city) && (
+            <div>
+              <dt class="text-muted-foreground">Adres</dt>
+              <dd>
+                {customer.address && <span>{customer.address}<br /></span>}
+                {customer.postalCode && <span>{customer.postalCode} </span>}
+                {customer.city && <span>{customer.city}</span>}
+                {customer.country && customer.country !== 'Nederland' && <span><br />{customer.country}</span>}
+              </dd>
+            </div>
+          )}
+        </dl>
+      </div>
+
+      <!-- Business Info -->
+      <div class="rounded-xl border bg-card p-6">
+        <h2 class="font-semibold mb-4">Bedrijfsgegevens</h2>
+        <dl class="space-y-3 text-sm">
+          {customer.kvkNumber && (
+            <div>
+              <dt class="text-muted-foreground">KVK nummer</dt>
+              <dd>{customer.kvkNumber}</dd>
+            </div>
+          )}
+          {customer.btwNumber && (
+            <div>
+              <dt class="text-muted-foreground">BTW nummer</dt>
+              <dd>{customer.btwNumber}</dd>
+            </div>
+          )}
+          <div>
+            <dt class="text-muted-foreground">Klant sinds</dt>
+            <dd>{customer.createdAt.toLocaleDateString('nl-NL', { year: 'numeric', month: 'long', day: 'numeric' })}</dd>
+          </div>
+        </dl>
+      </div>
+
+      <!-- Stats -->
+      <div class="rounded-xl border bg-card p-6">
+        <h2 class="font-semibold mb-4">Statistieken</h2>
+        <dl class="space-y-3 text-sm">
+          <div>
+            <dt class="text-muted-foreground">Totaal offertes</dt>
+            <dd class="text-2xl font-bold">{customerQuotes.length}</dd>
+          </div>
+          <div>
+            <dt class="text-muted-foreground">Geaccepteerd</dt>
+            <dd class="text-2xl font-bold text-green-600">
+              {customerQuotes.filter(q => q.status === 'accepted' || q.status === 'paid').length}
+            </dd>
+          </div>
+          <div>
+            <dt class="text-muted-foreground">Totale waarde</dt>
+            <dd class="text-2xl font-bold">
+              {formatCurrency(customerQuotes.filter(q => q.status === 'accepted' || q.status === 'paid').reduce((sum, q) => sum + q.total, 0))}
+            </dd>
+          </div>
+        </dl>
+      </div>
+    </div>
+
+    <!-- Notes -->
+    {customer.notes && (
+      <div class="rounded-xl border bg-card p-6">
+        <h2 class="font-semibold mb-2">Notities</h2>
+        <p class="text-sm text-muted-foreground whitespace-pre-wrap">{customer.notes}</p>
+      </div>
+    )}
+
+    <!-- Quotes -->
+    <div class="rounded-xl border bg-card overflow-hidden">
+      <div class="border-b bg-muted/30 px-6 py-4">
+        <h2 class="font-semibold">Offertes</h2>
+      </div>
+      {customerQuotes.length === 0 ? (
+        <div class="p-8 text-center text-sm text-muted-foreground">
+          Nog geen offertes voor deze klant
+        </div>
+      ) : (
+        <table class="w-full">
+          <thead class="border-b bg-muted/50">
+            <tr>
+              <th class="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase">Offerte</th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase">Titel</th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase">Bedrag</th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase">Status</th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase">Datum</th>
+              <th class="px-6 py-3 text-right text-xs font-medium text-muted-foreground uppercase">Acties</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y">
+            {customerQuotes.map((quote) => (
+              <tr class="hover:bg-muted/30 transition-colors">
+                <td class="px-6 py-4">
+                  <span class="font-mono text-sm">#{quote.quoteNumber}</span>
+                </td>
+                <td class="px-6 py-4 font-medium">{quote.title}</td>
+                <td class="px-6 py-4">{formatCurrency(quote.total)}</td>
+                <td class="px-6 py-4">
+                  <span class:list={['inline-flex rounded-full px-2.5 py-0.5 text-xs font-medium', statusColors[quote.status] || 'bg-gray-100 text-gray-800']}>
+                    {statusLabels[quote.status] || quote.status}
+                  </span>
+                </td>
+                <td class="px-6 py-4 text-sm text-muted-foreground">
+                  {quote.createdAt.toLocaleDateString('nl-NL')}
+                </td>
+                <td class="px-6 py-4 text-right">
+                  <a
+                    href={`/offertes/${quote.id}`}
+                    class="rounded-lg border px-3 py-1.5 text-sm transition-colors hover:bg-muted"
+                  >
+                    Bekijken
+                  </a>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
+    </div>
+  </div>
+</DashboardLayout>
