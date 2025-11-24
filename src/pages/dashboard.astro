@@ -1,61 +1,95 @@
 ---
 import DashboardLayout from '../layouts/DashboardLayout.astro';
-import { createDb, quotes, quoteRequests, customers } from '../lib/db';
+import { createDb, quotes, quoteRequests } from '../lib/db';
 import { formatCurrency, formatRelativeTime } from '../lib/utils';
 import { eq, desc, sql, and, gte } from 'drizzle-orm';
 
-// Get database
-const db = createDb(Astro.locals.runtime.env.DB);
+// Initialize variables
+let openRequestsCount = 0;
+let sentQuotesCount = 0;
+let acceptedQuotesCount = 0;
+let monthlyRevenue = 0;
+let recentRequests: Array<{
+  id: string;
+  company: string;
+  type: string;
+  time: string;
+  status: string;
+}> = [];
+let recentQuotes: Array<{
+  id: string;
+  quoteId: string;
+  company: string;
+  amount: string;
+  status: string;
+}> = [];
 
-// Helper for safe queries (returns placeholder if DB not available)
-async function safeQuery<T>(query: Promise<T>, fallback: T): Promise<T> {
-  try {
-    return await query;
-  } catch {
-    return fallback;
-  }
-}
+try {
+  const db = createDb(Astro.locals.runtime.env.DB);
+  const now = new Date();
+  const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
 
-// Get stats
-const now = new Date();
-const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-const startOfWeek = new Date(now.setDate(now.getDate() - now.getDay()));
-
-// Count queries
-const openRequestsCount = await safeQuery(
-  db.select({ count: sql<number>`count(*)` })
+  // Count queries
+  const openRequestsResult = await db
+    .select({ count: sql<number>`count(*)` })
     .from(quoteRequests)
-    .where(eq(quoteRequests.status, 'new'))
-    .then(r => r[0]?.count || 0),
-  3
-);
+    .where(eq(quoteRequests.status, 'new'));
+  openRequestsCount = openRequestsResult[0]?.count || 0;
 
-const sentQuotesCount = await safeQuery(
-  db.select({ count: sql<number>`count(*)` })
+  const sentQuotesResult = await db
+    .select({ count: sql<number>`count(*)` })
     .from(quotes)
-    .where(eq(quotes.status, 'sent'))
-    .then(r => r[0]?.count || 0),
-  12
-);
+    .where(eq(quotes.status, 'sent'));
+  sentQuotesCount = sentQuotesResult[0]?.count || 0;
 
-const acceptedQuotesCount = await safeQuery(
-  db.select({ count: sql<number>`count(*)` })
+  const acceptedQuotesResult = await db
+    .select({ count: sql<number>`count(*)` })
     .from(quotes)
-    .where(eq(quotes.status, 'accepted'))
-    .then(r => r[0]?.count || 0),
-  8
-);
+    .where(eq(quotes.status, 'accepted'));
+  acceptedQuotesCount = acceptedQuotesResult[0]?.count || 0;
 
-const monthlyRevenue = await safeQuery(
-  db.select({ total: sql<number>`sum(total)` })
+  const revenueResult = await db
+    .select({ total: sql<number>`sum(total)` })
     .from(quotes)
     .where(and(
       eq(quotes.status, 'accepted'),
       gte(quotes.signedAt, startOfMonth)
-    ))
-    .then(r => r[0]?.total || 0),
-  12450
-);
+    ));
+  monthlyRevenue = revenueResult[0]?.total || 0;
+
+  // Get recent requests
+  const requestsData = await db
+    .select()
+    .from(quoteRequests)
+    .where(eq(quoteRequests.status, 'new'))
+    .orderBy(desc(quoteRequests.createdAt))
+    .limit(5);
+
+  recentRequests = requestsData.map(r => ({
+    id: r.id,
+    company: r.companyName || r.contactName,
+    type: r.serviceType,
+    time: formatRelativeTime(r.createdAt),
+    status: r.status,
+  }));
+
+  // Get recent quotes
+  const quotesData = await db.query.quotes.findMany({
+    with: { customer: true },
+    orderBy: [desc(quotes.createdAt)],
+    limit: 5,
+  });
+
+  recentQuotes = quotesData.map(q => ({
+    id: q.quoteNumber,
+    quoteId: q.id,
+    company: q.customer?.companyName || 'Onbekend',
+    amount: formatCurrency(q.total),
+    status: q.status,
+  }));
+} catch (error) {
+  console.error('Failed to fetch dashboard data:', error);
+}
 
 const stats = [
   { label: 'Openstaande aanvragen', value: openRequestsCount, change: 'actief' },
@@ -63,55 +97,6 @@ const stats = [
   { label: 'Geaccepteerd', value: acceptedQuotesCount, change: `${Math.round((acceptedQuotesCount / Math.max(sentQuotesCount + acceptedQuotesCount, 1)) * 100)}% acceptatie` },
   { label: 'Omzet deze maand', value: formatCurrency(monthlyRevenue), change: 'geaccepteerde offertes' },
 ];
-
-// Get recent requests
-const recentRequestsData = await safeQuery(
-  db.select()
-    .from(quoteRequests)
-    .where(eq(quoteRequests.status, 'new'))
-    .orderBy(desc(quoteRequests.createdAt))
-    .limit(5),
-  []
-);
-
-const recentRequests = recentRequestsData.length > 0
-  ? recentRequestsData.map(r => ({
-      id: r.id,
-      company: r.companyName || 'Onbekend',
-      type: r.serviceType,
-      time: formatRelativeTime(r.createdAt),
-      status: r.status as 'new' | 'pending',
-    }))
-  : [
-      { id: '1', company: 'Bakkerij De Korenschoof', type: 'Website', time: '2 uur geleden', status: 'new' as const },
-      { id: '2', company: 'Autogarage Jansen', type: 'CRM Setup', time: '1 dag geleden', status: 'new' as const },
-      { id: '3', company: 'Hotel Zeezicht', type: 'Marketing', time: '2 dagen geleden', status: 'new' as const },
-    ];
-
-// Get recent quotes
-const recentQuotesData = await safeQuery(
-  db.query.quotes.findMany({
-    with: { customer: true },
-    orderBy: [desc(quotes.createdAt)],
-    limit: 5,
-  }),
-  []
-);
-
-const recentQuotes = recentQuotesData.length > 0
-  ? recentQuotesData.map(q => ({
-      id: q.quoteNumber,
-      quoteId: q.id,
-      company: q.customer?.companyName || 'Onbekend',
-      amount: formatCurrency(q.total),
-      status: q.status as 'draft' | 'sent' | 'accepted',
-    }))
-  : [
-      { id: '2024-042', quoteId: '1', company: 'Hotel Zeezicht', amount: '€2.450', status: 'accepted' as const },
-      { id: '2024-041', quoteId: '2', company: 'Bloemenwinkel Roos', amount: '€890', status: 'sent' as const },
-      { id: '2024-040', quoteId: '3', company: 'Installatiebedrijf Groot', amount: '€3.200', status: 'sent' as const },
-      { id: '2024-039', quoteId: '4', company: 'Bakkerij De Korenschoof', amount: '€1.650', status: 'draft' as const },
-    ];
 
 const statusColors: Record<string, string> = {
   new: 'bg-red-100 text-red-800',
@@ -211,6 +196,9 @@ const serviceTypeLabels: Record<string, string> = {
         ) : (
           <div class="p-6 text-center text-muted-foreground">
             <p>Geen openstaande aanvragen</p>
+            <p class="mt-2 text-sm">
+              Deel je aanvraagformulier: <a href="/aanvraag" class="text-tesoro-500 hover:underline">/aanvraag</a>
+            </p>
           </div>
         )}
       </div>
@@ -224,7 +212,7 @@ const serviceTypeLabels: Record<string, string> = {
         {recentQuotes.length > 0 ? (
           <div class="divide-y">
             {recentQuotes.map((quote) => (
-              <div class="flex items-center justify-between px-6 py-4">
+              <a href={`/offertes/${quote.quoteId}`} class="flex items-center justify-between px-6 py-4 hover:bg-muted/30 transition-colors">
                 <div class="flex items-center gap-4">
                   <span class="text-sm font-mono text-muted-foreground">#{quote.id}</span>
                   <p class="font-medium">{quote.company}</p>
@@ -235,7 +223,7 @@ const serviceTypeLabels: Record<string, string> = {
                     {statusLabels[quote.status] || 'Concept'}
                   </span>
                 </div>
-              </div>
+              </a>
             ))}
           </div>
         ) : (

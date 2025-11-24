@@ -1,0 +1,371 @@
+---
+import DashboardLayout from '../../layouts/DashboardLayout.astro';
+import { createDb, quotes, customers, quoteBlocks, quoteLines } from '../../lib/db';
+import { eq, asc } from 'drizzle-orm';
+
+const { id } = Astro.params;
+
+if (!id) {
+  return Astro.redirect('/offertes');
+}
+
+type Block = {
+  id: string;
+  blockType: string;
+  title: string | null;
+  description: string | null;
+  isOptional: boolean | null;
+  position: number;
+  lines: Array<{
+    id: string;
+    description: string;
+    quantity: number;
+    unit: string;
+    unitPrice: number;
+    lineTotal: number;
+    isOptional: boolean | null;
+  }>;
+};
+
+type Quote = {
+  id: string;
+  quoteNumber: string;
+  title: string;
+  introText: string | null;
+  footerText: string | null;
+  subtotal: number;
+  btwAmount: number;
+  total: number;
+  status: string;
+  validUntil: Date | null;
+  publicToken: string | null;
+  createdAt: Date;
+  customer: {
+    id: string;
+    companyName: string;
+    contactName: string;
+    email: string;
+  } | null;
+  blocks: Block[];
+};
+
+let quote: Quote | null = null;
+
+try {
+  const db = createDb(Astro.locals.runtime.env.DB);
+
+  const quoteResult = await db
+    .select()
+    .from(quotes)
+    .where(eq(quotes.id, id))
+    .limit(1);
+
+  if (quoteResult.length > 0) {
+    const q = quoteResult[0];
+
+    // Get customer
+    let customer = null;
+    if (q.customerId) {
+      const customerResult = await db
+        .select({
+          id: customers.id,
+          companyName: customers.companyName,
+          contactName: customers.contactName,
+          email: customers.email,
+        })
+        .from(customers)
+        .where(eq(customers.id, q.customerId))
+        .limit(1);
+      customer = customerResult[0] || null;
+    }
+
+    // Get blocks with lines
+    const blocksResult = await db
+      .select()
+      .from(quoteBlocks)
+      .where(eq(quoteBlocks.quoteId, id))
+      .orderBy(asc(quoteBlocks.position));
+
+    const blocks: Block[] = [];
+    for (const block of blocksResult) {
+      const linesResult = await db
+        .select()
+        .from(quoteLines)
+        .where(eq(quoteLines.blockId, block.id))
+        .orderBy(asc(quoteLines.position));
+
+      blocks.push({
+        id: block.id,
+        blockType: block.blockType,
+        title: block.title,
+        description: block.description,
+        isOptional: block.isOptional,
+        position: block.position,
+        lines: linesResult.map(l => ({
+          id: l.id,
+          description: l.description,
+          quantity: l.quantity,
+          unit: l.unit,
+          unitPrice: l.unitPrice,
+          lineTotal: l.lineTotal,
+          isOptional: l.isOptional,
+        })),
+      });
+    }
+
+    quote = {
+      id: q.id,
+      quoteNumber: q.quoteNumber,
+      title: q.title,
+      introText: q.introText,
+      footerText: q.footerText,
+      subtotal: q.subtotal,
+      btwAmount: q.btwAmount,
+      total: q.total,
+      status: q.status,
+      validUntil: q.validUntil,
+      publicToken: q.publicToken,
+      createdAt: q.createdAt,
+      customer,
+      blocks,
+    };
+  }
+} catch (error) {
+  console.error('Failed to fetch quote:', error);
+}
+
+if (!quote) {
+  return Astro.redirect('/offertes');
+}
+
+const statusColors: Record<string, string> = {
+  draft: 'bg-gray-100 text-gray-800',
+  sent: 'bg-blue-100 text-blue-800',
+  viewed: 'bg-purple-100 text-purple-800',
+  accepted: 'bg-green-100 text-green-800',
+  declined: 'bg-red-100 text-red-800',
+  expired: 'bg-orange-100 text-orange-800',
+  paid: 'bg-emerald-100 text-emerald-800',
+};
+
+const statusLabels: Record<string, string> = {
+  draft: 'Concept',
+  sent: 'Verstuurd',
+  viewed: 'Bekeken',
+  accepted: 'Geaccepteerd',
+  declined: 'Afgewezen',
+  expired: 'Verlopen',
+  paid: 'Betaald',
+};
+
+const formatCurrency = (amount: number) => {
+  return new Intl.NumberFormat('nl-NL', { style: 'currency', currency: 'EUR' }).format(amount);
+};
+
+const publicUrl = quote.publicToken ? `${Astro.url.origin}/offerte/${quote.publicToken}` : null;
+---
+
+<DashboardLayout title={`Offerte ${quote.quoteNumber}`}>
+  <div class="space-y-6">
+    <!-- Header -->
+    <div class="flex items-center justify-between">
+      <div class="flex items-center gap-4">
+        <a href="/offertes" class="rounded-lg p-2 hover:bg-muted">
+          <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+          </svg>
+        </a>
+        <div>
+          <div class="flex items-center gap-3">
+            <h1 class="text-2xl font-bold">#{quote.quoteNumber}</h1>
+            <span class:list={['inline-flex rounded-full px-2.5 py-0.5 text-xs font-medium', statusColors[quote.status] || 'bg-gray-100 text-gray-800']}>
+              {statusLabels[quote.status] || quote.status}
+            </span>
+          </div>
+          <p class="text-muted-foreground">{quote.title}</p>
+        </div>
+      </div>
+      <div class="flex gap-2">
+        {quote.status === 'draft' && (
+          <button
+            id="send-quote-btn"
+            class="inline-flex items-center gap-2 rounded-lg border px-4 py-2 text-sm font-medium transition-colors hover:bg-muted"
+          >
+            <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+            </svg>
+            Versturen
+          </button>
+        )}
+        {publicUrl && (
+          <button
+            id="copy-link-btn"
+            data-url={publicUrl}
+            class="inline-flex items-center gap-2 rounded-lg border px-4 py-2 text-sm font-medium transition-colors hover:bg-muted"
+          >
+            <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3" />
+            </svg>
+            Kopieer Link
+          </button>
+        )}
+        <a
+          href={`/api/quotes/${quote.id}/pdf`}
+          class="inline-flex items-center gap-2 rounded-lg border px-4 py-2 text-sm font-medium transition-colors hover:bg-muted"
+        >
+          <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+          </svg>
+          PDF
+        </a>
+      </div>
+    </div>
+
+    <div class="grid gap-6 lg:grid-cols-3">
+      <!-- Quote Details -->
+      <div class="lg:col-span-2 space-y-6">
+        <!-- Customer -->
+        {quote.customer && (
+          <div class="rounded-xl border bg-card p-6">
+            <h2 class="font-semibold mb-2">Klant</h2>
+            <div class="flex items-center justify-between">
+              <div>
+                <p class="font-medium">{quote.customer.companyName}</p>
+                <p class="text-sm text-muted-foreground">{quote.customer.contactName}</p>
+                <p class="text-sm text-muted-foreground">{quote.customer.email}</p>
+              </div>
+              <a
+                href={`/klanten/${quote.customer.id}`}
+                class="rounded-lg border px-3 py-1.5 text-sm transition-colors hover:bg-muted"
+              >
+                Bekijk klant
+              </a>
+            </div>
+          </div>
+        )}
+
+        <!-- Intro Text -->
+        {quote.introText && (
+          <div class="rounded-xl border bg-card p-6">
+            <h2 class="font-semibold mb-2">Introductie</h2>
+            <p class="text-sm whitespace-pre-wrap">{quote.introText}</p>
+          </div>
+        )}
+
+        <!-- Blocks -->
+        {quote.blocks.map((block) => (
+          <div class="rounded-xl border bg-card overflow-hidden">
+            <div class="border-b bg-muted/30 px-6 py-4">
+              <div class="flex items-center justify-between">
+                <h3 class="font-semibold">{block.title || 'Prijstabel'}</h3>
+                {block.isOptional && (
+                  <span class="text-xs text-muted-foreground">Optioneel</span>
+                )}
+              </div>
+              {block.description && (
+                <p class="text-sm text-muted-foreground mt-1">{block.description}</p>
+              )}
+            </div>
+            {block.lines.length > 0 && (
+              <table class="w-full">
+                <thead class="border-b bg-muted/50">
+                  <tr>
+                    <th class="px-6 py-2 text-left text-xs font-medium text-muted-foreground">Omschrijving</th>
+                    <th class="px-4 py-2 text-right text-xs font-medium text-muted-foreground">Aantal</th>
+                    <th class="px-4 py-2 text-right text-xs font-medium text-muted-foreground">Prijs</th>
+                    <th class="px-6 py-2 text-right text-xs font-medium text-muted-foreground">Totaal</th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y">
+                  {block.lines.map((line) => (
+                    <tr class="hover:bg-muted/30">
+                      <td class="px-6 py-3">
+                        <span class="text-sm">{line.description}</span>
+                        {line.isOptional && (
+                          <span class="ml-2 text-xs text-muted-foreground">(optioneel)</span>
+                        )}
+                      </td>
+                      <td class="px-4 py-3 text-right text-sm">{line.quantity} {line.unit}</td>
+                      <td class="px-4 py-3 text-right text-sm">{formatCurrency(line.unitPrice)}</td>
+                      <td class="px-6 py-3 text-right text-sm font-medium">{formatCurrency(line.lineTotal)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+          </div>
+        ))}
+
+        <!-- Footer Text -->
+        {quote.footerText && (
+          <div class="rounded-xl border bg-card p-6">
+            <h2 class="font-semibold mb-2">Voorwaarden</h2>
+            <p class="text-sm whitespace-pre-wrap">{quote.footerText}</p>
+          </div>
+        )}
+      </div>
+
+      <!-- Sidebar -->
+      <div class="space-y-6">
+        <!-- Totals -->
+        <div class="rounded-xl border bg-card p-6">
+          <h2 class="font-semibold mb-4">Totaal</h2>
+          <dl class="space-y-2 text-sm">
+            <div class="flex justify-between">
+              <dt class="text-muted-foreground">Subtotaal</dt>
+              <dd>{formatCurrency(quote.subtotal)}</dd>
+            </div>
+            <div class="flex justify-between">
+              <dt class="text-muted-foreground">BTW</dt>
+              <dd>{formatCurrency(quote.btwAmount)}</dd>
+            </div>
+            <div class="flex justify-between pt-2 border-t text-base font-semibold">
+              <dt>Totaal</dt>
+              <dd>{formatCurrency(quote.total)}</dd>
+            </div>
+          </dl>
+        </div>
+
+        <!-- Info -->
+        <div class="rounded-xl border bg-card p-6">
+          <h2 class="font-semibold mb-4">Details</h2>
+          <dl class="space-y-3 text-sm">
+            <div>
+              <dt class="text-muted-foreground">Aangemaakt</dt>
+              <dd>{quote.createdAt.toLocaleDateString('nl-NL', { year: 'numeric', month: 'long', day: 'numeric' })}</dd>
+            </div>
+            {quote.validUntil && (
+              <div>
+                <dt class="text-muted-foreground">Geldig tot</dt>
+                <dd>{quote.validUntil.toLocaleDateString('nl-NL', { year: 'numeric', month: 'long', day: 'numeric' })}</dd>
+              </div>
+            )}
+            {publicUrl && (
+              <div>
+                <dt class="text-muted-foreground">Publieke link</dt>
+                <dd class="break-all">
+                  <a href={publicUrl} target="_blank" class="text-tesoro-500 hover:underline text-xs">{publicUrl}</a>
+                </dd>
+              </div>
+            )}
+          </dl>
+        </div>
+      </div>
+    </div>
+  </div>
+</DashboardLayout>
+
+<script>
+  const copyBtn = document.getElementById('copy-link-btn');
+  copyBtn?.addEventListener('click', async () => {
+    const url = copyBtn.getAttribute('data-url');
+    if (url) {
+      await navigator.clipboard.writeText(url);
+      const originalText = copyBtn.innerHTML;
+      copyBtn.innerHTML = `<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg> Gekopieerd!`;
+      setTimeout(() => {
+        copyBtn.innerHTML = originalText;
+      }, 2000);
+    }
+  });
+</script>
