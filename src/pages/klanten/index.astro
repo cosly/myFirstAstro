@@ -227,7 +227,7 @@ const customers = [
   form?.addEventListener('submit', async (e) => {
     e.preventDefault();
     const formData = new FormData(form);
-    const data = Object.fromEntries(formData.entries());
+    const data: Record<string, string | boolean> = Object.fromEntries(formData.entries()) as Record<string, string>;
     data.isTesororClient = formData.has('isTesororClient');
 
     try {

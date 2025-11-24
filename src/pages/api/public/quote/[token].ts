@@ -91,6 +91,7 @@ export const PATCH: APIRoute = async ({ params, request, locals }) => {
     const quote = await db.query.quotes.findFirst({
       where: eq(quotes.publicToken, token),
       with: {
+        customer: true,
         blocks: {
           with: { lines: true },
         },
