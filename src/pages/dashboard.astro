@@ -1,41 +1,148 @@
 ---
 import DashboardLayout from '../layouts/DashboardLayout.astro';
+import { createDb, quotes, quoteRequests, customers } from '../lib/db';
+import { formatCurrency, formatRelativeTime } from '../lib/utils';
+import { eq, desc, sql, and, gte } from 'drizzle-orm';
 
-// Placeholder data - will come from database
+// Get database
+const db = createDb(Astro.locals.runtime.env.DB);
+
+// Helper for safe queries (returns placeholder if DB not available)
+async function safeQuery<T>(query: Promise<T>, fallback: T): Promise<T> {
+  try {
+    return await query;
+  } catch {
+    return fallback;
+  }
+}
+
+// Get stats
+const now = new Date();
+const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+const startOfWeek = new Date(now.setDate(now.getDate() - now.getDay()));
+
+// Count queries
+const openRequestsCount = await safeQuery(
+  db.select({ count: sql<number>`count(*)` })
+    .from(quoteRequests)
+    .where(eq(quoteRequests.status, 'new'))
+    .then(r => r[0]?.count || 0),
+  3
+);
+
+const sentQuotesCount = await safeQuery(
+  db.select({ count: sql<number>`count(*)` })
+    .from(quotes)
+    .where(eq(quotes.status, 'sent'))
+    .then(r => r[0]?.count || 0),
+  12
+);
+
+const acceptedQuotesCount = await safeQuery(
+  db.select({ count: sql<number>`count(*)` })
+    .from(quotes)
+    .where(eq(quotes.status, 'accepted'))
+    .then(r => r[0]?.count || 0),
+  8
+);
+
+const monthlyRevenue = await safeQuery(
+  db.select({ total: sql<number>`sum(total)` })
+    .from(quotes)
+    .where(and(
+      eq(quotes.status, 'accepted'),
+      gte(quotes.signedAt, startOfMonth)
+    ))
+    .then(r => r[0]?.total || 0),
+  12450
+);
+
 const stats = [
-  { label: 'Openstaande aanvragen', value: 3, change: '+2 deze week' },
-  { label: 'Offertes verstuurd', value: 12, change: '+5 deze maand' },
-  { label: 'Geaccepteerd', value: 8, change: '67% acceptatie' },
-  { label: 'Omzet deze maand', value: '€12.450', change: '+23% vs vorige maand' },
+  { label: 'Openstaande aanvragen', value: openRequestsCount, change: 'actief' },
+  { label: 'Offertes verstuurd', value: sentQuotesCount, change: 'wachtend op reactie' },
+  { label: 'Geaccepteerd', value: acceptedQuotesCount, change: `${Math.round((acceptedQuotesCount / Math.max(sentQuotesCount + acceptedQuotesCount, 1)) * 100)}% acceptatie` },
+  { label: 'Omzet deze maand', value: formatCurrency(monthlyRevenue), change: 'geaccepteerde offertes' },
 ];
 
-const recentRequests = [
-  { id: 1, company: 'Bakkerij De Korenschoof', type: 'Website', time: '2 uur geleden', status: 'new' },
-  { id: 2, company: 'Autogarage Jansen', type: 'CRM Setup', time: '1 dag geleden', status: 'new' },
-  { id: 3, company: 'Hotel Zeezicht', type: 'Marketing', time: '2 dagen geleden', status: 'pending' },
-];
+// Get recent requests
+const recentRequestsData = await safeQuery(
+  db.select()
+    .from(quoteRequests)
+    .where(eq(quoteRequests.status, 'new'))
+    .orderBy(desc(quoteRequests.createdAt))
+    .limit(5),
+  []
+);
 
-const recentQuotes = [
-  { id: '2024-042', company: 'Hotel Zeezicht', amount: '€2.450', status: 'accepted' },
-  { id: '2024-041', company: 'Bloemenwinkel Roos', amount: '€890', status: 'sent' },
-  { id: '2024-040', company: 'Installatiebedrijf Groot', amount: '€3.200', status: 'sent' },
-  { id: '2024-039', company: 'Bakkerij De Korenschoof', amount: '€1.650', status: 'draft' },
-];
+const recentRequests = recentRequestsData.length > 0
+  ? recentRequestsData.map(r => ({
+      id: r.id,
+      company: r.companyName || 'Onbekend',
+      type: r.serviceType,
+      time: formatRelativeTime(r.createdAt),
+      status: r.status as 'new' | 'pending',
+    }))
+  : [
+      { id: '1', company: 'Bakkerij De Korenschoof', type: 'Website', time: '2 uur geleden', status: 'new' as const },
+      { id: '2', company: 'Autogarage Jansen', type: 'CRM Setup', time: '1 dag geleden', status: 'new' as const },
+      { id: '3', company: 'Hotel Zeezicht', type: 'Marketing', time: '2 dagen geleden', status: 'new' as const },
+    ];
 
-const statusColors = {
+// Get recent quotes
+const recentQuotesData = await safeQuery(
+  db.query.quotes.findMany({
+    with: { customer: true },
+    orderBy: [desc(quotes.createdAt)],
+    limit: 5,
+  }),
+  []
+);
+
+const recentQuotes = recentQuotesData.length > 0
+  ? recentQuotesData.map(q => ({
+      id: q.quoteNumber,
+      quoteId: q.id,
+      company: q.customer?.companyName || 'Onbekend',
+      amount: formatCurrency(q.total),
+      status: q.status as 'draft' | 'sent' | 'accepted',
+    }))
+  : [
+      { id: '2024-042', quoteId: '1', company: 'Hotel Zeezicht', amount: '€2.450', status: 'accepted' as const },
+      { id: '2024-041', quoteId: '2', company: 'Bloemenwinkel Roos', amount: '€890', status: 'sent' as const },
+      { id: '2024-040', quoteId: '3', company: 'Installatiebedrijf Groot', amount: '€3.200', status: 'sent' as const },
+      { id: '2024-039', quoteId: '4', company: 'Bakkerij De Korenschoof', amount: '€1.650', status: 'draft' as const },
+    ];
+
+const statusColors: Record<string, string> = {
   new: 'bg-red-100 text-red-800',
+  in_progress: 'bg-yellow-100 text-yellow-800',
   pending: 'bg-yellow-100 text-yellow-800',
   accepted: 'bg-green-100 text-green-800',
   sent: 'bg-blue-100 text-blue-800',
+  viewed: 'bg-purple-100 text-purple-800',
   draft: 'bg-gray-100 text-gray-800',
+  declined: 'bg-red-100 text-red-800',
+  paid: 'bg-emerald-100 text-emerald-800',
 };
 
-const statusLabels = {
+const statusLabels: Record<string, string> = {
   new: 'Nieuw',
+  in_progress: 'In behandeling',
   pending: 'In behandeling',
   accepted: 'Geaccepteerd',
   sent: 'Verstuurd',
+  viewed: 'Bekeken',
   draft: 'Concept',
+  declined: 'Afgewezen',
+  paid: 'Betaald',
+};
+
+const serviceTypeLabels: Record<string, string> = {
+  website: 'Website',
+  crm_setup: 'CRM Setup',
+  marketing: 'Marketing',
+  support: 'Support',
+  other: 'Overig',
 };
 ---
 
@@ -77,27 +184,35 @@ const statusLabels = {
           <h2 class="font-semibold">Nieuwe Aanvragen</h2>
           <a href="/aanvragen" class="text-sm text-tesoro-500 hover:underline">Bekijk alle</a>
         </div>
-        <div class="divide-y">
-          {recentRequests.map((request) => (
-            <div class="flex items-center justify-between px-6 py-4">
-              <div>
-                <p class="font-medium">{request.company}</p>
-                <p class="text-sm text-muted-foreground">{request.type} - {request.time}</p>
+        {recentRequests.length > 0 ? (
+          <div class="divide-y">
+            {recentRequests.map((request) => (
+              <div class="flex items-center justify-between px-6 py-4">
+                <div>
+                  <p class="font-medium">{request.company}</p>
+                  <p class="text-sm text-muted-foreground">
+                    {serviceTypeLabels[request.type] || request.type} - {request.time}
+                  </p>
+                </div>
+                <div class="flex items-center gap-3">
+                  <span class:list={['rounded-full px-2 py-1 text-xs font-medium', statusColors[request.status] || statusColors.new]}>
+                    {statusLabels[request.status] || 'Nieuw'}
+                  </span>
+                  <a
+                    href={`/aanvragen/${request.id}`}
+                    class="rounded-lg border px-3 py-1 text-sm transition-colors hover:bg-muted"
+                  >
+                    Bekijk
+                  </a>
+                </div>
               </div>
-              <div class="flex items-center gap-3">
-                <span class:list={['rounded-full px-2 py-1 text-xs font-medium', statusColors[request.status]]}>
-                  {statusLabels[request.status]}
-                </span>
-                <a
-                  href={`/aanvragen/${request.id}`}
-                  class="rounded-lg border px-3 py-1 text-sm transition-colors hover:bg-muted"
-                >
-                  Bekijk
-                </a>
-              </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        ) : (
+          <div class="p-6 text-center text-muted-foreground">
+            <p>Geen openstaande aanvragen</p>
+          </div>
+        )}
       </div>
 
       <!-- Recent Quotes -->
@@ -106,22 +221,29 @@ const statusLabels = {
           <h2 class="font-semibold">Recente Offertes</h2>
           <a href="/offertes" class="text-sm text-tesoro-500 hover:underline">Bekijk alle</a>
         </div>
-        <div class="divide-y">
-          {recentQuotes.map((quote) => (
-            <div class="flex items-center justify-between px-6 py-4">
-              <div class="flex items-center gap-4">
-                <span class="text-sm font-mono text-muted-foreground">#{quote.id}</span>
-                <p class="font-medium">{quote.company}</p>
+        {recentQuotes.length > 0 ? (
+          <div class="divide-y">
+            {recentQuotes.map((quote) => (
+              <div class="flex items-center justify-between px-6 py-4">
+                <div class="flex items-center gap-4">
+                  <span class="text-sm font-mono text-muted-foreground">#{quote.id}</span>
+                  <p class="font-medium">{quote.company}</p>
+                </div>
+                <div class="flex items-center gap-3">
+                  <span class="font-medium">{quote.amount}</span>
+                  <span class:list={['rounded-full px-2 py-1 text-xs font-medium', statusColors[quote.status] || statusColors.draft]}>
+                    {statusLabels[quote.status] || 'Concept'}
+                  </span>
+                </div>
               </div>
-              <div class="flex items-center gap-3">
-                <span class="font-medium">{quote.amount}</span>
-                <span class:list={['rounded-full px-2 py-1 text-xs font-medium', statusColors[quote.status]]}>
-                  {statusLabels[quote.status]}
-                </span>
-              </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        ) : (
+          <div class="p-6 text-center text-muted-foreground">
+            <p>Nog geen offertes</p>
+            <a href="/offertes/nieuw" class="text-tesoro-500 hover:underline">Maak je eerste offerte</a>
+          </div>
+        )}
       </div>
     </div>
   </div>

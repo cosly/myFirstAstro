@@ -1,0 +1,262 @@
+---
+import DashboardLayout from '../../layouts/DashboardLayout.astro';
+
+// Placeholder data - will come from database
+const categories = [
+  {
+    id: '1',
+    name: 'Website',
+    icon: '🌐',
+    services: [
+      { id: 's1', name: 'Homepage design', price: 850, unit: 'stuk', btwRate: 21 },
+      { id: 's2', name: 'Subpagina design', price: 150, unit: 'stuk', btwRate: 21 },
+      { id: 's3', name: 'Website ontwikkeling', price: 95, unit: 'uur', btwRate: 21 },
+      { id: 's4', name: 'Responsive aanpassingen', price: 75, unit: 'uur', btwRate: 21 },
+    ],
+  },
+  {
+    id: '2',
+    name: 'Tesoro CRM',
+    icon: '⚙️',
+    services: [
+      { id: 's5', name: 'CRM basis configuratie', price: 95, unit: 'uur', btwRate: 21 },
+      { id: 's6', name: 'Data migratie', price: 95, unit: 'uur', btwRate: 21 },
+      { id: 's7', name: 'Training', price: 125, unit: 'uur', btwRate: 21 },
+      { id: 's8', name: 'Custom integratie', price: 115, unit: 'uur', btwRate: 21 },
+    ],
+  },
+  {
+    id: '3',
+    name: 'Marketing',
+    icon: '🎨',
+    services: [
+      { id: 's9', name: 'Window card design', price: 150, unit: 'stuk', btwRate: 21 },
+      { id: 's10', name: 'Flyer design', price: 95, unit: 'stuk', btwRate: 21 },
+      { id: 's11', name: 'Branding pakket', price: 750, unit: 'stuk', btwRate: 21 },
+      { id: 's12', name: 'Social media assets', price: 45, unit: 'stuk', btwRate: 21 },
+    ],
+  },
+  {
+    id: '4',
+    name: 'Support',
+    icon: '🔧',
+    services: [
+      { id: 's13', name: 'Support uurtarief', price: 85, unit: 'uur', btwRate: 21 },
+      { id: 's14', name: 'Onderhoudspakket maand', price: 75, unit: 'maand', btwRate: 21 },
+      { id: 's15', name: 'Priority support', price: 50, unit: 'maand', btwRate: 21 },
+      { id: 's16', name: 'Strippenkaart (10 uur)', price: 750, unit: 'stuk', btwRate: 21 },
+    ],
+  },
+];
+
+const formatCurrency = (amount: number) => {
+  return new Intl.NumberFormat('nl-NL', { style: 'currency', currency: 'EUR' }).format(amount);
+};
+---
+
+<DashboardLayout title="Diensten Catalogus">
+  <div class="space-y-6">
+    <!-- Header -->
+    <div class="flex items-center justify-between">
+      <div>
+        <h1 class="text-2xl font-bold">Diensten Catalogus</h1>
+        <p class="text-muted-foreground">Beheer uw diensten en standaard prijzen</p>
+      </div>
+      <div class="flex gap-2">
+        <button
+          id="add-category-btn"
+          class="inline-flex items-center gap-2 rounded-lg border px-4 py-2 text-sm font-medium transition-colors hover:bg-muted"
+        >
+          <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+          </svg>
+          Categorie
+        </button>
+        <button
+          id="add-service-btn"
+          class="inline-flex items-center gap-2 rounded-lg bg-tesoro-500 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-tesoro-600"
+        >
+          <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+          </svg>
+          Dienst
+        </button>
+      </div>
+    </div>
+
+    <!-- Categories Grid -->
+    <div class="grid gap-6 lg:grid-cols-2">
+      {categories.map((category) => (
+        <div class="rounded-xl border bg-card overflow-hidden">
+          <!-- Category Header -->
+          <div class="flex items-center justify-between border-b bg-muted/30 px-6 py-4">
+            <div class="flex items-center gap-3">
+              <span class="text-2xl">{category.icon}</span>
+              <h2 class="font-semibold">{category.name}</h2>
+              <span class="rounded-full bg-muted px-2 py-0.5 text-xs text-muted-foreground">
+                {category.services.length} diensten
+              </span>
+            </div>
+            <button class="p-1.5 text-muted-foreground hover:text-foreground rounded-lg hover:bg-muted">
+              <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z" />
+              </svg>
+            </button>
+          </div>
+
+          <!-- Services List -->
+          <div class="divide-y">
+            {category.services.map((service) => (
+              <div class="flex items-center justify-between px-6 py-3 hover:bg-muted/30 transition-colors group">
+                <div>
+                  <p class="font-medium text-sm">{service.name}</p>
+                  <p class="text-xs text-muted-foreground">BTW: {service.btwRate}%</p>
+                </div>
+                <div class="flex items-center gap-4">
+                  <div class="text-right">
+                    <p class="font-medium">{formatCurrency(service.price)}</p>
+                    <p class="text-xs text-muted-foreground">per {service.unit}</p>
+                  </div>
+                  <button class="p-1.5 text-muted-foreground hover:text-foreground opacity-0 group-hover:opacity-100 transition-opacity rounded-lg hover:bg-muted">
+                    <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                    </svg>
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <!-- Add Service to Category -->
+          <div class="border-t px-6 py-3">
+            <button class="w-full text-sm text-muted-foreground hover:text-tesoro-500 flex items-center justify-center gap-2">
+              <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+              </svg>
+              Dienst toevoegen
+            </button>
+          </div>
+        </div>
+      ))}
+    </div>
+  </div>
+
+  <!-- Add Service Modal -->
+  <div id="service-modal" class="fixed inset-0 z-50 hidden">
+    <div class="fixed inset-0 bg-black/50" id="modal-backdrop"></div>
+    <div class="fixed inset-0 flex items-center justify-center p-4">
+      <div class="relative w-full max-w-md rounded-2xl bg-card p-6 shadow-xl">
+        <button id="close-modal" class="absolute right-4 top-4 p-1 text-muted-foreground hover:text-foreground">
+          <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+
+        <h2 class="text-xl font-semibold mb-6">Nieuwe Dienst</h2>
+
+        <form id="service-form" class="space-y-4">
+          <div class="space-y-2">
+            <label class="text-sm font-medium">Categorie *</label>
+            <select name="categoryId" required class="flex h-10 w-full rounded-lg border border-input bg-background px-3 text-sm">
+              <option value="">Selecteer categorie</option>
+              {categories.map((cat) => (
+                <option value={cat.id}>{cat.icon} {cat.name}</option>
+              ))}
+            </select>
+          </div>
+
+          <div class="space-y-2">
+            <label class="text-sm font-medium">Naam *</label>
+            <input type="text" name="name" required class="flex h-10 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm" placeholder="bijv. Website ontwikkeling" />
+          </div>
+
+          <div class="space-y-2">
+            <label class="text-sm font-medium">Beschrijving</label>
+            <textarea name="description" rows="2" class="flex w-full rounded-lg border border-input bg-background px-3 py-2 text-sm" placeholder="Optionele beschrijving"></textarea>
+          </div>
+
+          <div class="grid gap-4 grid-cols-3">
+            <div class="space-y-2">
+              <label class="text-sm font-medium">Prijs *</label>
+              <div class="relative">
+                <span class="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">€</span>
+                <input type="number" name="defaultPrice" step="0.01" min="0" required class="flex h-10 w-full rounded-lg border border-input bg-background pl-7 pr-3 py-2 text-sm" />
+              </div>
+            </div>
+            <div class="space-y-2">
+              <label class="text-sm font-medium">Eenheid *</label>
+              <select name="unit" required class="flex h-10 w-full rounded-lg border border-input bg-background px-3 text-sm">
+                <option value="uur">uur</option>
+                <option value="stuk">stuk</option>
+                <option value="dag">dag</option>
+                <option value="maand">maand</option>
+                <option value="jaar">jaar</option>
+              </select>
+            </div>
+            <div class="space-y-2">
+              <label class="text-sm font-medium">BTW %</label>
+              <select name="btwRate" class="flex h-10 w-full rounded-lg border border-input bg-background px-3 text-sm">
+                <option value="21">21%</option>
+                <option value="9">9%</option>
+                <option value="0">0%</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="flex justify-end gap-3 pt-4">
+            <button type="button" id="cancel-btn" class="rounded-lg border px-4 py-2 text-sm font-medium hover:bg-muted">
+              Annuleren
+            </button>
+            <button type="submit" class="rounded-lg bg-tesoro-500 px-4 py-2 text-sm font-medium text-white hover:bg-tesoro-600">
+              Opslaan
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</DashboardLayout>
+
+<script>
+  const modal = document.getElementById('service-modal');
+  const addBtn = document.getElementById('add-service-btn');
+  const closeBtn = document.getElementById('close-modal');
+  const cancelBtn = document.getElementById('cancel-btn');
+  const backdrop = document.getElementById('modal-backdrop');
+  const form = document.getElementById('service-form') as HTMLFormElement;
+
+  function showModal() {
+    modal?.classList.remove('hidden');
+  }
+
+  function hideModal() {
+    modal?.classList.add('hidden');
+  }
+
+  addBtn?.addEventListener('click', showModal);
+  closeBtn?.addEventListener('click', hideModal);
+  cancelBtn?.addEventListener('click', hideModal);
+  backdrop?.addEventListener('click', hideModal);
+
+  form?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const formData = new FormData(form);
+    const data = Object.fromEntries(formData.entries());
+
+    try {
+      const response = await fetch('/api/services', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+      });
+
+      if (response.ok) {
+        window.location.reload();
+      } else {
+        alert('Er is iets misgegaan');
+      }
+    } catch {
+      alert('Er is iets misgegaan');
+    }
+  });
+</script>
