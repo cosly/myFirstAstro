@@ -18,6 +18,30 @@ const { title, description = 'Tesoro CRM Offerte Applicatie' } = Astro.props;
   </head>
   <body class="min-h-screen antialiased">
     <slot />
+    <script>
+      // Global error handler - sends errors to debug API
+      window.onerror = function(msg, url, line, col, error) {
+        fetch('/api/debug/errors', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            path: window.location.pathname,
+            error: `${msg} at ${url}:${line}:${col}`,
+          }),
+        }).catch(() => {});
+        return false;
+      };
+      window.addEventListener('unhandledrejection', (e) => {
+        fetch('/api/debug/errors', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            path: window.location.pathname,
+            error: `Unhandled promise rejection: ${e.reason}`,
+          }),
+        }).catch(() => {});
+      });
+    </script>
   </body>
 </html>
 
