@@ -207,13 +207,13 @@ CREATE INDEX IF NOT EXISTS idx_quote_blocks_quote ON quote_blocks(quote_id);
 CREATE INDEX IF NOT EXISTS idx_quote_lines_block ON quote_lines(block_id);
 CREATE INDEX IF NOT EXISTS idx_quote_requests_status ON quote_requests(status);
 
--- Insert default admin user (password: admin123 - CHANGE THIS!)
+-- Insert admin user (John)
 INSERT OR IGNORE INTO team_members (id, email, name, password_hash, role, is_active, created_at, updated_at)
 VALUES (
   'admin-001',
-  'admin@tesorocrm.nl',
-  'Admin',
-  '240be518fabd2724ddb6f04eeb9d82e3c0b8a7a6e8c5e8f3a1b2c3d4e5f6a7b8',
+  'john@tesorohq.io',
+  'John Stevens',
+  '71c0e22a22c53f40f8aef3d8234d16a5c8901cc5d98a6ee624bc1d980e16f710',
   'admin',
   1,
   strftime('%s', 'now') * 1000,
