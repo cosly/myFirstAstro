@@ -1,53 +1,56 @@
 ---
 import DashboardLayout from '../../layouts/DashboardLayout.astro';
+import { createDb, serviceCategories, services } from '../../lib/db';
+import { eq, asc } from 'drizzle-orm';
 
-// Placeholder data - will come from database
-const categories = [
-  {
-    id: '1',
-    name: 'Website',
-    icon: '🌐',
-    services: [
-      { id: 's1', name: 'Homepage design', price: 850, unit: 'stuk', btwRate: 21 },
-      { id: 's2', name: 'Subpagina design', price: 150, unit: 'stuk', btwRate: 21 },
-      { id: 's3', name: 'Website ontwikkeling', price: 95, unit: 'uur', btwRate: 21 },
-      { id: 's4', name: 'Responsive aanpassingen', price: 75, unit: 'uur', btwRate: 21 },
-    ],
-  },
-  {
-    id: '2',
-    name: 'Tesoro CRM',
-    icon: '⚙️',
-    services: [
-      { id: 's5', name: 'CRM basis configuratie', price: 95, unit: 'uur', btwRate: 21 },
-      { id: 's6', name: 'Data migratie', price: 95, unit: 'uur', btwRate: 21 },
-      { id: 's7', name: 'Training', price: 125, unit: 'uur', btwRate: 21 },
-      { id: 's8', name: 'Custom integratie', price: 115, unit: 'uur', btwRate: 21 },
-    ],
-  },
-  {
-    id: '3',
-    name: 'Marketing',
-    icon: '🎨',
-    services: [
-      { id: 's9', name: 'Window card design', price: 150, unit: 'stuk', btwRate: 21 },
-      { id: 's10', name: 'Flyer design', price: 95, unit: 'stuk', btwRate: 21 },
-      { id: 's11', name: 'Branding pakket', price: 750, unit: 'stuk', btwRate: 21 },
-      { id: 's12', name: 'Social media assets', price: 45, unit: 'stuk', btwRate: 21 },
-    ],
-  },
-  {
-    id: '4',
-    name: 'Support',
-    icon: '🔧',
-    services: [
-      { id: 's13', name: 'Support uurtarief', price: 85, unit: 'uur', btwRate: 21 },
-      { id: 's14', name: 'Onderhoudspakket maand', price: 75, unit: 'maand', btwRate: 21 },
-      { id: 's15', name: 'Priority support', price: 50, unit: 'maand', btwRate: 21 },
-      { id: 's16', name: 'Strippenkaart (10 uur)', price: 750, unit: 'stuk', btwRate: 21 },
-    ],
-  },
-];
+// Fetch from database
+type Category = {
+  id: string;
+  name: string;
+  icon: string | null;
+  services: Array<{
+    id: string;
+    name: string;
+    defaultPrice: number;
+    unit: string;
+    btwRate: number;
+  }>;
+};
+
+let categories: Category[] = [];
+
+try {
+  const db = createDb(Astro.locals.runtime.env.DB);
+
+  const dbCategories = await db
+    .select()
+    .from(serviceCategories)
+    .where(eq(serviceCategories.isActive, true))
+    .orderBy(asc(serviceCategories.sortOrder));
+
+  const dbServices = await db
+    .select()
+    .from(services)
+    .where(eq(services.isActive, true))
+    .orderBy(asc(services.sortOrder));
+
+  categories = dbCategories.map(cat => ({
+    id: cat.id,
+    name: cat.name,
+    icon: cat.icon,
+    services: dbServices
+      .filter(s => s.categoryId === cat.id)
+      .map(s => ({
+        id: s.id,
+        name: s.name,
+        defaultPrice: s.defaultPrice,
+        unit: s.unit,
+        btwRate: s.btwRate,
+      })),
+  }));
+} catch (error) {
+  console.error('Failed to fetch services:', error);
+}
 
 const formatCurrency = (amount: number) => {
   return new Intl.NumberFormat('nl-NL', { style: 'currency', currency: 'EUR' }).format(amount);
@@ -84,6 +87,17 @@ const formatCurrency = (amount: number) => {
       </div>
     </div>
 
+    <!-- Empty State -->
+    {categories.length === 0 && (
+      <div class="rounded-xl border bg-card p-12 text-center">
+        <svg class="mx-auto h-12 w-12 text-muted-foreground/50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+        </svg>
+        <h3 class="mt-4 text-lg font-medium">Geen diensten gevonden</h3>
+        <p class="mt-2 text-sm text-muted-foreground">Voeg categorieën en diensten toe om te beginnen.</p>
+      </div>
+    )}
+
     <!-- Categories Grid -->
     <div class="grid gap-6 lg:grid-cols-2">
       {categories.map((category) => (
@@ -91,7 +105,7 @@ const formatCurrency = (amount: number) => {
           <!-- Category Header -->
           <div class="flex items-center justify-between border-b bg-muted/30 px-6 py-4">
             <div class="flex items-center gap-3">
-              <span class="text-2xl">{category.icon}</span>
+              <span class="text-2xl">{category.icon || '📦'}</span>
               <h2 class="font-semibold">{category.name}</h2>
               <span class="rounded-full bg-muted px-2 py-0.5 text-xs text-muted-foreground">
                 {category.services.length} diensten
@@ -106,25 +120,31 @@ const formatCurrency = (amount: number) => {
 
           <!-- Services List -->
           <div class="divide-y">
-            {category.services.map((service) => (
-              <div class="flex items-center justify-between px-6 py-3 hover:bg-muted/30 transition-colors group">
-                <div>
-                  <p class="font-medium text-sm">{service.name}</p>
-                  <p class="text-xs text-muted-foreground">BTW: {service.btwRate}%</p>
-                </div>
-                <div class="flex items-center gap-4">
-                  <div class="text-right">
-                    <p class="font-medium">{formatCurrency(service.price)}</p>
-                    <p class="text-xs text-muted-foreground">per {service.unit}</p>
-                  </div>
-                  <button class="p-1.5 text-muted-foreground hover:text-foreground opacity-0 group-hover:opacity-100 transition-opacity rounded-lg hover:bg-muted">
-                    <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
-                    </svg>
-                  </button>
-                </div>
+            {category.services.length === 0 ? (
+              <div class="px-6 py-8 text-center text-sm text-muted-foreground">
+                Geen diensten in deze categorie
               </div>
-            ))}
+            ) : (
+              category.services.map((service) => (
+                <div class="flex items-center justify-between px-6 py-3 hover:bg-muted/30 transition-colors group">
+                  <div>
+                    <p class="font-medium text-sm">{service.name}</p>
+                    <p class="text-xs text-muted-foreground">BTW: {service.btwRate}%</p>
+                  </div>
+                  <div class="flex items-center gap-4">
+                    <div class="text-right">
+                      <p class="font-medium">{formatCurrency(service.defaultPrice)}</p>
+                      <p class="text-xs text-muted-foreground">per {service.unit}</p>
+                    </div>
+                    <button class="p-1.5 text-muted-foreground hover:text-foreground opacity-0 group-hover:opacity-100 transition-opacity rounded-lg hover:bg-muted">
+                      <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                      </svg>
+                    </button>
+                  </div>
+                </div>
+              ))
+            )}
           </div>
 
           <!-- Add Service to Category -->
