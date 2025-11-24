@@ -6,7 +6,7 @@ pages_build_output_dir = "./dist"
 [[d1_databases]]
 binding = "DB"
 database_name = "tesoro-quotes-db"
-database_id = "local-dev-db"
+database_id = "72959d9a-5a56-4f64-a96b-82edf076c2dc"
 
 # R2 Storage (voor PDF's, handtekeningen, afbeeldingen)
 [[r2_buckets]]
@@ -16,25 +16,10 @@ bucket_name = "tesoro-quotes-storage"
 # KV Namespace (voor sessies, caching)
 [[kv_namespaces]]
 binding = "KV"
-id = "tesoro-quotes-kv"
+id = "4a9874c88031497dbfea85f916cbb8ca"
 
-# Queue (voor achtergrond taken)
-[[queues.producers]]
-binding = "QUEUE"
-queue = "tesoro-quotes-queue"
-
-# Environment variables (lokaal)
+# Environment variables
 [vars]
-ENVIRONMENT = "development"
+ENVIRONMENT = "production"
 APP_NAME = "Tesoro CRM Quotes"
-APP_URL = "http://localhost:4321"
-
-# Email configuratie (Resend als backup voor Cloudflare Email)
-# RESEND_API_KEY = ""
-
-# Stripe
-# STRIPE_SECRET_KEY = ""
-# STRIPE_WEBHOOK_SECRET = ""
-
-# Claude AI
-# ANTHROPIC_API_KEY = ""
+APP_URL = "https://tesoro-quotes.pages.dev"
