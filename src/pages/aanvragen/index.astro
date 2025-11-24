@@ -1,0 +1,143 @@
+---
+import DashboardLayout from '../../layouts/DashboardLayout.astro';
+
+// Placeholder data
+const requests = [
+  {
+    id: '1',
+    company: 'Bakkerij De Korenschoof',
+    contact: 'Jan Bakker',
+    type: 'Website',
+    description: 'Extra pagina voor nieuwe dienst, homepage aanpassen met banner',
+    budget: '€500-€1000',
+    status: 'new',
+    date: '2024-01-15T10:30:00',
+  },
+  {
+    id: '2',
+    company: 'Autogarage Jansen',
+    contact: 'Piet Jansen',
+    type: 'CRM Setup',
+    description: 'Tesoro CRM inrichten voor werkplaatsbeheer',
+    budget: '€1000-€2500',
+    status: 'new',
+    date: '2024-01-14T14:00:00',
+  },
+  {
+    id: '3',
+    company: 'Hotel Zeezicht',
+    contact: 'Maria de Vries',
+    type: 'Marketing',
+    description: 'Window cards en flyers voor zomeractie',
+    budget: '€500-€1000',
+    status: 'in_progress',
+    date: '2024-01-13T09:15:00',
+  },
+];
+
+const statusColors: Record<string, string> = {
+  new: 'bg-red-100 text-red-800',
+  in_progress: 'bg-yellow-100 text-yellow-800',
+  quoted: 'bg-green-100 text-green-800',
+  closed: 'bg-gray-100 text-gray-800',
+};
+
+const statusLabels: Record<string, string> = {
+  new: 'Nieuw',
+  in_progress: 'In behandeling',
+  quoted: 'Offerte gemaakt',
+  closed: 'Gesloten',
+};
+
+const typeIcons: Record<string, string> = {
+  Website: '🌐',
+  'CRM Setup': '⚙️',
+  Marketing: '🎨',
+  Support: '🔧',
+};
+
+const formatRelativeTime = (date: string) => {
+  const d = new Date(date);
+  const now = new Date();
+  const diffMs = now.getTime() - d.getTime();
+  const diffHours = Math.floor(diffMs / 3600000);
+  const diffDays = Math.floor(diffMs / 86400000);
+
+  if (diffHours < 1) return 'zojuist';
+  if (diffHours < 24) return `${diffHours} uur geleden`;
+  if (diffDays < 7) return `${diffDays} ${diffDays === 1 ? 'dag' : 'dagen'} geleden`;
+  return d.toLocaleDateString('nl-NL');
+};
+---
+
+<DashboardLayout title="Aanvragen">
+  <div class="space-y-6">
+    <!-- Header -->
+    <div class="flex items-center justify-between">
+      <div>
+        <h1 class="text-2xl font-bold">Offerte Aanvragen</h1>
+        <p class="text-muted-foreground">Binnenkomende aanvragen van klanten</p>
+      </div>
+      <span class="inline-flex items-center gap-1.5 rounded-full bg-red-100 px-3 py-1 text-sm font-medium text-red-800">
+        <span class="h-2 w-2 rounded-full bg-red-500 animate-pulse"></span>
+        {requests.filter(r => r.status === 'new').length} nieuw
+      </span>
+    </div>
+
+    <!-- Requests List -->
+    <div class="space-y-4">
+      {requests.map((request) => (
+        <div class="rounded-xl border bg-card p-6 transition-shadow hover:shadow-md">
+          <div class="flex items-start justify-between">
+            <div class="flex items-start gap-4">
+              <div class="flex h-12 w-12 items-center justify-center rounded-lg bg-muted text-2xl">
+                {typeIcons[request.type] || '📝'}
+              </div>
+              <div>
+                <div class="flex items-center gap-2">
+                  <h3 class="font-semibold">{request.company}</h3>
+                  <span class:list={['inline-flex rounded-full px-2 py-0.5 text-xs font-medium', statusColors[request.status]]}>
+                    {statusLabels[request.status]}
+                  </span>
+                </div>
+                <p class="text-sm text-muted-foreground">{request.contact} · {request.type}</p>
+                <p class="mt-2 text-sm">{request.description}</p>
+                <div class="mt-3 flex items-center gap-4 text-sm text-muted-foreground">
+                  <span>Budget: {request.budget}</span>
+                  <span>·</span>
+                  <span>{formatRelativeTime(request.date)}</span>
+                </div>
+              </div>
+            </div>
+            <div class="flex items-center gap-2">
+              <a
+                href={`/aanvragen/${request.id}`}
+                class="rounded-lg border px-3 py-1.5 text-sm transition-colors hover:bg-muted"
+              >
+                Bekijk
+              </a>
+              <a
+                href={`/offertes/nieuw?request=${request.id}`}
+                class="rounded-lg bg-tesoro-500 px-3 py-1.5 text-sm font-medium text-white transition-colors hover:bg-tesoro-600"
+              >
+                Maak Offerte
+              </a>
+            </div>
+          </div>
+        </div>
+      ))}
+    </div>
+
+    {requests.length === 0 && (
+      <div class="rounded-xl border bg-card p-12 text-center">
+        <div class="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-muted">
+          <svg class="h-6 w-6 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
+          </svg>
+        </div>
+        <h3 class="mt-4 font-medium">Geen aanvragen</h3>
+        <p class="mt-1 text-sm text-muted-foreground">Er zijn momenteel geen openstaande aanvragen.</p>
+      </div>
+    )}
+  </div>
+</DashboardLayout>

@@ -1,0 +1,73 @@
+---
+import Layout from '../layouts/Layout.astro';
+import { QuoteRequestForm } from '../components/forms/QuoteRequestForm';
+---
+
+<Layout title="Offerte Aanvragen">
+  <div class="min-h-screen bg-gradient-to-b from-tesoro-50 to-white">
+    <!-- Header -->
+    <header class="border-b bg-white/80 backdrop-blur-sm">
+      <div class="container mx-auto flex h-16 items-center justify-between px-4">
+        <a href="/" class="flex items-center gap-2">
+          <div class="flex h-8 w-8 items-center justify-center rounded-lg bg-tesoro-500">
+            <span class="text-lg font-bold text-white">T</span>
+          </div>
+          <span class="text-lg font-semibold">Tesoro CRM</span>
+        </a>
+        <a
+          href="https://tesorocrm.nl"
+          target="_blank"
+          rel="noopener noreferrer"
+          class="text-sm text-muted-foreground hover:text-tesoro-500"
+        >
+          Terug naar website
+        </a>
+      </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="container mx-auto px-4 py-12">
+      <div class="mx-auto max-w-2xl">
+        <!-- Intro -->
+        <div class="mb-8 text-center">
+          <h1 class="text-3xl font-bold tracking-tight">Offerte Aanvragen</h1>
+          <p class="mt-2 text-muted-foreground">
+            Vertel ons wat u nodig heeft en we maken een passende offerte voor u.
+          </p>
+        </div>
+
+        <!-- Form Card -->
+        <div class="rounded-2xl border bg-white p-6 shadow-lg sm:p-8">
+          <QuoteRequestForm client:load />
+        </div>
+
+        <!-- Trust indicators -->
+        <div class="mt-8 flex flex-wrap items-center justify-center gap-6 text-center text-sm text-muted-foreground">
+          <div class="flex items-center gap-2">
+            <svg class="h-5 w-5 text-green-500" fill="currentColor" viewBox="0 0 20 20">
+              <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
+            </svg>
+            <span>Binnen 24 uur reactie</span>
+          </div>
+          <div class="flex items-center gap-2">
+            <svg class="h-5 w-5 text-green-500" fill="currentColor" viewBox="0 0 20 20">
+              <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
+            </svg>
+            <span>Vrijblijvende offerte</span>
+          </div>
+          <div class="flex items-center gap-2">
+            <svg class="h-5 w-5 text-green-500" fill="currentColor" viewBox="0 0 20 20">
+              <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
+            </svg>
+            <span>Persoonlijk advies</span>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="border-t py-6 text-center text-sm text-muted-foreground">
+      <p>&copy; {new Date().getFullYear()} Tesoro CRM. Alle rechten voorbehouden.</p>
+    </footer>
+  </div>
+</Layout>

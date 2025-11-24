@@ -1,0 +1,175 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import { QuoteViewer } from '../../components/customer-view/QuoteViewer';
+
+const { token } = Astro.params;
+
+// In production, fetch quote from database using token
+// For now, use placeholder data
+const quote = {
+  id: 'demo',
+  quoteNumber: '2024-042',
+  title: 'Website Ontwikkeling & CRM Inrichting',
+  introText: `Beste heer/mevrouw,
+
+Hartelijk dank voor uw interesse in onze diensten. Hieronder treft u onze offerte aan voor de besproken werkzaamheden.
+
+We kijken ernaar uit om met u samen te werken!`,
+  footerText: `Deze offerte is 30 dagen geldig. Prijzen zijn exclusief BTW tenzij anders vermeld.
+
+Bij vragen kunt u altijd contact met ons opnemen via info@tesorocrm.nl of 020-1234567.`,
+  blocks: [
+    {
+      id: 'block-1',
+      blockType: 'pricing_table' as const,
+      title: 'Website Ontwikkeling',
+      isOptional: false,
+      isSelectedByCustomer: true,
+      position: 0,
+      lines: [
+        {
+          id: 'line-1',
+          description: 'Design homepage op maat',
+          quantity: 1,
+          unit: 'stuk',
+          unitPrice: 850,
+          btwRate: 21,
+          isOptional: false,
+          isSelectedByCustomer: true,
+          position: 0,
+        },
+        {
+          id: 'line-2',
+          description: 'Ontwikkeling responsive website',
+          quantity: 20,
+          unit: 'uur',
+          unitPrice: 95,
+          btwRate: 21,
+          isOptional: false,
+          isSelectedByCustomer: true,
+          position: 1,
+        },
+        {
+          id: 'line-3',
+          description: 'Extra subpagina\'s (5 stuks)',
+          quantity: 5,
+          unit: 'stuk',
+          unitPrice: 150,
+          btwRate: 21,
+          isOptional: true,
+          isSelectedByCustomer: false,
+          position: 2,
+        },
+      ],
+    },
+    {
+      id: 'block-2',
+      blockType: 'pricing_table' as const,
+      title: 'Tesoro CRM Inrichting',
+      isOptional: false,
+      isSelectedByCustomer: true,
+      position: 1,
+      lines: [
+        {
+          id: 'line-4',
+          description: 'Basis configuratie CRM',
+          quantity: 8,
+          unit: 'uur',
+          unitPrice: 95,
+          btwRate: 21,
+          isOptional: false,
+          isSelectedByCustomer: true,
+          position: 0,
+        },
+        {
+          id: 'line-5',
+          description: 'Data migratie',
+          quantity: 4,
+          unit: 'uur',
+          unitPrice: 95,
+          btwRate: 21,
+          isOptional: true,
+          isSelectedByCustomer: true,
+          position: 1,
+        },
+        {
+          id: 'line-6',
+          description: 'Training team (2 personen)',
+          quantity: 2,
+          unit: 'uur',
+          unitPrice: 125,
+          btwRate: 21,
+          isOptional: true,
+          isSelectedByCustomer: false,
+          position: 2,
+        },
+      ],
+    },
+    {
+      id: 'block-3',
+      blockType: 'pricing_table' as const,
+      title: 'Onderhoud & Support',
+      isOptional: true,
+      isSelectedByCustomer: false,
+      position: 2,
+      lines: [
+        {
+          id: 'line-7',
+          description: 'Maandelijks onderhoudspakket',
+          quantity: 12,
+          unit: 'maand',
+          unitPrice: 75,
+          btwRate: 21,
+          isOptional: false,
+          isSelectedByCustomer: true,
+          position: 0,
+        },
+        {
+          id: 'line-8',
+          description: 'Priority support',
+          quantity: 12,
+          unit: 'maand',
+          unitPrice: 50,
+          btwRate: 21,
+          isOptional: true,
+          isSelectedByCustomer: false,
+          position: 1,
+        },
+      ],
+    },
+  ],
+  status: 'sent' as const,
+  validUntil: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+  subtotal: 0,
+  btwAmount: 0,
+  total: 0,
+};
+
+const customer = {
+  companyName: 'Bakkerij De Korenschoof',
+  contactName: 'Jan Bakker',
+  email: 'jan@bakkerij-korenschoof.nl',
+};
+---
+
+<Layout title={`Offerte ${quote.quoteNumber}`} description="Bekijk en accepteer uw offerte van Tesoro CRM">
+  <div class="min-h-screen bg-gradient-to-b from-tesoro-50 to-white py-8 px-4">
+    <QuoteViewer
+      client:load
+      quote={quote}
+      customer={customer}
+      onUpdateSelection={(blockId, lineId, selected) => {
+        console.log('Update selection:', blockId, lineId, selected);
+      }}
+      onAccept={(signatureData) => {
+        console.log('Accept:', signatureData);
+      }}
+      onDecline={(reason) => {
+        console.log('Decline:', reason);
+      }}
+      onAskQuestion={(message) => {
+        console.log('Question:', message);
+      }}
+    />
+  </div>
+</Layout>
