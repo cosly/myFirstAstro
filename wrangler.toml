@@ -1,0 +1,40 @@
+name = "tesoro-crm-quotes"
+compatibility_date = "2024-11-01"
+pages_build_output_dir = "./dist"
+
+# D1 Database
+[[d1_databases]]
+binding = "DB"
+database_name = "tesoro-quotes-db"
+database_id = "local-dev-db"
+
+# R2 Storage (voor PDF's, handtekeningen, afbeeldingen)
+[[r2_buckets]]
+binding = "STORAGE"
+bucket_name = "tesoro-quotes-storage"
+
+# KV Namespace (voor sessies, caching)
+[[kv_namespaces]]
+binding = "KV"
+id = "tesoro-quotes-kv"
+
+# Queue (voor achtergrond taken)
+[[queues.producers]]
+binding = "QUEUE"
+queue = "tesoro-quotes-queue"
+
+# Environment variables (lokaal)
+[vars]
+ENVIRONMENT = "development"
+APP_NAME = "Tesoro CRM Quotes"
+APP_URL = "http://localhost:4321"
+
+# Email configuratie (Resend als backup voor Cloudflare Email)
+# RESEND_API_KEY = ""
+
+# Stripe
+# STRIPE_SECRET_KEY = ""
+# STRIPE_WEBHOOK_SECRET = ""
+
+# Claude AI
+# ANTHROPIC_API_KEY = ""

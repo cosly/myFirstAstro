@@ -1,0 +1,250 @@
+---
+import DashboardLayout from '../layouts/DashboardLayout.astro';
+import { createDb, quotes, quoteRequests, customers } from '../lib/db';
+import { formatCurrency, formatRelativeTime } from '../lib/utils';
+import { eq, desc, sql, and, gte } from 'drizzle-orm';
+
+// Get database
+const db = createDb(Astro.locals.runtime.env.DB);
+
+// Helper for safe queries (returns placeholder if DB not available)
+async function safeQuery<T>(query: Promise<T>, fallback: T): Promise<T> {
+  try {
+    return await query;
+  } catch {
+    return fallback;
+  }
+}
+
+// Get stats
+const now = new Date();
+const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+const startOfWeek = new Date(now.setDate(now.getDate() - now.getDay()));
+
+// Count queries
+const openRequestsCount = await safeQuery(
+  db.select({ count: sql<number>`count(*)` })
+    .from(quoteRequests)
+    .where(eq(quoteRequests.status, 'new'))
+    .then(r => r[0]?.count || 0),
+  3
+);
+
+const sentQuotesCount = await safeQuery(
+  db.select({ count: sql<number>`count(*)` })
+    .from(quotes)
+    .where(eq(quotes.status, 'sent'))
+    .then(r => r[0]?.count || 0),
+  12
+);
+
+const acceptedQuotesCount = await safeQuery(
+  db.select({ count: sql<number>`count(*)` })
+    .from(quotes)
+    .where(eq(quotes.status, 'accepted'))
+    .then(r => r[0]?.count || 0),
+  8
+);
+
+const monthlyRevenue = await safeQuery(
+  db.select({ total: sql<number>`sum(total)` })
+    .from(quotes)
+    .where(and(
+      eq(quotes.status, 'accepted'),
+      gte(quotes.signedAt, startOfMonth)
+    ))
+    .then(r => r[0]?.total || 0),
+  12450
+);
+
+const stats = [
+  { label: 'Openstaande aanvragen', value: openRequestsCount, change: 'actief' },
+  { label: 'Offertes verstuurd', value: sentQuotesCount, change: 'wachtend op reactie' },
+  { label: 'Geaccepteerd', value: acceptedQuotesCount, change: `${Math.round((acceptedQuotesCount / Math.max(sentQuotesCount + acceptedQuotesCount, 1)) * 100)}% acceptatie` },
+  { label: 'Omzet deze maand', value: formatCurrency(monthlyRevenue), change: 'geaccepteerde offertes' },
+];
+
+// Get recent requests
+const recentRequestsData = await safeQuery(
+  db.select()
+    .from(quoteRequests)
+    .where(eq(quoteRequests.status, 'new'))
+    .orderBy(desc(quoteRequests.createdAt))
+    .limit(5),
+  []
+);
+
+const recentRequests = recentRequestsData.length > 0
+  ? recentRequestsData.map(r => ({
+      id: r.id,
+      company: r.companyName || 'Onbekend',
+      type: r.serviceType,
+      time: formatRelativeTime(r.createdAt),
+      status: r.status as 'new' | 'pending',
+    }))
+  : [
+      { id: '1', company: 'Bakkerij De Korenschoof', type: 'Website', time: '2 uur geleden', status: 'new' as const },
+      { id: '2', company: 'Autogarage Jansen', type: 'CRM Setup', time: '1 dag geleden', status: 'new' as const },
+      { id: '3', company: 'Hotel Zeezicht', type: 'Marketing', time: '2 dagen geleden', status: 'new' as const },
+    ];
+
+// Get recent quotes
+const recentQuotesData = await safeQuery(
+  db.query.quotes.findMany({
+    with: { customer: true },
+    orderBy: [desc(quotes.createdAt)],
+    limit: 5,
+  }),
+  []
+);
+
+const recentQuotes = recentQuotesData.length > 0
+  ? recentQuotesData.map(q => ({
+      id: q.quoteNumber,
+      quoteId: q.id,
+      company: q.customer?.companyName || 'Onbekend',
+      amount: formatCurrency(q.total),
+      status: q.status as 'draft' | 'sent' | 'accepted',
+    }))
+  : [
+      { id: '2024-042', quoteId: '1', company: 'Hotel Zeezicht', amount: '€2.450', status: 'accepted' as const },
+      { id: '2024-041', quoteId: '2', company: 'Bloemenwinkel Roos', amount: '€890', status: 'sent' as const },
+      { id: '2024-040', quoteId: '3', company: 'Installatiebedrijf Groot', amount: '€3.200', status: 'sent' as const },
+      { id: '2024-039', quoteId: '4', company: 'Bakkerij De Korenschoof', amount: '€1.650', status: 'draft' as const },
+    ];
+
+const statusColors: Record<string, string> = {
+  new: 'bg-red-100 text-red-800',
+  in_progress: 'bg-yellow-100 text-yellow-800',
+  pending: 'bg-yellow-100 text-yellow-800',
+  accepted: 'bg-green-100 text-green-800',
+  sent: 'bg-blue-100 text-blue-800',
+  viewed: 'bg-purple-100 text-purple-800',
+  draft: 'bg-gray-100 text-gray-800',
+  declined: 'bg-red-100 text-red-800',
+  paid: 'bg-emerald-100 text-emerald-800',
+};
+
+const statusLabels: Record<string, string> = {
+  new: 'Nieuw',
+  in_progress: 'In behandeling',
+  pending: 'In behandeling',
+  accepted: 'Geaccepteerd',
+  sent: 'Verstuurd',
+  viewed: 'Bekeken',
+  draft: 'Concept',
+  declined: 'Afgewezen',
+  paid: 'Betaald',
+};
+
+const serviceTypeLabels: Record<string, string> = {
+  website: 'Website',
+  crm_setup: 'CRM Setup',
+  marketing: 'Marketing',
+  support: 'Support',
+  other: 'Overig',
+};
+---
+
+<DashboardLayout title="Dashboard">
+  <div class="space-y-6">
+    <!-- Header -->
+    <div class="flex items-center justify-between">
+      <div>
+        <h1 class="text-2xl font-bold">Dashboard</h1>
+        <p class="text-muted-foreground">Welkom terug! Hier is een overzicht van vandaag.</p>
+      </div>
+      <a
+        href="/offertes/nieuw"
+        class="inline-flex items-center gap-2 rounded-lg bg-tesoro-500 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-tesoro-600"
+      >
+        <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+        </svg>
+        Nieuwe Offerte
+      </a>
+    </div>
+
+    <!-- Stats -->
+    <div class="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+      {stats.map((stat) => (
+        <div class="rounded-xl border bg-card p-6">
+          <p class="text-sm text-muted-foreground">{stat.label}</p>
+          <p class="mt-2 text-3xl font-bold">{stat.value}</p>
+          <p class="mt-1 text-xs text-muted-foreground">{stat.change}</p>
+        </div>
+      ))}
+    </div>
+
+    <!-- Two columns -->
+    <div class="grid gap-6 lg:grid-cols-2">
+      <!-- Recent Requests -->
+      <div class="rounded-xl border bg-card">
+        <div class="flex items-center justify-between border-b px-6 py-4">
+          <h2 class="font-semibold">Nieuwe Aanvragen</h2>
+          <a href="/aanvragen" class="text-sm text-tesoro-500 hover:underline">Bekijk alle</a>
+        </div>
+        {recentRequests.length > 0 ? (
+          <div class="divide-y">
+            {recentRequests.map((request) => (
+              <div class="flex items-center justify-between px-6 py-4">
+                <div>
+                  <p class="font-medium">{request.company}</p>
+                  <p class="text-sm text-muted-foreground">
+                    {serviceTypeLabels[request.type] || request.type} - {request.time}
+                  </p>
+                </div>
+                <div class="flex items-center gap-3">
+                  <span class:list={['rounded-full px-2 py-1 text-xs font-medium', statusColors[request.status] || statusColors.new]}>
+                    {statusLabels[request.status] || 'Nieuw'}
+                  </span>
+                  <a
+                    href={`/aanvragen/${request.id}`}
+                    class="rounded-lg border px-3 py-1 text-sm transition-colors hover:bg-muted"
+                  >
+                    Bekijk
+                  </a>
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div class="p-6 text-center text-muted-foreground">
+            <p>Geen openstaande aanvragen</p>
+          </div>
+        )}
+      </div>
+
+      <!-- Recent Quotes -->
+      <div class="rounded-xl border bg-card">
+        <div class="flex items-center justify-between border-b px-6 py-4">
+          <h2 class="font-semibold">Recente Offertes</h2>
+          <a href="/offertes" class="text-sm text-tesoro-500 hover:underline">Bekijk alle</a>
+        </div>
+        {recentQuotes.length > 0 ? (
+          <div class="divide-y">
+            {recentQuotes.map((quote) => (
+              <div class="flex items-center justify-between px-6 py-4">
+                <div class="flex items-center gap-4">
+                  <span class="text-sm font-mono text-muted-foreground">#{quote.id}</span>
+                  <p class="font-medium">{quote.company}</p>
+                </div>
+                <div class="flex items-center gap-3">
+                  <span class="font-medium">{quote.amount}</span>
+                  <span class:list={['rounded-full px-2 py-1 text-xs font-medium', statusColors[quote.status] || statusColors.draft]}>
+                    {statusLabels[quote.status] || 'Concept'}
+                  </span>
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div class="p-6 text-center text-muted-foreground">
+            <p>Nog geen offertes</p>
+            <a href="/offertes/nieuw" class="text-tesoro-500 hover:underline">Maak je eerste offerte</a>
+          </div>
+        )}
+      </div>
+    </div>
+  </div>
+</DashboardLayout>

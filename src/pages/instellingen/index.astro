@@ -1,0 +1,291 @@
+---
+import DashboardLayout from '../../layouts/DashboardLayout.astro';
+
+const tabs = [
+  { id: 'algemeen', label: 'Algemeen', icon: '⚙️' },
+  { id: 'emails', label: 'Email Templates', icon: '✉️' },
+  { id: 'team', label: 'Team', icon: '👥' },
+  { id: 'integraties', label: 'Integraties', icon: '🔗' },
+];
+
+const emailTemplates = [
+  { id: 'quote_sent', name: 'Offerte verstuurd', description: 'Wanneer een offerte naar de klant wordt verstuurd' },
+  { id: 'quote_reminder', name: 'Herinnering', description: 'Automatische herinnering voor verlopen offerte' },
+  { id: 'quote_accepted', name: 'Offerte geaccepteerd', description: 'Bevestiging wanneer klant accepteert' },
+  { id: 'quote_declined', name: 'Offerte afgewezen', description: 'Notificatie wanneer klant afwijst' },
+  { id: 'payment_received', name: 'Betaling ontvangen', description: 'Bevestiging van betaling' },
+  { id: 'question_received', name: 'Vraag ontvangen', description: 'Wanneer klant een vraag stelt' },
+];
+
+const teamMembers = [
+  { id: '1', name: 'Jan de Vries', email: 'jan@tesorocrm.nl', role: 'admin', active: true },
+  { id: '2', name: 'Sophie Bakker', email: 'sophie@tesorocrm.nl', role: 'member', active: true },
+  { id: '3', name: 'Piet Jansen', email: 'piet@tesorocrm.nl', role: 'member', active: false },
+];
+---
+
+<DashboardLayout title="Instellingen">
+  <div class="space-y-6">
+    <!-- Header -->
+    <div>
+      <h1 class="text-2xl font-bold">Instellingen</h1>
+      <p class="text-muted-foreground">Beheer uw applicatie instellingen</p>
+    </div>
+
+    <!-- Tabs -->
+    <div class="flex border-b">
+      {tabs.map((tab, index) => (
+        <button
+          data-tab={tab.id}
+          class:list={[
+            'flex items-center gap-2 px-4 py-3 text-sm font-medium border-b-2 -mb-px transition-colors',
+            index === 0 ? 'border-tesoro-500 text-tesoro-600' : 'border-transparent text-muted-foreground hover:text-foreground'
+          ]}
+        >
+          <span>{tab.icon}</span>
+          {tab.label}
+        </button>
+      ))}
+    </div>
+
+    <!-- Tab Content -->
+    <div class="tab-content">
+      <!-- Algemeen -->
+      <div id="tab-algemeen" class="space-y-6">
+        <div class="rounded-xl border bg-card p-6">
+          <h3 class="font-semibold mb-4">Bedrijfsgegevens</h3>
+          <form class="space-y-4 max-w-lg">
+            <div class="space-y-2">
+              <label class="text-sm font-medium">Bedrijfsnaam</label>
+              <input type="text" value="Tesoro CRM" class="flex h-10 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm" />
+            </div>
+            <div class="grid gap-4 sm:grid-cols-2">
+              <div class="space-y-2">
+                <label class="text-sm font-medium">Email</label>
+                <input type="email" value="info@tesorocrm.nl" class="flex h-10 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm" />
+              </div>
+              <div class="space-y-2">
+                <label class="text-sm font-medium">Telefoon</label>
+                <input type="tel" value="020-1234567" class="flex h-10 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm" />
+              </div>
+            </div>
+            <div class="space-y-2">
+              <label class="text-sm font-medium">Adres</label>
+              <input type="text" value="Voorbeeldstraat 123, 1234 AB Amsterdam" class="flex h-10 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm" />
+            </div>
+            <div class="grid gap-4 sm:grid-cols-2">
+              <div class="space-y-2">
+                <label class="text-sm font-medium">KVK nummer</label>
+                <input type="text" value="12345678" class="flex h-10 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm" />
+              </div>
+              <div class="space-y-2">
+                <label class="text-sm font-medium">BTW nummer</label>
+                <input type="text" value="NL123456789B01" class="flex h-10 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm" />
+              </div>
+            </div>
+            <button type="submit" class="rounded-lg bg-tesoro-500 px-4 py-2 text-sm font-medium text-white hover:bg-tesoro-600">
+              Opslaan
+            </button>
+          </form>
+        </div>
+
+        <div class="rounded-xl border bg-card p-6">
+          <h3 class="font-semibold mb-4">Offerte instellingen</h3>
+          <form class="space-y-4 max-w-lg">
+            <div class="space-y-2">
+              <label class="text-sm font-medium">Standaard geldigheid (dagen)</label>
+              <input type="number" value="30" class="flex h-10 w-32 rounded-lg border border-input bg-background px-3 py-2 text-sm" />
+            </div>
+            <div class="space-y-2">
+              <label class="text-sm font-medium">Offerte nummerprefix</label>
+              <input type="text" value="2024-" class="flex h-10 w-32 rounded-lg border border-input bg-background px-3 py-2 text-sm" />
+            </div>
+            <label class="flex items-center gap-2">
+              <input type="checkbox" checked class="h-4 w-4 rounded border-gray-300 text-tesoro-500" />
+              <span class="text-sm">Stuur automatische herinneringen</span>
+            </label>
+            <button type="submit" class="rounded-lg bg-tesoro-500 px-4 py-2 text-sm font-medium text-white hover:bg-tesoro-600">
+              Opslaan
+            </button>
+          </form>
+        </div>
+      </div>
+
+      <!-- Emails -->
+      <div id="tab-emails" class="hidden space-y-6">
+        <div class="rounded-xl border bg-card overflow-hidden">
+          <div class="border-b bg-muted/30 px-6 py-4">
+            <h3 class="font-semibold">Email Templates</h3>
+            <p class="text-sm text-muted-foreground">Pas de automatische emails aan</p>
+          </div>
+          <div class="divide-y">
+            {emailTemplates.map((template) => (
+              <div class="flex items-center justify-between px-6 py-4 hover:bg-muted/30">
+                <div>
+                  <p class="font-medium">{template.name}</p>
+                  <p class="text-sm text-muted-foreground">{template.description}</p>
+                </div>
+                <button class="rounded-lg border px-3 py-1.5 text-sm hover:bg-muted">
+                  Bewerken
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      <!-- Team -->
+      <div id="tab-team" class="hidden space-y-6">
+        <div class="flex justify-end">
+          <button class="inline-flex items-center gap-2 rounded-lg bg-tesoro-500 px-4 py-2 text-sm font-medium text-white hover:bg-tesoro-600">
+            <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+            </svg>
+            Teamlid toevoegen
+          </button>
+        </div>
+        <div class="rounded-xl border bg-card overflow-hidden">
+          <table class="w-full">
+            <thead class="border-b bg-muted/50">
+              <tr>
+                <th class="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase">Naam</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase">Email</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase">Rol</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase">Status</th>
+                <th class="px-6 py-3 text-right text-xs font-medium text-muted-foreground uppercase">Acties</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y">
+              {teamMembers.map((member) => (
+                <tr class="hover:bg-muted/30">
+                  <td class="px-6 py-4 font-medium">{member.name}</td>
+                  <td class="px-6 py-4 text-sm">{member.email}</td>
+                  <td class="px-6 py-4">
+                    <span class:list={[
+                      'inline-flex rounded-full px-2.5 py-0.5 text-xs font-medium',
+                      member.role === 'admin' ? 'bg-purple-100 text-purple-800' : 'bg-gray-100 text-gray-800'
+                    ]}>
+                      {member.role === 'admin' ? 'Beheerder' : 'Lid'}
+                    </span>
+                  </td>
+                  <td class="px-6 py-4">
+                    <span class:list={[
+                      'inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-medium',
+                      member.active ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
+                    ]}>
+                      <span class:list={['h-1.5 w-1.5 rounded-full', member.active ? 'bg-green-500' : 'bg-gray-400']}></span>
+                      {member.active ? 'Actief' : 'Inactief'}
+                    </span>
+                  </td>
+                  <td class="px-6 py-4 text-right">
+                    <button class="p-1.5 text-muted-foreground hover:text-foreground rounded-lg hover:bg-muted">
+                      <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                      </svg>
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Integraties -->
+      <div id="tab-integraties" class="hidden space-y-6">
+        <div class="grid gap-6 lg:grid-cols-2">
+          <!-- Stripe -->
+          <div class="rounded-xl border bg-card p-6">
+            <div class="flex items-start justify-between mb-4">
+              <div class="flex items-center gap-3">
+                <div class="flex h-12 w-12 items-center justify-center rounded-lg bg-[#635bff]/10">
+                  <span class="text-2xl">💳</span>
+                </div>
+                <div>
+                  <h3 class="font-semibold">Stripe</h3>
+                  <p class="text-sm text-muted-foreground">Betalingen verwerken</p>
+                </div>
+              </div>
+              <span class="rounded-full bg-yellow-100 px-2.5 py-0.5 text-xs font-medium text-yellow-800">
+                Niet geconfigureerd
+              </span>
+            </div>
+            <button class="w-full rounded-lg border px-4 py-2 text-sm font-medium hover:bg-muted">
+              Configureren
+            </button>
+          </div>
+
+          <!-- Claude AI -->
+          <div class="rounded-xl border bg-card p-6">
+            <div class="flex items-start justify-between mb-4">
+              <div class="flex items-center gap-3">
+                <div class="flex h-12 w-12 items-center justify-center rounded-lg bg-orange-100">
+                  <span class="text-2xl">🤖</span>
+                </div>
+                <div>
+                  <h3 class="font-semibold">Claude AI</h3>
+                  <p class="text-sm text-muted-foreground">Tekst assistentie</p>
+                </div>
+              </div>
+              <span class="rounded-full bg-yellow-100 px-2.5 py-0.5 text-xs font-medium text-yellow-800">
+                Niet geconfigureerd
+              </span>
+            </div>
+            <button class="w-full rounded-lg border px-4 py-2 text-sm font-medium hover:bg-muted">
+              Configureren
+            </button>
+          </div>
+
+          <!-- Resend -->
+          <div class="rounded-xl border bg-card p-6">
+            <div class="flex items-start justify-between mb-4">
+              <div class="flex items-center gap-3">
+                <div class="flex h-12 w-12 items-center justify-center rounded-lg bg-blue-100">
+                  <span class="text-2xl">✉️</span>
+                </div>
+                <div>
+                  <h3 class="font-semibold">Resend</h3>
+                  <p class="text-sm text-muted-foreground">Email verzending</p>
+                </div>
+              </div>
+              <span class="rounded-full bg-yellow-100 px-2.5 py-0.5 text-xs font-medium text-yellow-800">
+                Niet geconfigureerd
+              </span>
+            </div>
+            <button class="w-full rounded-lg border px-4 py-2 text-sm font-medium hover:bg-muted">
+              Configureren
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</DashboardLayout>
+
+<script>
+  const tabs = document.querySelectorAll('[data-tab]');
+  const tabContents = document.querySelectorAll('[id^="tab-"]');
+
+  tabs.forEach((tab) => {
+    tab.addEventListener('click', () => {
+      const tabId = tab.getAttribute('data-tab');
+
+      // Update tab styles
+      tabs.forEach((t) => {
+        t.classList.remove('border-tesoro-500', 'text-tesoro-600');
+        t.classList.add('border-transparent', 'text-muted-foreground');
+      });
+      tab.classList.add('border-tesoro-500', 'text-tesoro-600');
+      tab.classList.remove('border-transparent', 'text-muted-foreground');
+
+      // Show/hide content
+      tabContents.forEach((content) => {
+        if (content.id === `tab-${tabId}`) {
+          content.classList.remove('hidden');
+        } else {
+          content.classList.add('hidden');
+        }
+      });
+    });
+  });
+</script>

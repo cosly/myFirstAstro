@@ -1,0 +1,97 @@
+---
+import Layout from './Layout.astro';
+
+interface Props {
+  title: string;
+}
+
+const { title } = Astro.props;
+
+const navigation = [
+  { name: 'Dashboard', href: '/dashboard', icon: 'home' },
+  { name: 'Aanvragen', href: '/aanvragen', icon: 'inbox', badge: true },
+  { name: 'Offertes', href: '/offertes', icon: 'file-text' },
+  { name: 'Klanten', href: '/klanten', icon: 'users' },
+  { name: 'Catalogus', href: '/catalogus', icon: 'package' },
+  { name: 'Instellingen', href: '/instellingen', icon: 'settings' },
+];
+
+const currentPath = Astro.url.pathname;
+---
+
+<Layout title={title}>
+  <div class="flex h-screen overflow-hidden">
+    <!-- Sidebar -->
+    <aside class="hidden w-64 flex-shrink-0 border-r bg-card lg:block">
+      <div class="flex h-full flex-col">
+        <!-- Logo -->
+        <div class="flex h-16 items-center gap-2 border-b px-6">
+          <div class="flex h-8 w-8 items-center justify-center rounded-lg bg-tesoro-500">
+            <span class="text-lg font-bold text-white">T</span>
+          </div>
+          <span class="text-lg font-semibold">Tesoro CRM</span>
+        </div>
+
+        <!-- Navigation -->
+        <nav class="flex-1 space-y-1 px-3 py-4">
+          {navigation.map((item) => {
+            const isActive = currentPath.startsWith(item.href);
+            return (
+              <a
+                href={item.href}
+                class:list={[
+                  'flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors',
+                  isActive
+                    ? 'bg-tesoro-500 text-white'
+                    : 'text-muted-foreground hover:bg-muted hover:text-foreground'
+                ]}
+              >
+                <span class="h-5 w-5" data-icon={item.icon}></span>
+                {item.name}
+                {item.badge && (
+                  <span class="ml-auto flex h-5 w-5 items-center justify-center rounded-full bg-destructive text-xs text-white">
+                    3
+                  </span>
+                )}
+              </a>
+            );
+          })}
+        </nav>
+
+        <!-- User -->
+        <div class="border-t p-4">
+          <div class="flex items-center gap-3">
+            <div class="flex h-9 w-9 items-center justify-center rounded-full bg-muted">
+              <span class="text-sm font-medium">TC</span>
+            </div>
+            <div class="flex-1">
+              <p class="text-sm font-medium">Team Tesoro</p>
+              <p class="text-xs text-muted-foreground">team@tesorocrm.nl</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Main Content -->
+    <div class="flex flex-1 flex-col overflow-hidden">
+      <!-- Top bar (mobile) -->
+      <header class="flex h-16 items-center gap-4 border-b bg-card px-4 lg:hidden">
+        <button class="p-2" id="mobile-menu-btn">
+          <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+          </svg>
+        </button>
+        <div class="flex h-8 w-8 items-center justify-center rounded-lg bg-tesoro-500">
+          <span class="text-lg font-bold text-white">T</span>
+        </div>
+        <span class="text-lg font-semibold">Tesoro CRM</span>
+      </header>
+
+      <!-- Page Content -->
+      <main class="flex-1 overflow-y-auto bg-muted/30 p-6">
+        <slot />
+      </main>
+    </div>
+  </div>
+</Layout>
