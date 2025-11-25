@@ -2,6 +2,7 @@ import type { APIRoute } from 'astro';
 import { createDb, quotes, quoteBlocks, quoteLines, quoteVersions, auditLog } from '@/lib/db';
 import { generateId } from '@/lib/utils';
 import { eq } from 'drizzle-orm';
+import { notifyQuoteViewed } from '@/lib/discord';
 
 // Get quote by public token
 export const GET: APIRoute = async ({ params, locals, request }) => {
@@ -58,6 +59,14 @@ export const GET: APIRoute = async ({ params, locals, request }) => {
         ipAddress: request.headers.get('CF-Connecting-IP') || request.headers.get('X-Forwarded-For'),
         userAgent: request.headers.get('User-Agent'),
       });
+
+      // Send Discord notification
+      if (quote.customer) {
+        const appUrl = new URL(request.url).origin;
+        notifyQuoteViewed(db, quote, quote.customer, appUrl).catch(err => {
+          console.error('Failed to send Discord notification:', err);
+        });
+      }
     }
 
     return new Response(JSON.stringify(quote), {

@@ -437,6 +437,129 @@ const autoRemindersEnabled = (settings.auto_reminders_enabled as boolean) ?? tru
             </div>
           </div>
         </div>
+
+        <!-- Discord Notifications -->
+        <div class="rounded-xl border bg-card p-6">
+          <div class="flex items-center gap-3 mb-4">
+            <div class="flex h-10 w-10 items-center justify-center rounded-lg bg-[#5865F2]/10">
+              <svg class="h-5 w-5 text-[#5865F2]" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M20.317 4.37a19.791 19.791 0 0 0-4.885-1.515.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0 12.64 12.64 0 0 0-.617-1.25.077.077 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057a.082.082 0 0 0 .031.057 19.9 19.9 0 0 0 5.993 3.03.078.078 0 0 0 .084-.028 14.09 14.09 0 0 0 1.226-1.994.076.076 0 0 0-.041-.106 13.107 13.107 0 0 1-1.872-.892.077.077 0 0 1-.008-.128 10.2 10.2 0 0 0 .372-.292.074.074 0 0 1 .077-.01c3.928 1.793 8.18 1.793 12.062 0a.074.074 0 0 1 .078.01c.12.098.246.198.373.292a.077.077 0 0 1-.006.127 12.299 12.299 0 0 1-1.873.892.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028 19.839 19.839 0 0 0 6.002-3.03.077.077 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.03zM8.02 15.33c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.956-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.956 2.418-2.157 2.418zm7.975 0c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.955-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.946 2.418-2.157 2.418z"/>
+              </svg>
+            </div>
+            <div>
+              <h3 class="font-semibold">Discord Notificaties</h3>
+              <p class="text-sm text-muted-foreground">Ontvang meldingen in Discord bij belangrijke events</p>
+            </div>
+          </div>
+
+          <div id="discord-settings" class="space-y-6">
+            <!-- Loading state -->
+            <div id="discord-loading" class="py-4 text-center text-muted-foreground text-sm">
+              Laden...
+            </div>
+
+            <!-- Settings form (hidden until loaded) -->
+            <div id="discord-form" class="hidden space-y-6">
+              <!-- Enable toggle -->
+              <div class="flex items-center justify-between">
+                <div>
+                  <p class="font-medium">Discord notificaties inschakelen</p>
+                  <p class="text-sm text-muted-foreground">Ontvang real-time meldingen in je Discord kanaal</p>
+                </div>
+                <label class="relative inline-flex items-center cursor-pointer">
+                  <input type="checkbox" id="discord-enabled" class="sr-only peer" />
+                  <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-tesoro-300 rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-tesoro-500"></div>
+                </label>
+              </div>
+
+              <!-- Webhook URL -->
+              <div class="space-y-2">
+                <label class="text-sm font-medium">Discord Webhook URL</label>
+                <div class="flex gap-2">
+                  <input
+                    type="password"
+                    id="discord-webhook-url"
+                    class="flex-1 h-10 rounded-lg border border-input bg-background px-3 py-2 text-sm"
+                    placeholder="https://discord.com/api/webhooks/..."
+                  />
+                  <button
+                    id="discord-test-btn"
+                    type="button"
+                    class="rounded-lg border px-4 py-2 text-sm font-medium hover:bg-muted"
+                  >
+                    Testen
+                  </button>
+                </div>
+                <p class="text-xs text-muted-foreground">
+                  <a href="https://support.discord.com/hc/en-us/articles/228383668-Intro-to-Webhooks" target="_blank" rel="noopener" class="text-tesoro-500 hover:underline">
+                    Hoe maak ik een webhook aan?
+                  </a>
+                </p>
+              </div>
+
+              <!-- Event toggles -->
+              <div class="space-y-3">
+                <p class="text-sm font-medium">Notificatie types</p>
+                <div class="grid gap-3 sm:grid-cols-2">
+                  <label class="flex items-start gap-3 p-3 border rounded-lg hover:bg-muted/30 cursor-pointer">
+                    <input type="checkbox" id="discord-event-quote_request_received" class="discord-event mt-0.5 h-4 w-4 rounded border-gray-300 text-tesoro-500" />
+                    <div>
+                      <p class="text-sm font-medium">Nieuwe aanvraag</p>
+                      <p class="text-xs text-muted-foreground">Wanneer een klant een offerte aanvraagt</p>
+                    </div>
+                  </label>
+                  <label class="flex items-start gap-3 p-3 border rounded-lg hover:bg-muted/30 cursor-pointer">
+                    <input type="checkbox" id="discord-event-quote_viewed" class="discord-event mt-0.5 h-4 w-4 rounded border-gray-300 text-tesoro-500" />
+                    <div>
+                      <p class="text-sm font-medium">Offerte bekeken</p>
+                      <p class="text-xs text-muted-foreground">Wanneer een klant de offerte opent</p>
+                    </div>
+                  </label>
+                  <label class="flex items-start gap-3 p-3 border rounded-lg hover:bg-muted/30 cursor-pointer">
+                    <input type="checkbox" id="discord-event-quote_accepted" class="discord-event mt-0.5 h-4 w-4 rounded border-gray-300 text-tesoro-500" />
+                    <div>
+                      <p class="text-sm font-medium">Offerte geaccepteerd</p>
+                      <p class="text-xs text-muted-foreground">Wanneer een klant accepteert en tekent</p>
+                    </div>
+                  </label>
+                  <label class="flex items-start gap-3 p-3 border rounded-lg hover:bg-muted/30 cursor-pointer">
+                    <input type="checkbox" id="discord-event-quote_declined" class="discord-event mt-0.5 h-4 w-4 rounded border-gray-300 text-tesoro-500" />
+                    <div>
+                      <p class="text-sm font-medium">Offerte afgewezen</p>
+                      <p class="text-xs text-muted-foreground">Wanneer een klant de offerte afwijst</p>
+                    </div>
+                  </label>
+                  <label class="flex items-start gap-3 p-3 border rounded-lg hover:bg-muted/30 cursor-pointer">
+                    <input type="checkbox" id="discord-event-question_received" class="discord-event mt-0.5 h-4 w-4 rounded border-gray-300 text-tesoro-500" />
+                    <div>
+                      <p class="text-sm font-medium">Vraag ontvangen</p>
+                      <p class="text-xs text-muted-foreground">Wanneer een klant een vraag stelt</p>
+                    </div>
+                  </label>
+                  <label class="flex items-start gap-3 p-3 border rounded-lg hover:bg-muted/30 cursor-pointer">
+                    <input type="checkbox" id="discord-event-payment_received" class="discord-event mt-0.5 h-4 w-4 rounded border-gray-300 text-tesoro-500" />
+                    <div>
+                      <p class="text-sm font-medium">Betaling ontvangen</p>
+                      <p class="text-xs text-muted-foreground">Wanneer een betaling is voltooid</p>
+                    </div>
+                  </label>
+                </div>
+              </div>
+
+              <!-- Save button -->
+              <div class="flex items-center gap-3">
+                <button
+                  id="discord-save-btn"
+                  type="button"
+                  class="rounded-lg bg-tesoro-500 px-4 py-2 text-sm font-medium text-white hover:bg-tesoro-600"
+                >
+                  Opslaan
+                </button>
+                <span id="discord-save-status" class="text-sm text-green-600 hidden">Opgeslagen!</span>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   </div>
@@ -1234,4 +1357,172 @@ const autoRemindersEnabled = (settings.auto_reminders_enabled as boolean) ?? tru
 
   // Load API key status on page load
   loadApiKeyStatus();
+
+  // =====================
+  // Discord Settings
+  // =====================
+  const discordLoading = document.getElementById('discord-loading');
+  const discordForm = document.getElementById('discord-form');
+  const discordEnabled = document.getElementById('discord-enabled') as HTMLInputElement;
+  const discordWebhookUrl = document.getElementById('discord-webhook-url') as HTMLInputElement;
+  const discordSaveBtn = document.getElementById('discord-save-btn');
+  const discordTestBtn = document.getElementById('discord-test-btn');
+  const discordSaveStatus = document.getElementById('discord-save-status');
+
+  const eventTypes = [
+    'quote_request_received',
+    'quote_viewed',
+    'quote_accepted',
+    'quote_declined',
+    'question_received',
+    'payment_received',
+  ];
+
+  interface DiscordSettings {
+    webhookUrl: string;
+    hasWebhookUrl: boolean;
+    enabled: boolean;
+    events: Record<string, boolean>;
+  }
+
+  let currentDiscordSettings: DiscordSettings | null = null;
+
+  async function loadDiscordSettings() {
+    try {
+      const response = await fetch('/api/settings/discord');
+      if (!response.ok) throw new Error('Failed to load Discord settings');
+
+      const settings: DiscordSettings = await response.json();
+      currentDiscordSettings = settings;
+
+      // Update UI
+      if (discordEnabled) discordEnabled.checked = settings.enabled;
+      if (discordWebhookUrl) {
+        if (settings.hasWebhookUrl) {
+          discordWebhookUrl.value = settings.webhookUrl;
+          discordWebhookUrl.type = 'text';
+        } else {
+          discordWebhookUrl.value = '';
+          discordWebhookUrl.type = 'password';
+        }
+      }
+
+      // Update event checkboxes
+      eventTypes.forEach(event => {
+        const checkbox = document.getElementById(`discord-event-${event}`) as HTMLInputElement;
+        if (checkbox) {
+          checkbox.checked = settings.events?.[event] ?? true;
+        }
+      });
+
+      // Show form, hide loading
+      discordLoading?.classList.add('hidden');
+      discordForm?.classList.remove('hidden');
+    } catch (error) {
+      console.error('Failed to load Discord settings:', error);
+      if (discordLoading) {
+        discordLoading.textContent = 'Kon instellingen niet laden';
+      }
+    }
+  }
+
+  async function saveDiscordSettings() {
+    const events: Record<string, boolean> = {};
+    eventTypes.forEach(event => {
+      const checkbox = document.getElementById(`discord-event-${event}`) as HTMLInputElement;
+      if (checkbox) {
+        events[event] = checkbox.checked;
+      }
+    });
+
+    const data: any = {
+      enabled: discordEnabled?.checked ?? false,
+      events,
+    };
+
+    // Only include webhookUrl if it's changed (not the masked version)
+    const webhookValue = discordWebhookUrl?.value || '';
+    if (webhookValue && !webhookValue.startsWith('••••')) {
+      data.webhookUrl = webhookValue;
+    }
+
+    try {
+      const response = await fetch('/api/settings/discord', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to save');
+      }
+
+      // Show success
+      if (discordSaveStatus) {
+        discordSaveStatus.classList.remove('hidden');
+        setTimeout(() => discordSaveStatus.classList.add('hidden'), 2000);
+      }
+
+      // Reload settings to get updated masked URL
+      await loadDiscordSettings();
+    } catch (error: any) {
+      console.error('Failed to save Discord settings:', error);
+      alert(error.message || 'Fout bij opslaan van Discord instellingen');
+    }
+  }
+
+  async function testDiscordWebhook() {
+    const webhookValue = discordWebhookUrl?.value || '';
+
+    // Check if we need to use the saved webhook or a new one
+    const data: any = {};
+    if (webhookValue && !webhookValue.startsWith('••••')) {
+      data.webhookUrl = webhookValue;
+    }
+
+    if (discordTestBtn) {
+      discordTestBtn.textContent = 'Testen...';
+      discordTestBtn.setAttribute('disabled', 'true');
+    }
+
+    try {
+      const response = await fetch('/api/settings/discord', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+      });
+
+      const result = await response.json();
+
+      if (response.ok) {
+        alert('Test notificatie verstuurd! Check je Discord kanaal.');
+      } else {
+        throw new Error(result.error || 'Failed to send test');
+      }
+    } catch (error: any) {
+      console.error('Failed to test Discord webhook:', error);
+      alert(error.message || 'Fout bij testen van webhook');
+    } finally {
+      if (discordTestBtn) {
+        discordTestBtn.textContent = 'Testen';
+        discordTestBtn.removeAttribute('disabled');
+      }
+    }
+  }
+
+  // Event listeners
+  discordSaveBtn?.addEventListener('click', saveDiscordSettings);
+  discordTestBtn?.addEventListener('click', testDiscordWebhook);
+
+  // Clear webhook URL field when user starts typing (to replace masked value)
+  discordWebhookUrl?.addEventListener('focus', () => {
+    if (discordWebhookUrl.value.startsWith('••••')) {
+      discordWebhookUrl.value = '';
+      discordWebhookUrl.type = 'password';
+    }
+  });
+
+  // Load Discord settings on page load
+  loadDiscordSettings();
 </script>
