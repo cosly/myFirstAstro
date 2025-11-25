@@ -1,0 +1,272 @@
+{
+  "common": {
+    "save": "Opslaan",
+    "cancel": "Annuleren",
+    "delete": "Verwijderen",
+    "edit": "Bewerken",
+    "add": "Toevoegen",
+    "search": "Zoeken",
+    "loading": "Laden...",
+    "error": "Er is iets misgegaan",
+    "success": "Succesvol",
+    "confirm": "Bevestigen",
+    "close": "Sluiten",
+    "back": "Terug",
+    "next": "Volgende",
+    "previous": "Vorige",
+    "yes": "Ja",
+    "no": "Nee",
+    "or": "of",
+    "and": "en",
+    "preview": "Preview",
+    "download": "Downloaden",
+    "send": "Versturen",
+    "status": "Status",
+    "actions": "Acties",
+    "details": "Details",
+    "settings": "Instellingen",
+    "language": "Taal"
+  },
+  "nav": {
+    "dashboard": "Dashboard",
+    "quotes": "Offertes",
+    "customers": "Klanten",
+    "services": "Diensten",
+    "settings": "Instellingen",
+    "logout": "Uitloggen"
+  },
+  "dashboard": {
+    "title": "Dashboard",
+    "welcome": "Welkom terug",
+    "recentQuotes": "Recente offertes",
+    "stats": {
+      "totalQuotes": "Totaal offertes",
+      "pendingQuotes": "In afwachting",
+      "acceptedQuotes": "Geaccepteerd",
+      "revenue": "Omzet"
+    }
+  },
+  "quotes": {
+    "title": "Offertes",
+    "newQuote": "Nieuwe offerte",
+    "quoteNumber": "Offertenummer",
+    "customer": "Klant",
+    "total": "Totaal",
+    "validUntil": "Geldig tot",
+    "createdAt": "Aangemaakt op",
+    "status": {
+      "draft": "Concept",
+      "sent": "Verstuurd",
+      "viewed": "Bekeken",
+      "accepted": "Geaccepteerd",
+      "declined": "Afgewezen",
+      "expired": "Verlopen"
+    },
+    "actions": {
+      "view": "Bekijken",
+      "edit": "Bewerken",
+      "send": "Versturen",
+      "duplicate": "Dupliceren",
+      "delete": "Verwijderen",
+      "downloadPdf": "Download PDF"
+    },
+    "sendConfirm": "Weet je zeker dat je deze offerte naar de klant wilt versturen?",
+    "sendSuccess": "Offerte succesvol verstuurd!",
+    "deleteConfirm": "Weet je zeker dat je deze offerte wilt verwijderen?"
+  },
+  "customers": {
+    "title": "Klanten",
+    "newCustomer": "Nieuwe klant",
+    "name": "Naam",
+    "company": "Bedrijf",
+    "email": "E-mail",
+    "phone": "Telefoon",
+    "address": "Adres",
+    "totalQuotes": "Totaal offertes",
+    "noCustomers": "Nog geen klanten"
+  },
+  "services": {
+    "title": "Diensten",
+    "newService": "Nieuwe dienst",
+    "name": "Naam",
+    "description": "Beschrijving",
+    "price": "Prijs",
+    "unit": "Eenheid",
+    "category": "Categorie"
+  },
+  "settings": {
+    "title": "Instellingen",
+    "tabs": {
+      "general": "Algemeen",
+      "emails": "Email Templates",
+      "texts": "Tekst Templates",
+      "team": "Team",
+      "integrations": "Integraties"
+    },
+    "company": {
+      "title": "Bedrijfsgegevens",
+      "name": "Bedrijfsnaam",
+      "email": "E-mail",
+      "phone": "Telefoon",
+      "address": "Adres",
+      "kvk": "KVK nummer",
+      "vat": "BTW nummer"
+    },
+    "quoteSettings": {
+      "title": "Offerte instellingen",
+      "validityDays": "Standaard geldigheid (dagen)",
+      "prefix": "Offerte nummerprefix"
+    },
+    "apiKeys": {
+      "title": "API Keys",
+      "description": "Configureer de API keys voor externe diensten. De keys worden veilig opgeslagen en zijn niet zichtbaar na opslaan.",
+      "configured": "Geconfigureerd",
+      "notConfigured": "Niet geconfigureerd",
+      "save": "Opslaan",
+      "delete": "Verwijderen",
+      "deleteConfirm": "Weet je zeker dat je deze API key wilt verwijderen?",
+      "saved": "API key opgeslagen!",
+      "deleted": "API key verwijderd!",
+      "enterKey": "Voer een API key in",
+      "saveError": "Fout bij opslaan van API key",
+      "deleteError": "Fout bij verwijderen van API key"
+    },
+    "emailTemplates": {
+      "title": "Email Templates",
+      "description": "Pas de automatische emails aan",
+      "edit": "Bewerken",
+      "preview": "Preview",
+      "types": {
+        "quote_sent": "Offerte verstuurd",
+        "quote_reminder": "Herinnering",
+        "quote_accepted": "Offerte geaccepteerd",
+        "quote_declined": "Offerte afgewezen",
+        "payment_received": "Betaling ontvangen",
+        "question_received": "Vraag ontvangen"
+      }
+    }
+  },
+  "customerPortal": {
+    "quoteFor": "Offerte voor",
+    "preparedBy": "Opgesteld door",
+    "preparedFor": "Opgesteld voor",
+    "quoteNumber": "Offertenummer",
+    "quoteNumberShort": "Offerte #",
+    "validUntil": "Geldig tot",
+    "expired": "Deze offerte is verlopen",
+    "total": "Totaal",
+    "subtotal": "Subtotaal",
+    "vat": "BTW",
+    "optional": "Optioneel",
+    "included": "Inbegrepen",
+    "perUnit": "per",
+    "unknown": "Onbekend",
+    "unknownDate": "onbekende datum",
+    "open": "Open",
+    "status": {
+      "accepted": {
+        "title": "Offerte Geaccepteerd",
+        "message": "Deze offerte is geaccepteerd op {date} door {name}{function}.",
+        "followUp": "U ontvangt binnenkort een bevestigingsmail met de volgende stappen."
+      },
+      "declined": {
+        "title": "Offerte Afgewezen",
+        "message": "Deze offerte is afgewezen. Heeft u vragen? Neem gerust contact met ons op."
+      },
+      "expired": {
+        "title": "Offerte Verlopen",
+        "message": "Deze offerte is verlopen op {date}.",
+        "followUp": "Neem contact met ons op voor een nieuwe offerte."
+      }
+    },
+    "actions": {
+      "accept": "Offerte accepteren",
+      "decline": "Afwijzen",
+      "askQuestion": "Stel een vraag",
+      "downloadPdf": "Download PDF"
+    },
+    "acceptConfirm": "Weet je zeker dat je deze offerte wilt accepteren?",
+    "declineConfirm": "Weet je zeker dat je deze offerte wilt afwijzen?",
+    "acceptSuccess": "Bedankt! De offerte is geaccepteerd.",
+    "declineSuccess": "De offerte is afgewezen.",
+    "signature": {
+      "title": "Handtekening",
+      "instruction": "Teken hieronder om de offerte te accepteren",
+      "name": "Naam",
+      "function": "Functie",
+      "clear": "Wissen",
+      "confirm": "Bevestig & Accepteer"
+    },
+    "question": {
+      "title": "Stel een vraag",
+      "titleAboutLine": "Vraag over regel",
+      "placeholder": "Typ hier uw vraag...",
+      "send": "Verstuur vraag",
+      "success": "Uw vraag is verstuurd!",
+      "aboutLine": "Over",
+      "lineQuestion": "Stel uw vraag over deze regel. Wij nemen zo snel mogelijk contact met u op.",
+      "generalQuestion": "Heeft u een vraag over deze offerte? Wij nemen zo snel mogelijk contact met u op.",
+      "askAboutLine": "Vraag stellen over deze regel"
+    },
+    "decline": {
+      "title": "Offerte afwijzen",
+      "confirm": "Weet u zeker dat u deze offerte wilt afwijzen? U kunt optioneel een reden opgeven.",
+      "reasonPlaceholder": "Reden voor afwijzing (optioneel)",
+      "submitting": "Bezig...",
+      "cancel": "Annuleren"
+    },
+    "chat": {
+      "title": "Vragen & Opmerkingen",
+      "loading": "Laden...",
+      "noMessages": "Nog geen berichten",
+      "startConversation": "Stel een vraag over de offerte",
+      "placeholder": "Stel een vraag...",
+      "send": "Verstuur",
+      "sending": "Versturen...",
+      "you": "U",
+      "team": "Tesoro",
+      "replyTo": "Re"
+    },
+    "table": {
+      "description": "Omschrijving",
+      "quantity": "Aantal",
+      "price": "Prijs",
+      "lineTotal": "Totaal"
+    },
+    "errors": {
+      "selectionFailed": "Kon selectie niet opslaan. Probeer het opnieuw.",
+      "acceptFailed": "Kon offerte niet accepteren. Probeer het opnieuw.",
+      "declineFailed": "Kon offerte niet afwijzen. Probeer het opnieuw.",
+      "questionFailed": "Kon vraag niet versturen. Probeer het opnieuw.",
+      "messageFailed": "Kon bericht niet versturen. Probeer het opnieuw."
+    },
+    "success": {
+      "questionSent": "Uw vraag is verzonden! We nemen zo snel mogelijk contact met u op."
+    }
+  },
+  "errors": {
+    "notFound": "Pagina niet gevonden",
+    "unauthorized": "Niet geautoriseerd",
+    "serverError": "Server fout",
+    "networkError": "Netwerkfout",
+    "validationError": "Validatiefout",
+    "required": "Dit veld is verplicht",
+    "invalidEmail": "Ongeldig e-mailadres",
+    "invalidPhone": "Ongeldig telefoonnummer"
+  },
+  "dates": {
+    "today": "Vandaag",
+    "yesterday": "Gisteren",
+    "daysAgo": "{days} dagen geleden",
+    "formats": {
+      "short": "DD-MM-YYYY",
+      "long": "D MMMM YYYY",
+      "withTime": "DD-MM-YYYY HH:mm"
+    }
+  },
+  "currency": {
+    "symbol": "€",
+    "code": "EUR",
+    "format": "€{amount}"
+  }
+}

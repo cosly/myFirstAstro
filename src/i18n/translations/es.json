@@ -1,0 +1,272 @@
+{
+  "common": {
+    "save": "Guardar",
+    "cancel": "Cancelar",
+    "delete": "Eliminar",
+    "edit": "Editar",
+    "add": "Añadir",
+    "search": "Buscar",
+    "loading": "Cargando...",
+    "error": "Algo salió mal",
+    "success": "Éxito",
+    "confirm": "Confirmar",
+    "close": "Cerrar",
+    "back": "Atrás",
+    "next": "Siguiente",
+    "previous": "Anterior",
+    "yes": "Sí",
+    "no": "No",
+    "or": "o",
+    "and": "y",
+    "preview": "Vista previa",
+    "download": "Descargar",
+    "send": "Enviar",
+    "status": "Estado",
+    "actions": "Acciones",
+    "details": "Detalles",
+    "settings": "Configuración",
+    "language": "Idioma"
+  },
+  "nav": {
+    "dashboard": "Panel",
+    "quotes": "Presupuestos",
+    "customers": "Clientes",
+    "services": "Servicios",
+    "settings": "Configuración",
+    "logout": "Cerrar sesión"
+  },
+  "dashboard": {
+    "title": "Panel",
+    "welcome": "Bienvenido de nuevo",
+    "recentQuotes": "Presupuestos recientes",
+    "stats": {
+      "totalQuotes": "Total presupuestos",
+      "pendingQuotes": "Pendientes",
+      "acceptedQuotes": "Aceptados",
+      "revenue": "Ingresos"
+    }
+  },
+  "quotes": {
+    "title": "Presupuestos",
+    "newQuote": "Nuevo presupuesto",
+    "quoteNumber": "Número de presupuesto",
+    "customer": "Cliente",
+    "total": "Total",
+    "validUntil": "Válido hasta",
+    "createdAt": "Creado el",
+    "status": {
+      "draft": "Borrador",
+      "sent": "Enviado",
+      "viewed": "Visto",
+      "accepted": "Aceptado",
+      "declined": "Rechazado",
+      "expired": "Expirado"
+    },
+    "actions": {
+      "view": "Ver",
+      "edit": "Editar",
+      "send": "Enviar",
+      "duplicate": "Duplicar",
+      "delete": "Eliminar",
+      "downloadPdf": "Descargar PDF"
+    },
+    "sendConfirm": "¿Estás seguro de que quieres enviar este presupuesto al cliente?",
+    "sendSuccess": "¡Presupuesto enviado con éxito!",
+    "deleteConfirm": "¿Estás seguro de que quieres eliminar este presupuesto?"
+  },
+  "customers": {
+    "title": "Clientes",
+    "newCustomer": "Nuevo cliente",
+    "name": "Nombre",
+    "company": "Empresa",
+    "email": "Correo electrónico",
+    "phone": "Teléfono",
+    "address": "Dirección",
+    "totalQuotes": "Total presupuestos",
+    "noCustomers": "Aún no hay clientes"
+  },
+  "services": {
+    "title": "Servicios",
+    "newService": "Nuevo servicio",
+    "name": "Nombre",
+    "description": "Descripción",
+    "price": "Precio",
+    "unit": "Unidad",
+    "category": "Categoría"
+  },
+  "settings": {
+    "title": "Configuración",
+    "tabs": {
+      "general": "General",
+      "emails": "Plantillas de correo",
+      "texts": "Plantillas de texto",
+      "team": "Equipo",
+      "integrations": "Integraciones"
+    },
+    "company": {
+      "title": "Datos de la empresa",
+      "name": "Nombre de la empresa",
+      "email": "Correo electrónico",
+      "phone": "Teléfono",
+      "address": "Dirección",
+      "kvk": "Número de registro mercantil",
+      "vat": "Número de IVA"
+    },
+    "quoteSettings": {
+      "title": "Configuración de presupuestos",
+      "validityDays": "Validez predeterminada (días)",
+      "prefix": "Prefijo del número de presupuesto"
+    },
+    "apiKeys": {
+      "title": "Claves API",
+      "description": "Configure las claves API para servicios externos. Las claves se almacenan de forma segura y no son visibles después de guardar.",
+      "configured": "Configurado",
+      "notConfigured": "No configurado",
+      "save": "Guardar",
+      "delete": "Eliminar",
+      "deleteConfirm": "¿Estás seguro de que quieres eliminar esta clave API?",
+      "saved": "¡Clave API guardada!",
+      "deleted": "¡Clave API eliminada!",
+      "enterKey": "Introduce una clave API",
+      "saveError": "Error al guardar la clave API",
+      "deleteError": "Error al eliminar la clave API"
+    },
+    "emailTemplates": {
+      "title": "Plantillas de correo",
+      "description": "Personaliza los correos automáticos",
+      "edit": "Editar",
+      "preview": "Vista previa",
+      "types": {
+        "quote_sent": "Presupuesto enviado",
+        "quote_reminder": "Recordatorio",
+        "quote_accepted": "Presupuesto aceptado",
+        "quote_declined": "Presupuesto rechazado",
+        "payment_received": "Pago recibido",
+        "question_received": "Pregunta recibida"
+      }
+    }
+  },
+  "customerPortal": {
+    "quoteFor": "Presupuesto para",
+    "preparedBy": "Preparado por",
+    "preparedFor": "Preparado para",
+    "quoteNumber": "Número de presupuesto",
+    "quoteNumberShort": "Presupuesto #",
+    "validUntil": "Válido hasta",
+    "expired": "Este presupuesto ha expirado",
+    "total": "Total",
+    "subtotal": "Subtotal",
+    "vat": "IVA",
+    "optional": "Opcional",
+    "included": "Incluido",
+    "perUnit": "por",
+    "unknown": "Desconocido",
+    "unknownDate": "fecha desconocida",
+    "open": "Abierto",
+    "status": {
+      "accepted": {
+        "title": "Presupuesto Aceptado",
+        "message": "Este presupuesto fue aceptado el {date} por {name}{function}.",
+        "followUp": "Recibirás un correo de confirmación con los próximos pasos en breve."
+      },
+      "declined": {
+        "title": "Presupuesto Rechazado",
+        "message": "Este presupuesto ha sido rechazado. Si tienes alguna pregunta, por favor contáctanos."
+      },
+      "expired": {
+        "title": "Presupuesto Expirado",
+        "message": "Este presupuesto expiró el {date}.",
+        "followUp": "Por favor, contáctanos para un nuevo presupuesto."
+      }
+    },
+    "actions": {
+      "accept": "Aceptar presupuesto",
+      "decline": "Rechazar",
+      "askQuestion": "Hacer una pregunta",
+      "downloadPdf": "Descargar PDF"
+    },
+    "acceptConfirm": "¿Estás seguro de que quieres aceptar este presupuesto?",
+    "declineConfirm": "¿Estás seguro de que quieres rechazar este presupuesto?",
+    "acceptSuccess": "¡Gracias! El presupuesto ha sido aceptado.",
+    "declineSuccess": "El presupuesto ha sido rechazado.",
+    "signature": {
+      "title": "Firma",
+      "instruction": "Firma abajo para aceptar el presupuesto",
+      "name": "Nombre",
+      "function": "Función",
+      "clear": "Borrar",
+      "confirm": "Confirmar y Aceptar"
+    },
+    "question": {
+      "title": "Hacer una pregunta",
+      "titleAboutLine": "Pregunta sobre la línea",
+      "placeholder": "Escribe tu pregunta aquí...",
+      "send": "Enviar pregunta",
+      "success": "¡Tu pregunta ha sido enviada!",
+      "aboutLine": "Sobre",
+      "lineQuestion": "Haz tu pregunta sobre esta línea. Te contactaremos lo antes posible.",
+      "generalQuestion": "¿Tienes alguna pregunta sobre este presupuesto? Te contactaremos lo antes posible.",
+      "askAboutLine": "Hacer una pregunta sobre esta línea"
+    },
+    "decline": {
+      "title": "Rechazar presupuesto",
+      "confirm": "¿Estás seguro de que quieres rechazar este presupuesto? Opcionalmente puedes dar una razón.",
+      "reasonPlaceholder": "Razón del rechazo (opcional)",
+      "submitting": "Procesando...",
+      "cancel": "Cancelar"
+    },
+    "chat": {
+      "title": "Preguntas y Comentarios",
+      "loading": "Cargando...",
+      "noMessages": "Aún no hay mensajes",
+      "startConversation": "Haz una pregunta sobre el presupuesto",
+      "placeholder": "Haz una pregunta...",
+      "send": "Enviar",
+      "sending": "Enviando...",
+      "you": "Tú",
+      "team": "Tesoro",
+      "replyTo": "Re"
+    },
+    "table": {
+      "description": "Descripción",
+      "quantity": "Cantidad",
+      "price": "Precio",
+      "lineTotal": "Total"
+    },
+    "errors": {
+      "selectionFailed": "No se pudo guardar la selección. Por favor, inténtalo de nuevo.",
+      "acceptFailed": "No se pudo aceptar el presupuesto. Por favor, inténtalo de nuevo.",
+      "declineFailed": "No se pudo rechazar el presupuesto. Por favor, inténtalo de nuevo.",
+      "questionFailed": "No se pudo enviar la pregunta. Por favor, inténtalo de nuevo.",
+      "messageFailed": "No se pudo enviar el mensaje. Por favor, inténtalo de nuevo."
+    },
+    "success": {
+      "questionSent": "¡Tu pregunta ha sido enviada! Te contactaremos lo antes posible."
+    }
+  },
+  "errors": {
+    "notFound": "Página no encontrada",
+    "unauthorized": "No autorizado",
+    "serverError": "Error del servidor",
+    "networkError": "Error de red",
+    "validationError": "Error de validación",
+    "required": "Este campo es obligatorio",
+    "invalidEmail": "Dirección de correo electrónico no válida",
+    "invalidPhone": "Número de teléfono no válido"
+  },
+  "dates": {
+    "today": "Hoy",
+    "yesterday": "Ayer",
+    "daysAgo": "Hace {days} días",
+    "formats": {
+      "short": "DD/MM/YYYY",
+      "long": "D de MMMM de YYYY",
+      "withTime": "DD/MM/YYYY HH:mm"
+    }
+  },
+  "currency": {
+    "symbol": "€",
+    "code": "EUR",
+    "format": "{amount} €"
+  }
+}
