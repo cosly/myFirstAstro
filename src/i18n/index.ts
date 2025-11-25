@@ -1,20 +1,23 @@
 import nl from './translations/nl.json';
 import en from './translations/en.json';
+import es from './translations/es.json';
 
-export type Locale = 'nl' | 'en';
+export type Locale = 'nl' | 'en' | 'es';
 
 export const defaultLocale: Locale = 'nl';
 
-export const locales: Locale[] = ['nl', 'en'];
+export const locales: Locale[] = ['nl', 'en', 'es'];
 
 export const localeNames: Record<Locale, string> = {
   nl: 'Nederlands',
   en: 'English',
+  es: 'Español',
 };
 
 const translations: Record<Locale, typeof nl> = {
   nl,
   en,
+  es,
 };
 
 type NestedKeyOf<T> = T extends object
@@ -142,11 +145,17 @@ export function resolveLocale(
   );
 }
 
+const localeMap: Record<Locale, string> = {
+  nl: 'nl-NL',
+  en: 'en-US',
+  es: 'es-ES',
+};
+
 /**
  * Format currency based on locale
  */
 export function formatCurrencyLocale(amount: number, locale: Locale): string {
-  return new Intl.NumberFormat(locale === 'nl' ? 'nl-NL' : 'en-US', {
+  return new Intl.NumberFormat(localeMap[locale], {
     style: 'currency',
     currency: 'EUR',
   }).format(amount);
@@ -159,14 +168,14 @@ export function formatDateLocale(date: Date | string, locale: Locale, style: 'sh
   const d = typeof date === 'string' ? new Date(date) : date;
 
   if (style === 'long') {
-    return new Intl.DateTimeFormat(locale === 'nl' ? 'nl-NL' : 'en-US', {
+    return new Intl.DateTimeFormat(localeMap[locale], {
       year: 'numeric',
       month: 'long',
       day: 'numeric',
     }).format(d);
   }
 
-  return new Intl.DateTimeFormat(locale === 'nl' ? 'nl-NL' : 'en-US', {
+  return new Intl.DateTimeFormat(localeMap[locale], {
     year: 'numeric',
     month: '2-digit',
     day: '2-digit',
