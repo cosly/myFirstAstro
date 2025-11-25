@@ -11,6 +11,7 @@ type Category = {
   services: Array<{
     id: string;
     name: string;
+    description: string | null;
     defaultPrice: number;
     unit: string;
     btwRate: number;
@@ -43,6 +44,7 @@ try {
       .map(s => ({
         id: s.id,
         name: s.name,
+        description: s.description,
         defaultPrice: s.defaultPrice,
         unit: s.unit,
         btwRate: s.btwRate,
@@ -101,7 +103,7 @@ const formatCurrency = (amount: number) => {
     <!-- Categories Grid -->
     <div class="grid gap-6 lg:grid-cols-2">
       {categories.map((category) => (
-        <div class="rounded-xl border bg-card overflow-hidden">
+        <div class="rounded-xl border bg-card overflow-hidden" data-category-id={category.id}>
           <!-- Category Header -->
           <div class="flex items-center justify-between border-b bg-muted/30 px-6 py-4">
             <div class="flex items-center gap-3">
@@ -111,11 +113,27 @@ const formatCurrency = (amount: number) => {
                 {category.services.length} diensten
               </span>
             </div>
-            <button class="p-1.5 text-muted-foreground hover:text-foreground rounded-lg hover:bg-muted">
-              <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z" />
-              </svg>
-            </button>
+            <div class="flex items-center gap-1">
+              <button
+                class="edit-category-btn p-1.5 text-muted-foreground hover:text-foreground rounded-lg hover:bg-muted"
+                data-category-id={category.id}
+                data-category-name={category.name}
+                data-category-icon={category.icon || ''}
+              >
+                <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                </svg>
+              </button>
+              <button
+                class="delete-category-btn p-1.5 text-muted-foreground hover:text-red-500 rounded-lg hover:bg-muted"
+                data-category-id={category.id}
+                data-category-name={category.name}
+              >
+                <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                </svg>
+              </button>
+            </div>
           </div>
 
           <!-- Services List -->
@@ -136,11 +154,31 @@ const formatCurrency = (amount: number) => {
                       <p class="font-medium">{formatCurrency(service.defaultPrice)}</p>
                       <p class="text-xs text-muted-foreground">per {service.unit}</p>
                     </div>
-                    <button class="p-1.5 text-muted-foreground hover:text-foreground opacity-0 group-hover:opacity-100 transition-opacity rounded-lg hover:bg-muted">
-                      <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
-                      </svg>
-                    </button>
+                    <div class="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <button
+                        class="edit-service-btn p-1.5 text-muted-foreground hover:text-foreground rounded-lg hover:bg-muted"
+                        data-service-id={service.id}
+                        data-service-name={service.name}
+                        data-service-description={service.description || ''}
+                        data-service-price={service.defaultPrice}
+                        data-service-unit={service.unit}
+                        data-service-btw={service.btwRate}
+                        data-service-category={category.id}
+                      >
+                        <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                        </svg>
+                      </button>
+                      <button
+                        class="delete-service-btn p-1.5 text-muted-foreground hover:text-red-500 rounded-lg hover:bg-muted"
+                        data-service-id={service.id}
+                        data-service-name={service.name}
+                      >
+                        <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                        </svg>
+                      </button>
+                    </div>
                   </div>
                 </div>
               ))
@@ -149,7 +187,10 @@ const formatCurrency = (amount: number) => {
 
           <!-- Add Service to Category -->
           <div class="border-t px-6 py-3">
-            <button class="w-full text-sm text-muted-foreground hover:text-tesoro-500 flex items-center justify-center gap-2">
+            <button
+              class="add-service-to-category w-full text-sm text-muted-foreground hover:text-tesoro-500 flex items-center justify-center gap-2"
+              data-category-id={category.id}
+            >
               <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
               </svg>
@@ -161,23 +202,25 @@ const formatCurrency = (amount: number) => {
     </div>
   </div>
 
-  <!-- Add Service Modal -->
+  <!-- Service Modal (Create/Edit) -->
   <div id="service-modal" class="fixed inset-0 z-50 hidden">
-    <div class="fixed inset-0 bg-black/50" id="modal-backdrop"></div>
+    <div class="fixed inset-0 bg-black/50" id="service-modal-backdrop"></div>
     <div class="fixed inset-0 flex items-center justify-center p-4">
       <div class="relative w-full max-w-md rounded-2xl bg-card p-6 shadow-xl">
-        <button id="close-modal" class="absolute right-4 top-4 p-1 text-muted-foreground hover:text-foreground">
+        <button id="close-service-modal" class="absolute right-4 top-4 p-1 text-muted-foreground hover:text-foreground">
           <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
           </svg>
         </button>
 
-        <h2 class="text-xl font-semibold mb-6">Nieuwe Dienst</h2>
+        <h2 id="service-modal-title" class="text-xl font-semibold mb-6">Nieuwe Dienst</h2>
 
         <form id="service-form" class="space-y-4">
+          <input type="hidden" id="service-id" name="id" />
+
           <div class="space-y-2">
             <label class="text-sm font-medium">Categorie *</label>
-            <select name="categoryId" required class="flex h-10 w-full rounded-lg border border-input bg-background px-3 text-sm">
+            <select id="service-category" name="categoryId" required class="flex h-10 w-full rounded-lg border border-input bg-background px-3 text-sm">
               <option value="">Selecteer categorie</option>
               {categories.map((cat) => (
                 <option value={cat.id}>{cat.icon} {cat.name}</option>
@@ -187,12 +230,12 @@ const formatCurrency = (amount: number) => {
 
           <div class="space-y-2">
             <label class="text-sm font-medium">Naam *</label>
-            <input type="text" name="name" required class="flex h-10 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm" placeholder="bijv. Website ontwikkeling" />
+            <input type="text" id="service-name" name="name" required class="flex h-10 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm" placeholder="bijv. Website ontwikkeling" />
           </div>
 
           <div class="space-y-2">
             <label class="text-sm font-medium">Beschrijving</label>
-            <textarea name="description" rows="2" class="flex w-full rounded-lg border border-input bg-background px-3 py-2 text-sm" placeholder="Optionele beschrijving"></textarea>
+            <textarea id="service-description" name="description" rows="2" class="flex w-full rounded-lg border border-input bg-background px-3 py-2 text-sm" placeholder="Optionele beschrijving"></textarea>
           </div>
 
           <div class="grid gap-4 grid-cols-3">
@@ -200,12 +243,12 @@ const formatCurrency = (amount: number) => {
               <label class="text-sm font-medium">Prijs *</label>
               <div class="relative">
                 <span class="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">€</span>
-                <input type="number" name="defaultPrice" step="0.01" min="0" required class="flex h-10 w-full rounded-lg border border-input bg-background pl-7 pr-3 py-2 text-sm" />
+                <input type="number" id="service-price" name="defaultPrice" step="0.01" min="0" required class="flex h-10 w-full rounded-lg border border-input bg-background pl-7 pr-3 py-2 text-sm" />
               </div>
             </div>
             <div class="space-y-2">
               <label class="text-sm font-medium">Eenheid *</label>
-              <select name="unit" required class="flex h-10 w-full rounded-lg border border-input bg-background px-3 text-sm">
+              <select id="service-unit" name="unit" required class="flex h-10 w-full rounded-lg border border-input bg-background px-3 text-sm">
                 <option value="uur">uur</option>
                 <option value="stuk">stuk</option>
                 <option value="dag">dag</option>
@@ -215,7 +258,7 @@ const formatCurrency = (amount: number) => {
             </div>
             <div class="space-y-2">
               <label class="text-sm font-medium">BTW %</label>
-              <select name="btwRate" class="flex h-10 w-full rounded-lg border border-input bg-background px-3 text-sm">
+              <select id="service-btw" name="btwRate" class="flex h-10 w-full rounded-lg border border-input bg-background px-3 text-sm">
                 <option value="21">21%</option>
                 <option value="9">9%</option>
                 <option value="0">0%</option>
@@ -224,7 +267,7 @@ const formatCurrency = (amount: number) => {
           </div>
 
           <div class="flex justify-end gap-3 pt-4">
-            <button type="button" id="cancel-btn" class="rounded-lg border px-4 py-2 text-sm font-medium hover:bg-muted">
+            <button type="button" id="cancel-service-btn" class="rounded-lg border px-4 py-2 text-sm font-medium hover:bg-muted">
               Annuleren
             </button>
             <button type="submit" class="rounded-lg bg-tesoro-500 px-4 py-2 text-sm font-medium text-white hover:bg-tesoro-600">
@@ -235,37 +278,149 @@ const formatCurrency = (amount: number) => {
       </div>
     </div>
   </div>
+
+  <!-- Category Modal (Create/Edit) -->
+  <div id="category-modal" class="fixed inset-0 z-50 hidden">
+    <div class="fixed inset-0 bg-black/50" id="category-modal-backdrop"></div>
+    <div class="fixed inset-0 flex items-center justify-center p-4">
+      <div class="relative w-full max-w-md rounded-2xl bg-card p-6 shadow-xl">
+        <button id="close-category-modal" class="absolute right-4 top-4 p-1 text-muted-foreground hover:text-foreground">
+          <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+
+        <h2 id="category-modal-title" class="text-xl font-semibold mb-6">Nieuwe Categorie</h2>
+
+        <form id="category-form" class="space-y-4">
+          <input type="hidden" id="category-id" name="id" />
+
+          <div class="space-y-2">
+            <label class="text-sm font-medium">Naam *</label>
+            <input type="text" id="category-name" name="name" required class="flex h-10 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm" placeholder="bijv. Webontwikkeling" />
+          </div>
+
+          <div class="space-y-2">
+            <label class="text-sm font-medium">Icoon (emoji)</label>
+            <input type="text" id="category-icon" name="icon" class="flex h-10 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm" placeholder="bijv. 🌐" maxlength="4" />
+            <p class="text-xs text-muted-foreground">Gebruik een emoji als icoon voor deze categorie</p>
+          </div>
+
+          <div class="flex justify-end gap-3 pt-4">
+            <button type="button" id="cancel-category-btn" class="rounded-lg border px-4 py-2 text-sm font-medium hover:bg-muted">
+              Annuleren
+            </button>
+            <button type="submit" class="rounded-lg bg-tesoro-500 px-4 py-2 text-sm font-medium text-white hover:bg-tesoro-600">
+              Opslaan
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Delete Confirmation Modal -->
+  <div id="delete-modal" class="fixed inset-0 z-50 hidden">
+    <div class="fixed inset-0 bg-black/50" id="delete-modal-backdrop"></div>
+    <div class="fixed inset-0 flex items-center justify-center p-4">
+      <div class="relative w-full max-w-sm rounded-2xl bg-card p-6 shadow-xl">
+        <h2 class="text-lg font-semibold mb-2">Verwijderen bevestigen</h2>
+        <p id="delete-message" class="text-sm text-muted-foreground mb-6">
+          Weet je zeker dat je dit item wilt verwijderen?
+        </p>
+        <input type="hidden" id="delete-id" />
+        <input type="hidden" id="delete-type" />
+        <div class="flex justify-end gap-3">
+          <button id="cancel-delete-btn" class="rounded-lg border px-4 py-2 text-sm font-medium hover:bg-muted">
+            Annuleren
+          </button>
+          <button id="confirm-delete-btn" class="rounded-lg bg-red-500 px-4 py-2 text-sm font-medium text-white hover:bg-red-600">
+            Verwijderen
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
 </DashboardLayout>
 
 <script>
-  const modal = document.getElementById('service-modal');
-  const addBtn = document.getElementById('add-service-btn');
-  const closeBtn = document.getElementById('close-modal');
-  const cancelBtn = document.getElementById('cancel-btn');
-  const backdrop = document.getElementById('modal-backdrop');
-  const form = document.getElementById('service-form') as HTMLFormElement;
+  // Service Modal
+  const serviceModal = document.getElementById('service-modal');
+  const serviceModalTitle = document.getElementById('service-modal-title');
+  const serviceForm = document.getElementById('service-form') as HTMLFormElement;
+  const serviceIdInput = document.getElementById('service-id') as HTMLInputElement;
+  const serviceCategoryInput = document.getElementById('service-category') as HTMLSelectElement;
+  const serviceNameInput = document.getElementById('service-name') as HTMLInputElement;
+  const serviceDescriptionInput = document.getElementById('service-description') as HTMLTextAreaElement;
+  const servicePriceInput = document.getElementById('service-price') as HTMLInputElement;
+  const serviceUnitInput = document.getElementById('service-unit') as HTMLSelectElement;
+  const serviceBtwInput = document.getElementById('service-btw') as HTMLSelectElement;
 
-  function showModal() {
-    modal?.classList.remove('hidden');
+  function showServiceModal(editMode = false) {
+    serviceModal?.classList.remove('hidden');
+    if (serviceModalTitle) {
+      serviceModalTitle.textContent = editMode ? 'Dienst Bewerken' : 'Nieuwe Dienst';
+    }
   }
 
-  function hideModal() {
-    modal?.classList.add('hidden');
+  function hideServiceModal() {
+    serviceModal?.classList.add('hidden');
+    serviceForm?.reset();
+    if (serviceIdInput) serviceIdInput.value = '';
   }
 
-  addBtn?.addEventListener('click', showModal);
-  closeBtn?.addEventListener('click', hideModal);
-  cancelBtn?.addEventListener('click', hideModal);
-  backdrop?.addEventListener('click', hideModal);
+  document.getElementById('add-service-btn')?.addEventListener('click', () => showServiceModal(false));
+  document.getElementById('close-service-modal')?.addEventListener('click', hideServiceModal);
+  document.getElementById('cancel-service-btn')?.addEventListener('click', hideServiceModal);
+  document.getElementById('service-modal-backdrop')?.addEventListener('click', hideServiceModal);
 
-  form?.addEventListener('submit', async (e) => {
+  // Add service to specific category
+  document.querySelectorAll('.add-service-to-category').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const categoryId = btn.getAttribute('data-category-id');
+      if (categoryId && serviceCategoryInput) {
+        serviceCategoryInput.value = categoryId;
+      }
+      showServiceModal(false);
+    });
+  });
+
+  // Edit service buttons
+  document.querySelectorAll('.edit-service-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const serviceId = btn.getAttribute('data-service-id');
+      const name = btn.getAttribute('data-service-name');
+      const description = btn.getAttribute('data-service-description');
+      const price = btn.getAttribute('data-service-price');
+      const unit = btn.getAttribute('data-service-unit');
+      const btw = btn.getAttribute('data-service-btw');
+      const categoryId = btn.getAttribute('data-service-category');
+
+      if (serviceIdInput) serviceIdInput.value = serviceId || '';
+      if (serviceNameInput) serviceNameInput.value = name || '';
+      if (serviceDescriptionInput) serviceDescriptionInput.value = description || '';
+      if (servicePriceInput) servicePriceInput.value = price || '';
+      if (serviceUnitInput) serviceUnitInput.value = unit || 'uur';
+      if (serviceBtwInput) serviceBtwInput.value = btw || '21';
+      if (serviceCategoryInput) serviceCategoryInput.value = categoryId || '';
+
+      showServiceModal(true);
+    });
+  });
+
+  // Service form submit
+  serviceForm?.addEventListener('submit', async (e) => {
     e.preventDefault();
-    const formData = new FormData(form);
+    const formData = new FormData(serviceForm);
     const data = Object.fromEntries(formData.entries());
+    const isEdit = Boolean(data.id);
 
     try {
-      const response = await fetch('/api/services', {
-        method: 'POST',
+      const url = isEdit ? `/api/services/${data.id}` : '/api/services';
+      const method = isEdit ? 'PUT' : 'POST';
+
+      const response = await fetch(url, {
+        method,
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data),
       });
@@ -273,7 +428,142 @@ const formatCurrency = (amount: number) => {
       if (response.ok) {
         window.location.reload();
       } else {
-        alert('Er is iets misgegaan');
+        const error = await response.json();
+        alert(error.error || 'Er is iets misgegaan');
+      }
+    } catch {
+      alert('Er is iets misgegaan');
+    }
+  });
+
+  // Category Modal
+  const categoryModal = document.getElementById('category-modal');
+  const categoryModalTitle = document.getElementById('category-modal-title');
+  const categoryForm = document.getElementById('category-form') as HTMLFormElement;
+  const categoryIdInput = document.getElementById('category-id') as HTMLInputElement;
+  const categoryNameInput = document.getElementById('category-name') as HTMLInputElement;
+  const categoryIconInput = document.getElementById('category-icon') as HTMLInputElement;
+
+  function showCategoryModal(editMode = false) {
+    categoryModal?.classList.remove('hidden');
+    if (categoryModalTitle) {
+      categoryModalTitle.textContent = editMode ? 'Categorie Bewerken' : 'Nieuwe Categorie';
+    }
+  }
+
+  function hideCategoryModal() {
+    categoryModal?.classList.add('hidden');
+    categoryForm?.reset();
+    if (categoryIdInput) categoryIdInput.value = '';
+  }
+
+  document.getElementById('add-category-btn')?.addEventListener('click', () => showCategoryModal(false));
+  document.getElementById('close-category-modal')?.addEventListener('click', hideCategoryModal);
+  document.getElementById('cancel-category-btn')?.addEventListener('click', hideCategoryModal);
+  document.getElementById('category-modal-backdrop')?.addEventListener('click', hideCategoryModal);
+
+  // Edit category buttons
+  document.querySelectorAll('.edit-category-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const categoryId = btn.getAttribute('data-category-id');
+      const name = btn.getAttribute('data-category-name');
+      const icon = btn.getAttribute('data-category-icon');
+
+      if (categoryIdInput) categoryIdInput.value = categoryId || '';
+      if (categoryNameInput) categoryNameInput.value = name || '';
+      if (categoryIconInput) categoryIconInput.value = icon || '';
+
+      showCategoryModal(true);
+    });
+  });
+
+  // Category form submit
+  categoryForm?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const formData = new FormData(categoryForm);
+    const data = Object.fromEntries(formData.entries());
+    const isEdit = Boolean(data.id);
+
+    try {
+      const url = isEdit ? `/api/categories/${data.id}` : '/api/categories';
+      const method = isEdit ? 'PUT' : 'POST';
+
+      const response = await fetch(url, {
+        method,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+      });
+
+      if (response.ok) {
+        window.location.reload();
+      } else {
+        const error = await response.json();
+        alert(error.error || 'Er is iets misgegaan');
+      }
+    } catch {
+      alert('Er is iets misgegaan');
+    }
+  });
+
+  // Delete Modal
+  const deleteModal = document.getElementById('delete-modal');
+  const deleteMessage = document.getElementById('delete-message');
+  const deleteIdInput = document.getElementById('delete-id') as HTMLInputElement;
+  const deleteTypeInput = document.getElementById('delete-type') as HTMLInputElement;
+
+  function showDeleteModal(type: 'service' | 'category', id: string, name: string) {
+    deleteModal?.classList.remove('hidden');
+    if (deleteMessage) {
+      const itemType = type === 'service' ? 'dienst' : 'categorie';
+      deleteMessage.textContent = `Weet je zeker dat je de ${itemType} "${name}" wilt verwijderen?`;
+    }
+    if (deleteIdInput) deleteIdInput.value = id;
+    if (deleteTypeInput) deleteTypeInput.value = type;
+  }
+
+  function hideDeleteModal() {
+    deleteModal?.classList.add('hidden');
+    if (deleteIdInput) deleteIdInput.value = '';
+    if (deleteTypeInput) deleteTypeInput.value = '';
+  }
+
+  document.getElementById('cancel-delete-btn')?.addEventListener('click', hideDeleteModal);
+  document.getElementById('delete-modal-backdrop')?.addEventListener('click', hideDeleteModal);
+
+  // Delete service buttons
+  document.querySelectorAll('.delete-service-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const id = btn.getAttribute('data-service-id');
+      const name = btn.getAttribute('data-service-name');
+      if (id && name) showDeleteModal('service', id, name);
+    });
+  });
+
+  // Delete category buttons
+  document.querySelectorAll('.delete-category-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const id = btn.getAttribute('data-category-id');
+      const name = btn.getAttribute('data-category-name');
+      if (id && name) showDeleteModal('category', id, name);
+    });
+  });
+
+  // Confirm delete
+  document.getElementById('confirm-delete-btn')?.addEventListener('click', async () => {
+    const id = deleteIdInput?.value;
+    const type = deleteTypeInput?.value;
+
+    if (!id || !type) return;
+
+    try {
+      const url = type === 'service' ? `/api/services/${id}` : `/api/categories/${id}`;
+      const response = await fetch(url, { method: 'DELETE' });
+
+      if (response.ok) {
+        window.location.reload();
+      } else {
+        const error = await response.json();
+        alert(error.error || 'Er is iets misgegaan');
       }
     } catch {
       alert('Er is iets misgegaan');
