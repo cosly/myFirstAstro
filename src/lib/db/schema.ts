@@ -11,6 +11,7 @@ export const teamMembers = sqliteTable('team_members', {
   passwordHash: text('password_hash').notNull(),
   role: text('role', { enum: ['admin', 'member'] }).notNull().default('member'),
   avatarUrl: text('avatar_url'),
+  locale: text('locale', { enum: ['nl', 'en', 'es'] }).default('nl'), // User's preferred dashboard language
   isActive: integer('is_active', { mode: 'boolean' }).notNull().default(true),
   createdAt: integer('created_at', { mode: 'timestamp' }).notNull().$defaultFn(() => new Date()),
   updatedAt: integer('updated_at', { mode: 'timestamp' }).notNull().$defaultFn(() => new Date()),

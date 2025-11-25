@@ -60,15 +60,18 @@ const currentPath = Astro.url.pathname;
 
         <!-- User -->
         <div class="border-t p-4">
-          <div class="flex items-center gap-3">
+          <a href="/profiel" class="flex items-center gap-3 rounded-lg p-2 -m-2 hover:bg-muted transition-colors">
             <div class="flex h-9 w-9 items-center justify-center rounded-full bg-muted">
               <span class="text-sm font-medium">TC</span>
             </div>
             <div class="flex-1">
               <p class="text-sm font-medium">Team Tesoro</p>
-              <p class="text-xs text-muted-foreground">team@tesorocrm.nl</p>
+              <p class="text-xs text-muted-foreground">Profiel bewerken</p>
             </div>
-          </div>
+            <svg class="h-4 w-4 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+            </svg>
+          </a>
         </div>
       </div>
     </aside>
