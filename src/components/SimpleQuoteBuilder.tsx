@@ -36,17 +36,50 @@ interface QuoteLine {
   btwRate: number;
 }
 
+interface ExistingQuote {
+  id: string;
+  quoteNumber: string;
+  customerId: string;
+  title: string;
+  introText: string | null;
+  footerText: string | null;
+  blocks: Array<{
+    lines: Array<{
+      id: string;
+      description: string;
+      quantity: number;
+      unit: string;
+      unitPrice: number;
+      btwRate: number;
+    }>;
+  }>;
+}
+
 interface SimpleQuoteBuilderProps {
   customers?: Customer[];
   initialCustomerId?: string | null;
+  existingQuote?: ExistingQuote | null;
 }
 
-export function SimpleQuoteBuilder({ customers = [], initialCustomerId }: SimpleQuoteBuilderProps) {
-  const [customerId, setCustomerId] = useState<string>(initialCustomerId || '');
-  const [title, setTitle] = useState('Offerte');
-  const [introText, setIntroText] = useState('');
-  const [footerText, setFooterText] = useState('');
-  const [lines, setLines] = useState<QuoteLine[]>([]);
+export function SimpleQuoteBuilder({ customers = [], initialCustomerId, existingQuote }: SimpleQuoteBuilderProps) {
+  const [quoteId] = useState<string | null>(existingQuote?.id || null);
+  const [customerId, setCustomerId] = useState<string>(existingQuote?.customerId || initialCustomerId || '');
+  const [title, setTitle] = useState(existingQuote?.title || 'Offerte');
+  const [introText, setIntroText] = useState(existingQuote?.introText || '');
+  const [footerText, setFooterText] = useState(existingQuote?.footerText || '');
+  const [lines, setLines] = useState<QuoteLine[]>(() => {
+    if (existingQuote?.blocks?.[0]?.lines) {
+      return existingQuote.blocks[0].lines.map(l => ({
+        id: l.id || crypto.randomUUID(),
+        description: l.description,
+        quantity: l.quantity,
+        unit: l.unit,
+        unitPrice: l.unitPrice,
+        btwRate: l.btwRate || 21,
+      }));
+    }
+    return [];
+  });
   const [validityDays, setValidityDays] = useState(30);
 
   const [services, setServices] = useState<Service[]>([]);
@@ -157,38 +190,44 @@ export function SimpleQuoteBuilder({ customers = [], initialCustomerId }: Simple
       const validUntil = new Date();
       validUntil.setDate(validUntil.getDate() + validityDays);
 
-      const response = await fetch('/api/quotes', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          customerId,
-          title,
-          introText,
-          footerText,
-          status: send ? 'sent' : 'draft',
-          validUntil: validUntil.toISOString(),
-          subtotal,
-          btwAmount,
-          total,
-          blocks: lines.length > 0 ? [{
-            blockType: 'pricing_table',
-            title: 'Prijsopgave',
-            position: 0,
+      const payload = {
+        customerId,
+        title,
+        introText,
+        footerText,
+        status: send ? 'sent' : 'draft',
+        validUntil: validUntil.toISOString(),
+        subtotal,
+        btwAmount,
+        total,
+        blocks: lines.length > 0 ? [{
+          blockType: 'pricing_table',
+          title: 'Prijsopgave',
+          position: 0,
+          isOptional: false,
+          isSelectedByCustomer: true,
+          lines: lines.map((line, index) => ({
+            description: line.description,
+            quantity: line.quantity,
+            unit: line.unit,
+            unitPrice: line.unitPrice,
+            btwRate: line.btwRate,
+            lineTotal: line.quantity * line.unitPrice,
+            position: index,
             isOptional: false,
             isSelectedByCustomer: true,
-            lines: lines.map((line, index) => ({
-              description: line.description,
-              quantity: line.quantity,
-              unit: line.unit,
-              unitPrice: line.unitPrice,
-              btwRate: line.btwRate,
-              lineTotal: line.quantity * line.unitPrice,
-              position: index,
-              isOptional: false,
-              isSelectedByCustomer: true,
-            })),
-          }] : [],
-        }),
+          })),
+        }] : [],
+      };
+
+      const isUpdate = !!quoteId;
+      const url = isUpdate ? `/api/quotes/${quoteId}` : '/api/quotes';
+      const method = isUpdate ? 'PUT' : 'POST';
+
+      const response = await fetch(url, {
+        method,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
       });
 
       if (!response.ok) {
@@ -200,7 +239,7 @@ export function SimpleQuoteBuilder({ customers = [], initialCustomerId }: Simple
       setMessage({ type: 'success', text: send ? 'Offerte verstuurd!' : 'Offerte opgeslagen!' });
 
       setTimeout(() => {
-        window.location.href = `/offertes/${data.id}`;
+        window.location.href = `/offertes/${quoteId || data.id}`;
       }, 1000);
     } catch (error) {
       setMessage({ type: 'error', text: error instanceof Error ? error.message : 'Er ging iets mis' });
