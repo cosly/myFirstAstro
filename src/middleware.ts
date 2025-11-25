@@ -7,6 +7,7 @@ const publicRoutes = [
   '/login',
   '/aanvraag',
   '/offerte/',
+  '/offertes/nieuw',
   '/api/auth/login',
   '/api/quote-requests',
   '/api/public/',
