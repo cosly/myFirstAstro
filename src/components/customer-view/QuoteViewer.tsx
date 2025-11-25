@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
@@ -6,6 +6,17 @@ import { Textarea } from '@/components/ui/textarea';
 import { SignaturePad } from '@/components/signature/SignaturePad';
 import type { Quote, QuoteBlock, QuoteLine } from '@/components/quote-builder/types';
 import { cn, formatCurrency, formatDate, calculateLineTotal } from '@/lib/utils';
+
+interface Comment {
+  id: string;
+  lineId: string | null;
+  lineDescription: string | null;
+  authorType: 'team' | 'customer';
+  authorName: string | null;
+  authorEmail: string | null;
+  message: string;
+  createdAt: string;
+}
 
 interface QuoteViewerProps {
   quote: Quote;
@@ -33,6 +44,56 @@ export function QuoteViewer({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [successMessage, setSuccessMessage] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
+
+  // Chat sidebar state
+  const [showChat, setShowChat] = useState(false);
+  const [comments, setComments] = useState<Comment[]>([]);
+  const [newMessage, setNewMessage] = useState('');
+  const [isLoadingComments, setIsLoadingComments] = useState(false);
+
+  // Load comments on mount and when chat is opened
+  const loadComments = useCallback(async () => {
+    setIsLoadingComments(true);
+    try {
+      const response = await fetch(`/api/public/quote/${publicToken}/question`);
+      if (response.ok) {
+        const data = await response.json();
+        setComments(data);
+      }
+    } catch (error) {
+      console.error('Failed to load comments:', error);
+    } finally {
+      setIsLoadingComments(false);
+    }
+  }, [publicToken]);
+
+  useEffect(() => {
+    loadComments();
+  }, [loadComments]);
+
+  // Send message from chat sidebar
+  const handleSendMessage = useCallback(async () => {
+    if (!newMessage.trim()) return;
+
+    setIsSubmitting(true);
+    try {
+      const response = await fetch(`/api/public/quote/${publicToken}/question`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: newMessage }),
+      });
+
+      if (response.ok) {
+        setNewMessage('');
+        // Reload comments to show the new one
+        await loadComments();
+      }
+    } catch (error) {
+      console.error('Failed to send message:', error);
+    } finally {
+      setIsSubmitting(false);
+    }
+  }, [publicToken, newMessage, loadComments]);
 
   // Update selection via API
   const handleUpdateSelection = useCallback(async (blockId: string, lineId: string | null, selected: boolean) => {
@@ -154,6 +215,8 @@ export function QuoteViewer({
       setQuestionLineId(null);
       setQuestionLineDescription('');
       setShowQuestionModal(false);
+      // Reload comments to show the new one
+      await loadComments();
       setTimeout(() => setSuccessMessage(''), 5000);
     } catch (error) {
       console.error('Failed to send question:', error);
@@ -161,7 +224,7 @@ export function QuoteViewer({
     } finally {
       setIsSubmitting(false);
     }
-  }, [publicToken, questionMessage, questionLineId]);
+  }, [publicToken, questionMessage, questionLineId, loadComments]);
 
   // Open question modal for a specific line
   const openLineQuestion = useCallback((lineId: string, lineDescription: string) => {
@@ -218,7 +281,9 @@ export function QuoteViewer({
   }
 
   return (
-    <div className="max-w-4xl mx-auto">
+    <div className="flex gap-6 max-w-6xl mx-auto">
+      {/* Main content */}
+      <div className="flex-1 max-w-4xl">
       {/* Success Message */}
       {successMessage && (
         <div className="mb-6 rounded-lg bg-green-50 border border-green-200 p-4 text-green-800">
@@ -407,6 +472,109 @@ export function QuoteViewer({
           </div>
         </div>
       )}
+      </div>
+
+      {/* Chat Sidebar */}
+      <div className="w-80 shrink-0">
+        <div className="sticky top-4 rounded-xl border bg-card overflow-hidden">
+          {/* Header */}
+          <div className="flex items-center justify-between px-4 py-3 border-b bg-muted/30">
+            <div className="flex items-center gap-2">
+              <svg className="w-5 h-5 text-tesoro-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+              </svg>
+              <h3 className="font-semibold">Vragen & Opmerkingen</h3>
+            </div>
+            {comments.length > 0 && (
+              <span className="flex h-5 w-5 items-center justify-center rounded-full bg-tesoro-500 text-xs text-white">
+                {comments.length}
+              </span>
+            )}
+          </div>
+
+          {/* Messages */}
+          <div className="h-80 overflow-y-auto p-4 space-y-4">
+            {isLoadingComments ? (
+              <div className="flex items-center justify-center h-full text-muted-foreground">
+                <svg className="w-5 h-5 animate-spin mr-2" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                </svg>
+                Laden...
+              </div>
+            ) : comments.length === 0 ? (
+              <div className="flex flex-col items-center justify-center h-full text-center text-muted-foreground">
+                <svg className="w-12 h-12 mb-3 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                </svg>
+                <p className="text-sm">Nog geen berichten</p>
+                <p className="text-xs mt-1">Stel een vraag over de offerte</p>
+              </div>
+            ) : (
+              comments.map((comment) => (
+                <div
+                  key={comment.id}
+                  className={cn(
+                    'rounded-lg p-3',
+                    comment.authorType === 'customer'
+                      ? 'bg-tesoro-50 ml-4'
+                      : 'bg-muted mr-4'
+                  )}
+                >
+                  {comment.lineDescription && (
+                    <div className="text-xs text-tesoro-600 mb-1 flex items-center gap-1">
+                      <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                      </svg>
+                      Re: {comment.lineDescription}
+                    </div>
+                  )}
+                  <p className="text-sm">{comment.message}</p>
+                  <div className="flex items-center justify-between mt-2 text-xs text-muted-foreground">
+                    <span>{comment.authorType === 'team' ? 'Tesoro' : 'U'}</span>
+                    <span>
+                      {new Date(comment.createdAt).toLocaleDateString('nl-NL', {
+                        day: 'numeric',
+                        month: 'short',
+                        hour: '2-digit',
+                        minute: '2-digit',
+                      })}
+                    </span>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+
+          {/* Input */}
+          <div className="border-t p-3">
+            <div className="flex gap-2">
+              <Textarea
+                placeholder="Stel een vraag..."
+                value={newMessage}
+                onChange={(e) => setNewMessage(e.target.value)}
+                className="min-h-[60px] resize-none text-sm"
+                rows={2}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    handleSendMessage();
+                  }
+                }}
+              />
+            </div>
+            <Button
+              variant="tesoro"
+              size="sm"
+              className="w-full mt-2"
+              onClick={handleSendMessage}
+              disabled={isSubmitting || !newMessage.trim()}
+            >
+              {isSubmitting ? 'Versturen...' : 'Verstuur'}
+            </Button>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
