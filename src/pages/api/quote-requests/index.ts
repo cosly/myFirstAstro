@@ -10,7 +10,7 @@ export const GET: APIRoute = async ({ locals }) => {
     const allRequests = await db.query.quoteRequests.findMany({
       with: {
         customer: true,
-        assignedToMember: true,
+        assignedMember: true,
       },
       orderBy: (requests, { desc }) => [desc(requests.createdAt)],
     });
