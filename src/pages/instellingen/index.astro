@@ -459,67 +459,114 @@ const autoRemindersEnabled = (settings.auto_reminders_enabled as boolean) ?? tru
           </div>
         </div>
 
-        <!-- AI Provider Selection -->
+        <!-- AI Configuration with CF Gateway -->
         <div class="rounded-xl border bg-card p-6">
           <div class="flex items-center gap-3 mb-4">
             <div class="flex h-10 w-10 items-center justify-center rounded-lg bg-purple-100">
               <span class="text-xl">✨</span>
             </div>
             <div>
-              <h3 class="font-semibold">AI Provider</h3>
-              <p class="text-sm text-muted-foreground">Kies welke AI provider gebruikt wordt voor tekst assistentie</p>
+              <h3 class="font-semibold">AI Configuratie</h3>
+              <p class="text-sm text-muted-foreground">Configureer AI providers en optioneel Cloudflare AI Gateway</p>
             </div>
           </div>
 
-          <div id="ai-provider-settings">
-            <div id="ai-provider-loading" class="py-4 text-center text-muted-foreground text-sm">
+          <div id="ai-gateway-settings">
+            <div id="ai-gateway-loading" class="py-4 text-center text-muted-foreground text-sm">
               Laden...
             </div>
 
-            <div id="ai-provider-form" class="hidden space-y-4">
-              <div class="grid gap-3 sm:grid-cols-2">
-                <!-- Anthropic Option -->
-                <label class="ai-provider-option relative flex cursor-pointer rounded-lg border p-4 hover:border-tesoro-300" data-provider="anthropic">
-                  <input type="radio" name="ai_provider" value="anthropic" class="sr-only" />
-                  <div class="flex items-start gap-3">
-                    <div class="flex h-10 w-10 items-center justify-center rounded-lg bg-orange-100 shrink-0">
-                      <span class="text-xl">🤖</span>
-                    </div>
-                    <div>
-                      <p class="font-medium">Anthropic (Claude)</p>
-                      <p class="text-xs text-muted-foreground">Claude Sonnet 4 - Uitstekend voor zakelijke teksten</p>
-                      <span class="ai-provider-status mt-2 inline-block text-xs"></span>
-                    </div>
-                  </div>
-                  <div class="ai-provider-check absolute right-3 top-3 hidden">
-                    <svg class="h-5 w-5 text-tesoro-500" fill="currentColor" viewBox="0 0 20 20">
-                      <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
+            <div id="ai-gateway-form" class="hidden space-y-6">
+              <!-- Cloudflare AI Gateway (Optional) -->
+              <div class="rounded-lg border bg-gradient-to-r from-orange-50 to-amber-50 p-4">
+                <div class="flex items-center justify-between mb-3">
+                  <div class="flex items-center gap-2">
+                    <svg class="h-5 w-5 text-orange-500" viewBox="0 0 24 24" fill="currentColor">
+                      <path d="M16.5088 16.8447C16.5088 16.8447 17.1377 15.5283 17.2554 15.2871C17.373 15.046 17.5495 14.8225 17.6849 14.6519C18.2903 14.1053 18.6373 13.3235 18.6373 12.4712C18.6373 11.0725 17.6318 9.88355 16.2921 9.67359C16.0156 9.62892 15.7097 9.62892 15.4273 9.66419C15.2391 7.95129 13.7935 6.61523 12.0394 6.61523C10.4232 6.61523 9.06537 7.75191 8.72193 9.26951C8.39609 9.14316 8.04089 9.07234 7.66801 9.07234C6.21888 9.07234 5.04224 10.249 5.04224 11.698C5.04224 11.9745 5.08691 12.2392 5.16126 12.4889C3.92286 12.8265 3 13.9632 3 15.2871C3 16.8682 4.27961 18.1478 5.86068 18.1478H10.9624V16.8447H5.86068C5.00132 16.8447 4.30313 16.1465 4.30313 15.2871C4.30313 14.4278 5.00132 13.7296 5.86068 13.7296C5.92798 13.7296 5.99528 13.7355 6.06257 13.7413C5.91623 13.2948 5.84186 12.8206 5.84186 12.3287C5.84186 10.7358 7.13328 9.44436 8.72606 9.44436C9.20579 9.44436 9.66258 9.56131 10.0678 9.77127C10.1939 8.29918 11.4147 7.1448 12.9605 7.1448C14.5063 7.1448 15.7273 8.29918 15.8533 9.77127C16.2586 9.56131 16.7154 9.44436 17.1951 9.44436C18.7879 9.44436 20.0793 10.7358 20.0793 12.3287C20.0793 12.8206 20.0049 13.2948 19.8586 13.7413C19.9259 13.7355 19.9932 13.7296 20.0605 13.7296C20.9199 13.7296 21.618 14.4278 21.618 15.2871C21.618 16.1465 20.9199 16.8447 20.0605 16.8447H16.5088Z"/>
                     </svg>
+                    <span class="font-medium text-sm">Cloudflare AI Gateway</span>
+                    <span class="text-xs bg-orange-100 text-orange-700 px-2 py-0.5 rounded">Optioneel</span>
                   </div>
-                </label>
-
-                <!-- OpenAI Option -->
-                <label class="ai-provider-option relative flex cursor-pointer rounded-lg border p-4 hover:border-tesoro-300" data-provider="openai">
-                  <input type="radio" name="ai_provider" value="openai" class="sr-only" />
-                  <div class="flex items-start gap-3">
-                    <div class="flex h-10 w-10 items-center justify-center rounded-lg bg-emerald-100 shrink-0">
-                      <span class="text-xl">🧠</span>
-                    </div>
-                    <div>
-                      <p class="font-medium">OpenAI (GPT)</p>
-                      <p class="text-xs text-muted-foreground">GPT-4o - Veelzijdig en snel</p>
-                      <span class="ai-provider-status mt-2 inline-block text-xs"></span>
-                    </div>
+                  <span id="ai-gateway-status" class="text-xs"></span>
+                </div>
+                <p class="text-xs text-muted-foreground mb-3">Routeer AI requests via Cloudflare voor caching, analytics en rate limiting.</p>
+                <div class="grid gap-3 sm:grid-cols-2">
+                  <div>
+                    <label class="text-xs font-medium">Account ID</label>
+                    <input type="text" id="ai-gateway-account-id"
+                      class="mt-1 flex h-9 w-full rounded-lg border border-input bg-background px-3 text-sm"
+                      placeholder="Cloudflare Account ID" />
                   </div>
-                  <div class="ai-provider-check absolute right-3 top-3 hidden">
-                    <svg class="h-5 w-5 text-tesoro-500" fill="currentColor" viewBox="0 0 20 20">
-                      <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
-                    </svg>
+                  <div>
+                    <label class="text-xs font-medium">Gateway Name</label>
+                    <input type="text" id="ai-gateway-name"
+                      class="mt-1 flex h-9 w-full rounded-lg border border-input bg-background px-3 text-sm"
+                      placeholder="my-ai-gateway" />
                   </div>
-                </label>
+                </div>
               </div>
 
-              <p id="ai-provider-error" class="text-sm text-red-600 hidden"></p>
+              <!-- Provider Selection -->
+              <div>
+                <label class="text-sm font-medium mb-3 block">Actieve Provider</label>
+                <div class="grid gap-3 sm:grid-cols-2">
+                  <!-- Anthropic Option -->
+                  <label class="ai-provider-option relative flex cursor-pointer rounded-lg border p-4 hover:border-tesoro-300" data-provider="anthropic">
+                    <input type="radio" name="ai_provider" value="anthropic" class="sr-only" />
+                    <div class="flex items-start gap-3">
+                      <div class="flex h-10 w-10 items-center justify-center rounded-lg bg-orange-100 shrink-0">
+                        <span class="text-xl">🤖</span>
+                      </div>
+                      <div>
+                        <p class="font-medium">Anthropic (Claude)</p>
+                        <p class="text-xs text-muted-foreground">Claude Sonnet 4</p>
+                        <span class="ai-provider-status mt-2 inline-block text-xs"></span>
+                      </div>
+                    </div>
+                    <div class="ai-provider-check absolute right-3 top-3 hidden">
+                      <svg class="h-5 w-5 text-tesoro-500" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
+                      </svg>
+                    </div>
+                  </label>
+
+                  <!-- OpenAI Option -->
+                  <label class="ai-provider-option relative flex cursor-pointer rounded-lg border p-4 hover:border-tesoro-300" data-provider="openai">
+                    <input type="radio" name="ai_provider" value="openai" class="sr-only" />
+                    <div class="flex items-start gap-3">
+                      <div class="flex h-10 w-10 items-center justify-center rounded-lg bg-emerald-100 shrink-0">
+                        <span class="text-xl">🧠</span>
+                      </div>
+                      <div>
+                        <p class="font-medium">OpenAI (GPT)</p>
+                        <p class="text-xs text-muted-foreground">GPT-4o</p>
+                        <span class="ai-provider-status mt-2 inline-block text-xs"></span>
+                      </div>
+                    </div>
+                    <div class="ai-provider-check absolute right-3 top-3 hidden">
+                      <svg class="h-5 w-5 text-tesoro-500" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
+                    </svg>
+                    </div>
+                  </label>
+                </div>
+              </div>
+
+              <!-- Action Buttons -->
+              <div class="flex items-center justify-between pt-4 border-t">
+                <button type="button" id="ai-test-btn"
+                  class="flex items-center gap-2 rounded-lg border px-4 py-2 text-sm font-medium hover:bg-muted">
+                  <span>🧪</span>
+                  <span>Test Verbinding</span>
+                </button>
+                <button type="button" id="ai-save-btn"
+                  class="rounded-lg bg-tesoro-500 px-4 py-2 text-sm font-medium text-white hover:bg-tesoro-600">
+                  Opslaan
+                </button>
+              </div>
+
+              <p id="ai-gateway-error" class="text-sm text-red-600 hidden"></p>
+              <p id="ai-gateway-success" class="text-sm text-green-600 hidden"></p>
             </div>
           </div>
         </div>
@@ -726,6 +773,111 @@ const autoRemindersEnabled = (settings.auto_reminders_enabled as boolean) ?? tru
             Verwijderen
           </button>
         </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Email Template Editor Modal -->
+  <div id="template-modal" class="fixed inset-0 z-50 hidden">
+    <div class="fixed inset-0 bg-black/50" id="template-modal-backdrop"></div>
+    <div class="fixed inset-0 flex items-center justify-center p-4 overflow-y-auto">
+      <div class="relative w-full max-w-4xl rounded-2xl bg-card p-6 shadow-xl my-8">
+        <button id="close-template-modal" class="absolute right-4 top-4 p-1 text-muted-foreground hover:text-foreground">
+          <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+
+        <h2 id="template-modal-title" class="text-xl font-semibold mb-2">Email Template Bewerken</h2>
+        <p id="template-modal-description" class="text-sm text-muted-foreground mb-6"></p>
+
+        <form id="template-form" class="space-y-4">
+          <input type="hidden" id="template-type" name="type" />
+
+          <div class="space-y-2">
+            <label class="text-sm font-medium">Onderwerp</label>
+            <input type="text" id="template-subject" name="subject" required
+              class="flex h-10 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
+              placeholder="Bijv: Uw offerte van Tesoro CRM - {{quote_number}}" />
+          </div>
+
+          <div class="space-y-2">
+            <label class="text-sm font-medium">HTML Inhoud</label>
+            <textarea id="template-body-html" name="bodyHtml" rows="15" required
+              class="flex w-full rounded-lg border border-input bg-background px-3 py-2 text-sm font-mono"
+              placeholder="HTML template..."></textarea>
+          </div>
+
+          <div class="space-y-2">
+            <label class="text-sm font-medium">Platte tekst (fallback)</label>
+            <textarea id="template-body-text" name="bodyText" rows="6"
+              class="flex w-full rounded-lg border border-input bg-background px-3 py-2 text-sm font-mono"
+              placeholder="Platte tekst versie..."></textarea>
+          </div>
+
+          <!-- Available Variables -->
+          <div class="rounded-lg border bg-muted/30 p-4">
+            <p class="text-sm font-medium mb-2">Beschikbare variabelen:</p>
+            <div class="flex flex-wrap gap-2">
+              <code class="rounded bg-muted px-2 py-1 text-xs cursor-pointer hover:bg-tesoro-100" data-var="quote_number">{`{{quote_number}}`}</code>
+              <code class="rounded bg-muted px-2 py-1 text-xs cursor-pointer hover:bg-tesoro-100" data-var="quote_title">{`{{quote_title}}`}</code>
+              <code class="rounded bg-muted px-2 py-1 text-xs cursor-pointer hover:bg-tesoro-100" data-var="quote_total">{`{{quote_total}}`}</code>
+              <code class="rounded bg-muted px-2 py-1 text-xs cursor-pointer hover:bg-tesoro-100" data-var="quote_valid_until">{`{{quote_valid_until}}`}</code>
+              <code class="rounded bg-muted px-2 py-1 text-xs cursor-pointer hover:bg-tesoro-100" data-var="quote_url">{`{{quote_url}}`}</code>
+              <code class="rounded bg-muted px-2 py-1 text-xs cursor-pointer hover:bg-tesoro-100" data-var="customer_name">{`{{customer_name}}`}</code>
+              <code class="rounded bg-muted px-2 py-1 text-xs cursor-pointer hover:bg-tesoro-100" data-var="customer_company">{`{{customer_company}}`}</code>
+              <code class="rounded bg-muted px-2 py-1 text-xs cursor-pointer hover:bg-tesoro-100" data-var="company_name">{`{{company_name}}`}</code>
+              <code class="rounded bg-muted px-2 py-1 text-xs cursor-pointer hover:bg-tesoro-100" data-var="company_email">{`{{company_email}}`}</code>
+              <code class="rounded bg-muted px-2 py-1 text-xs cursor-pointer hover:bg-tesoro-100" data-var="signed_by">{`{{signed_by}}`}</code>
+              <code class="rounded bg-muted px-2 py-1 text-xs cursor-pointer hover:bg-tesoro-100" data-var="signed_at">{`{{signed_at}}`}</code>
+            </div>
+            <p class="text-xs text-muted-foreground mt-2">Klik op een variabele om te kopieren</p>
+          </div>
+
+          <div class="flex items-center justify-between pt-4 border-t">
+            <button type="button" id="reset-template-btn"
+              class="text-sm text-muted-foreground hover:text-destructive">
+              Reset naar standaard
+            </button>
+            <div class="flex gap-3">
+              <!-- Translate Dropdown -->
+              <div class="relative">
+                <button type="button" id="translate-template-btn"
+                  class="flex items-center gap-2 rounded-lg border px-4 py-2 text-sm font-medium hover:bg-muted">
+                  <span>🌐</span>
+                  <span>Vertalen</span>
+                  <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                  </svg>
+                </button>
+                <div id="translate-dropdown" class="absolute right-0 bottom-full mb-2 hidden w-48 rounded-lg border bg-card shadow-lg z-10">
+                  <div class="p-2 text-xs text-muted-foreground border-b">Vertaal naar:</div>
+                  <button type="button" class="translate-option w-full px-4 py-2 text-left text-sm hover:bg-muted" data-lang="en">
+                    🇬🇧 Engels
+                  </button>
+                  <button type="button" class="translate-option w-full px-4 py-2 text-left text-sm hover:bg-muted" data-lang="de">
+                    🇩🇪 Duits
+                  </button>
+                  <button type="button" class="translate-option w-full px-4 py-2 text-left text-sm hover:bg-muted" data-lang="fr">
+                    🇫🇷 Frans
+                  </button>
+                  <button type="button" class="translate-option w-full px-4 py-2 text-left text-sm hover:bg-muted" data-lang="es">
+                    🇪🇸 Spaans
+                  </button>
+                  <button type="button" class="translate-option w-full px-4 py-2 text-left text-sm hover:bg-muted" data-lang="nl">
+                    🇳🇱 Nederlands
+                  </button>
+                </div>
+              </div>
+              <button type="button" id="cancel-template-btn" class="rounded-lg border px-4 py-2 text-sm font-medium hover:bg-muted">
+                Annuleren
+              </button>
+              <button type="submit" class="rounded-lg bg-tesoro-500 px-4 py-2 text-sm font-medium text-white hover:bg-tesoro-600">
+                Opslaan
+              </button>
+            </div>
+          </div>
+        </form>
       </div>
     </div>
   </div>
@@ -1103,6 +1255,103 @@ const autoRemindersEnabled = (settings.auto_reminders_enabled as boolean) ?? tru
         }
       } catch {
         alert('Kon preview niet laden');
+      }
+    });
+  });
+
+  // =====================
+  // TEMPLATE TRANSLATION
+  // =====================
+  const translateBtn = document.getElementById('translate-template-btn');
+  const translateDropdown = document.getElementById('translate-dropdown');
+  const translateOptions = document.querySelectorAll('.translate-option');
+
+  // Toggle translate dropdown
+  translateBtn?.addEventListener('click', (e) => {
+    e.stopPropagation();
+    translateDropdown?.classList.toggle('hidden');
+  });
+
+  // Close dropdown when clicking outside
+  document.addEventListener('click', () => {
+    translateDropdown?.classList.add('hidden');
+  });
+
+  // Handle translation
+  translateOptions.forEach(option => {
+    option.addEventListener('click', async (e) => {
+      e.stopPropagation();
+      const targetLang = option.getAttribute('data-lang');
+      if (!targetLang) return;
+
+      const langNames: Record<string, string> = {
+        en: 'Engels',
+        de: 'Duits',
+        fr: 'Frans',
+        es: 'Spaans',
+        nl: 'Nederlands',
+      };
+
+      translateDropdown?.classList.add('hidden');
+
+      // Get current template values
+      const subject = templateSubjectInput?.value || '';
+      const bodyHtml = templateBodyHtmlInput?.value || '';
+      const bodyText = templateBodyTextInput?.value || '';
+
+      if (!subject && !bodyHtml) {
+        alert('Vul eerst de template in voordat je vertaalt');
+        return;
+      }
+
+      // Show loading state
+      const originalBtnText = translateBtn?.innerHTML || '';
+      if (translateBtn) {
+        translateBtn.innerHTML = `<span class="animate-spin">⏳</span> Vertalen naar ${langNames[targetLang]}...`;
+        translateBtn.setAttribute('disabled', 'true');
+      }
+
+      try {
+        const response = await fetch('/api/ai/translate-template', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            subject,
+            bodyHtml,
+            bodyText,
+            targetLanguage: targetLang,
+          }),
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+          throw new Error(data.error || 'Vertaling mislukt');
+        }
+
+        // Update the form fields with translated content
+        if (templateSubjectInput && data.translated?.subject) {
+          templateSubjectInput.value = data.translated.subject;
+        }
+        if (templateBodyHtmlInput && data.translated?.bodyHtml) {
+          templateBodyHtmlInput.value = data.translated.bodyHtml;
+        }
+        if (templateBodyTextInput && data.translated?.bodyText) {
+          templateBodyTextInput.value = data.translated.bodyText;
+        }
+
+        // Show success message
+        const providerName = data.provider === 'openai' ? 'OpenAI' : 'Anthropic';
+        alert(`✅ Template vertaald naar ${langNames[targetLang]} via ${providerName}!\n\nControleer de vertaling en klik op Opslaan om te bewaren.`);
+      } catch (error: any) {
+        console.error('Translation error:', error);
+        alert(`❌ ${error.message || 'Er is iets misgegaan bij het vertalen'}`);
+      } finally {
+        // Restore button state
+        if (translateBtn) {
+          translateBtn.innerHTML = originalBtnText;
+          translateBtn.removeAttribute('disabled');
+        }
       }
     });
   });
@@ -1613,34 +1862,62 @@ const autoRemindersEnabled = (settings.auto_reminders_enabled as boolean) ?? tru
   loadDiscordSettings();
 
   // =====================
-  // AI Provider Settings
+  // AI Gateway Settings
   // =====================
-  const aiProviderLoading = document.getElementById('ai-provider-loading');
-  const aiProviderForm = document.getElementById('ai-provider-form');
-  const aiProviderError = document.getElementById('ai-provider-error');
+  const aiGatewayLoading = document.getElementById('ai-gateway-loading');
+  const aiGatewayForm = document.getElementById('ai-gateway-form');
+  const aiGatewayError = document.getElementById('ai-gateway-error');
+  const aiGatewaySuccess = document.getElementById('ai-gateway-success');
+  const aiGatewayStatus = document.getElementById('ai-gateway-status');
+  const aiGatewayAccountId = document.getElementById('ai-gateway-account-id') as HTMLInputElement;
+  const aiGatewayName = document.getElementById('ai-gateway-name') as HTMLInputElement;
+  const aiTestBtn = document.getElementById('ai-test-btn');
+  const aiSaveBtn = document.getElementById('ai-save-btn');
   const aiProviderOptions = document.querySelectorAll('.ai-provider-option');
 
-  interface AIProviderData {
-    id: string;
-    name: string;
-    description: string;
-    configured: boolean;
-    active: boolean;
-  }
+  let selectedProvider: string = 'anthropic';
 
-  interface AIProviderResponse {
+  interface AIGatewayData {
+    gatewayAccountId: string | null;
+    gatewayName: string | null;
+    gatewayEnabled: boolean;
     provider: string;
-    providers: AIProviderData[];
+    providers: Array<{
+      id: string;
+      name: string;
+      configured: boolean;
+      active: boolean;
+    }>;
   }
 
-  async function loadAIProviderSettings() {
+  async function loadAIGatewaySettings() {
     try {
-      const response = await fetch('/api/settings/ai-provider');
-      if (!response.ok) throw new Error('Failed to load AI provider settings');
+      const response = await fetch('/api/settings/ai-gateway');
+      if (!response.ok) throw new Error('Failed to load settings');
 
-      const data: AIProviderResponse = await response.json();
+      const data: AIGatewayData = await response.json();
+      selectedProvider = data.provider;
 
-      // Update UI for each provider option
+      // Update gateway fields
+      if (aiGatewayAccountId && data.gatewayAccountId) {
+        aiGatewayAccountId.value = data.gatewayAccountId;
+      }
+      if (aiGatewayName && data.gatewayName) {
+        aiGatewayName.value = data.gatewayName;
+      }
+
+      // Update gateway status
+      if (aiGatewayStatus) {
+        if (data.gatewayEnabled) {
+          aiGatewayStatus.textContent = '✓ Actief';
+          aiGatewayStatus.className = 'text-xs text-green-600';
+        } else {
+          aiGatewayStatus.textContent = 'Niet geconfigureerd';
+          aiGatewayStatus.className = 'text-xs text-muted-foreground';
+        }
+      }
+
+      // Update provider options
       aiProviderOptions.forEach((option) => {
         const providerId = option.getAttribute('data-provider');
         const providerData = data.providers.find(p => p.id === providerId);
@@ -1652,10 +1929,10 @@ const autoRemindersEnabled = (settings.auto_reminders_enabled as boolean) ?? tru
           // Show configuration status
           if (statusEl) {
             if (providerData.configured) {
-              statusEl.textContent = 'API key geconfigureerd';
+              statusEl.textContent = '✓ API key geconfigureerd';
               statusEl.className = 'ai-provider-status mt-2 inline-block text-xs text-green-600';
             } else {
-              statusEl.textContent = 'API key niet geconfigureerd';
+              statusEl.textContent = '⚠ API key ontbreekt';
               statusEl.className = 'ai-provider-status mt-2 inline-block text-xs text-yellow-600';
             }
           }
@@ -1671,7 +1948,7 @@ const autoRemindersEnabled = (settings.auto_reminders_enabled as boolean) ?? tru
             if (radioInput) radioInput.checked = false;
           }
 
-          // Disable if not configured
+          // Dim if not configured
           if (!providerData.configured) {
             option.classList.add('opacity-60');
           } else {
@@ -1681,57 +1958,140 @@ const autoRemindersEnabled = (settings.auto_reminders_enabled as boolean) ?? tru
       });
 
       // Show form, hide loading
-      aiProviderLoading?.classList.add('hidden');
-      aiProviderForm?.classList.remove('hidden');
+      aiGatewayLoading?.classList.add('hidden');
+      aiGatewayForm?.classList.remove('hidden');
     } catch (error) {
-      console.error('Failed to load AI provider settings:', error);
-      if (aiProviderLoading) {
-        aiProviderLoading.textContent = 'Kon instellingen niet laden';
+      console.error('Failed to load AI gateway settings:', error);
+      if (aiGatewayLoading) {
+        aiGatewayLoading.textContent = 'Kon instellingen niet laden';
       }
     }
   }
 
-  async function selectAIProvider(provider: string) {
-    if (aiProviderError) {
-      aiProviderError.classList.add('hidden');
-      aiProviderError.textContent = '';
-    }
+  async function saveAIGatewaySettings() {
+    hideMessages();
 
     try {
-      const response = await fetch('/api/settings/ai-provider', {
+      const data: Record<string, string> = {
+        provider: selectedProvider,
+      };
+
+      // Only send gateway values if they've been entered
+      const accountId = aiGatewayAccountId?.value?.trim() || '';
+      const gatewayName = aiGatewayName?.value?.trim() || '';
+
+      if (accountId && !accountId.startsWith('••••')) {
+        data.gatewayAccountId = accountId;
+      }
+      if (gatewayName) {
+        data.gatewayName = gatewayName;
+      }
+
+      const response = await fetch('/api/settings/ai-gateway', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ provider }),
+        body: JSON.stringify(data),
       });
 
       if (!response.ok) {
         const error = await response.json();
-        throw new Error(error.error || 'Failed to update provider');
+        throw new Error(error.error || 'Opslaan mislukt');
       }
 
-      // Reload to show updated state
-      await loadAIProviderSettings();
+      showSuccess('Instellingen opgeslagen!');
+      await loadAIGatewaySettings();
     } catch (error: any) {
-      console.error('Failed to select AI provider:', error);
-      if (aiProviderError) {
-        aiProviderError.textContent = error.message || 'Fout bij selecteren van provider';
-        aiProviderError.classList.remove('hidden');
-      }
-      // Reload to reset UI state
-      await loadAIProviderSettings();
+      console.error('Failed to save AI gateway settings:', error);
+      showError(error.message || 'Fout bij opslaan');
     }
   }
 
-  // Click handlers for provider options
+  async function testAIConnection() {
+    hideMessages();
+
+    const originalText = aiTestBtn?.innerHTML || '';
+    if (aiTestBtn) {
+      aiTestBtn.innerHTML = '<span class="animate-spin">⏳</span> Testen...';
+      aiTestBtn.setAttribute('disabled', 'true');
+    }
+
+    try {
+      const response = await fetch('/api/settings/ai-gateway', {
+        method: 'POST',
+      });
+
+      const result = await response.json();
+
+      if (result.success) {
+        const gatewayText = result.gateway ? ' via AI Gateway' : ' (directe verbinding)';
+        showSuccess(`✅ Verbinding OK! Provider: ${result.provider}${gatewayText} (${result.duration})`);
+      } else {
+        showError(result.error || 'Test mislukt');
+      }
+    } catch (error: any) {
+      console.error('AI test failed:', error);
+      showError(error.message || 'Verbinding mislukt');
+    } finally {
+      if (aiTestBtn) {
+        aiTestBtn.innerHTML = originalText;
+        aiTestBtn.removeAttribute('disabled');
+      }
+    }
+  }
+
+  function showError(message: string) {
+    if (aiGatewayError) {
+      aiGatewayError.textContent = message;
+      aiGatewayError.classList.remove('hidden');
+    }
+  }
+
+  function showSuccess(message: string) {
+    if (aiGatewaySuccess) {
+      aiGatewaySuccess.textContent = message;
+      aiGatewaySuccess.classList.remove('hidden');
+      setTimeout(() => aiGatewaySuccess.classList.add('hidden'), 3000);
+    }
+  }
+
+  function hideMessages() {
+    aiGatewayError?.classList.add('hidden');
+    aiGatewaySuccess?.classList.add('hidden');
+  }
+
+  // Provider selection click handler
   aiProviderOptions.forEach((option) => {
     option.addEventListener('click', () => {
       const provider = option.getAttribute('data-provider');
       if (provider) {
-        selectAIProvider(provider);
+        selectedProvider = provider;
+
+        // Update UI immediately
+        aiProviderOptions.forEach((opt) => {
+          const checkEl = opt.querySelector('.ai-provider-check');
+          if (opt.getAttribute('data-provider') === provider) {
+            opt.classList.add('border-tesoro-500', 'bg-tesoro-50');
+            checkEl?.classList.remove('hidden');
+          } else {
+            opt.classList.remove('border-tesoro-500', 'bg-tesoro-50');
+            checkEl?.classList.add('hidden');
+          }
+        });
       }
     });
   });
 
-  // Load AI provider settings on page load
-  loadAIProviderSettings();
+  // Event listeners
+  aiSaveBtn?.addEventListener('click', saveAIGatewaySettings);
+  aiTestBtn?.addEventListener('click', testAIConnection);
+
+  // Clear masked values on focus
+  aiGatewayAccountId?.addEventListener('focus', () => {
+    if (aiGatewayAccountId.value.startsWith('••••')) {
+      aiGatewayAccountId.value = '';
+    }
+  });
+
+  // Load settings on page load
+  loadAIGatewaySettings();
 </script>
