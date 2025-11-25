@@ -1,11 +1,27 @@
 import type { APIRoute } from 'astro';
-import { translateText } from '@/lib/ai';
+import { translateText, getAIConfig } from '@/lib/ai';
 
 export const POST: APIRoute = async ({ request, locals }) => {
   try {
-    const apiKey = locals.runtime.env.ANTHROPIC_API_KEY;
-    if (!apiKey) {
-      return new Response(JSON.stringify({ error: 'AI not configured' }), {
+    const kv = locals.runtime.env.KV;
+    if (!kv) {
+      return new Response(JSON.stringify({ error: 'KV not configured' }), {
+        status: 500,
+        headers: { 'Content-Type': 'application/json' },
+      });
+    }
+
+    const config = await getAIConfig(kv);
+
+    // Check if the selected provider has an API key
+    if (config.provider === 'anthropic' && !config.anthropicKey) {
+      return new Response(JSON.stringify({ error: 'Anthropic API key not configured' }), {
+        status: 500,
+        headers: { 'Content-Type': 'application/json' },
+      });
+    }
+    if (config.provider === 'openai' && !config.openaiKey) {
+      return new Response(JSON.stringify({ error: 'OpenAI API key not configured' }), {
         status: 500,
         headers: { 'Content-Type': 'application/json' },
       });
@@ -24,9 +40,9 @@ export const POST: APIRoute = async ({ request, locals }) => {
       });
     }
 
-    const translated = await translateText(text, apiKey, targetLanguage);
+    const translated = await translateText(text, config, targetLanguage);
 
-    return new Response(JSON.stringify({ result: translated }), {
+    return new Response(JSON.stringify({ result: translated, provider: config.provider }), {
       status: 200,
       headers: { 'Content-Type': 'application/json' },
     });

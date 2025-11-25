@@ -20,6 +20,15 @@ bucket_name = "tesoro-quotes-storage"
 binding = "KV"
 id = "4a9874c88031497dbfea85f916cbb8ca"
 
+# Durable Objects (Real-time presence tracking)
+[[durable_objects.bindings]]
+name = "QUOTE_PRESENCE"
+class_name = "QuotePresence"
+
+[[migrations]]
+tag = "v1"
+new_classes = ["QuotePresence"]
+
 # Environment variables
 [vars]
 ENVIRONMENT = "production"

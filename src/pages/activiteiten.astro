@@ -1,0 +1,70 @@
+---
+import DashboardLayout from '../layouts/DashboardLayout.astro';
+import { createDb, quotes, quoteActivities, quoteSessions } from '../lib/db';
+import { desc, eq } from 'drizzle-orm';
+import { LiveActivities } from '../components/dashboard/LiveActivities';
+
+let allQuotes: Array<{ id: string; quoteNumber: string; customerName?: string }> = [];
+let recentActivities: Array<{
+  id: string;
+  quoteId: string;
+  sessionId: string;
+  eventType: string;
+  eventData: string | null;
+  deviceType: string | null;
+  browserName: string | null;
+  createdAt: string;
+}> = [];
+
+try {
+  const db = createDb(Astro.locals.runtime.env.DB);
+
+  // Get all quotes for the filter
+  const quotesData = await db.query.quotes.findMany({
+    with: { customer: true },
+    orderBy: [desc(quotes.createdAt)],
+    limit: 50,
+  });
+
+  allQuotes = quotesData.map(q => ({
+    id: q.id,
+    quoteNumber: q.quoteNumber,
+    customerName: q.customer?.companyName,
+  }));
+
+  // Get recent activities across all quotes
+  const activitiesData = await db
+    .select()
+    .from(quoteActivities)
+    .orderBy(desc(quoteActivities.createdAt))
+    .limit(100);
+
+  recentActivities = activitiesData.map(a => ({
+    id: a.id,
+    quoteId: a.quoteId,
+    sessionId: a.sessionId,
+    eventType: a.eventType,
+    eventData: a.eventData,
+    deviceType: a.deviceType,
+    browserName: a.browserName,
+    createdAt: a.createdAt?.toISOString() || new Date().toISOString(),
+  }));
+} catch (error) {
+  console.error('Failed to fetch activities:', error);
+}
+---
+
+<DashboardLayout title="Activiteiten">
+  <div class="space-y-6">
+    <!-- Header -->
+    <div class="flex items-center justify-between">
+      <div>
+        <h1 class="text-2xl font-bold">Live Activiteit</h1>
+        <p class="text-muted-foreground">Bekijk real-time wat klanten doen op hun offertes</p>
+      </div>
+    </div>
+
+    <!-- Live Activities Component -->
+    <LiveActivities quotes={allQuotes} client:load />
+  </div>
+</DashboardLayout>

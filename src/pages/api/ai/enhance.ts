@@ -1,11 +1,27 @@
 import type { APIRoute } from 'astro';
-import { enhanceText, type EnhanceTextOptions } from '@/lib/ai';
+import { enhanceText, getAIConfig, type EnhanceTextOptions } from '@/lib/ai';
 
 export const POST: APIRoute = async ({ request, locals }) => {
   try {
-    const apiKey = locals.runtime.env.ANTHROPIC_API_KEY;
-    if (!apiKey) {
-      return new Response(JSON.stringify({ error: 'AI not configured' }), {
+    const kv = locals.runtime.env.KV;
+    if (!kv) {
+      return new Response(JSON.stringify({ error: 'KV not configured' }), {
+        status: 500,
+        headers: { 'Content-Type': 'application/json' },
+      });
+    }
+
+    const config = await getAIConfig(kv);
+
+    // Check if the selected provider has an API key
+    if (config.provider === 'anthropic' && !config.anthropicKey) {
+      return new Response(JSON.stringify({ error: 'Anthropic API key not configured' }), {
+        status: 500,
+        headers: { 'Content-Type': 'application/json' },
+      });
+    }
+    if (config.provider === 'openai' && !config.openaiKey) {
+      return new Response(JSON.stringify({ error: 'OpenAI API key not configured' }), {
         status: 500,
         headers: { 'Content-Type': 'application/json' },
       });
@@ -25,9 +41,9 @@ export const POST: APIRoute = async ({ request, locals }) => {
       });
     }
 
-    const enhanced = await enhanceText(text, apiKey, { style, context });
+    const enhanced = await enhanceText(text, config, { style, context });
 
-    return new Response(JSON.stringify({ result: enhanced }), {
+    return new Response(JSON.stringify({ result: enhanced, provider: config.provider }), {
       status: 200,
       headers: { 'Content-Type': 'application/json' },
     });

@@ -1,12 +1,66 @@
 import Anthropic from '@anthropic-ai/sdk';
+import OpenAI from 'openai';
 
-let anthropic: Anthropic | null = null;
+export type AIProvider = 'anthropic' | 'openai';
 
-function getClient(apiKey: string): Anthropic {
-  if (!anthropic) {
-    anthropic = new Anthropic({ apiKey });
+interface AIConfig {
+  provider: AIProvider;
+  anthropicKey?: string;
+  openaiKey?: string;
+}
+
+// Client instances
+let anthropicClient: Anthropic | null = null;
+let openaiClient: OpenAI | null = null;
+
+function getAnthropicClient(apiKey: string): Anthropic {
+  if (!anthropicClient) {
+    anthropicClient = new Anthropic({ apiKey });
   }
-  return anthropic;
+  return anthropicClient;
+}
+
+function getOpenAIClient(apiKey: string): OpenAI {
+  if (!openaiClient) {
+    openaiClient = new OpenAI({ apiKey });
+  }
+  return openaiClient;
+}
+
+// Generic completion function that works with both providers
+async function complete(
+  config: AIConfig,
+  prompt: string,
+  maxTokens: number = 1024
+): Promise<string> {
+  if (config.provider === 'anthropic') {
+    if (!config.anthropicKey) {
+      throw new Error('Anthropic API key not configured');
+    }
+    const client = getAnthropicClient(config.anthropicKey);
+    const response = await client.messages.create({
+      model: 'claude-sonnet-4-20250514',
+      max_tokens: maxTokens,
+      messages: [{ role: 'user', content: prompt }],
+    });
+    const content = response.content[0];
+    if (content.type === 'text') {
+      return content.text;
+    }
+    return '';
+  } else if (config.provider === 'openai') {
+    if (!config.openaiKey) {
+      throw new Error('OpenAI API key not configured');
+    }
+    const client = getOpenAIClient(config.openaiKey);
+    const response = await client.chat.completions.create({
+      model: 'gpt-4o',
+      max_tokens: maxTokens,
+      messages: [{ role: 'user', content: prompt }],
+    });
+    return response.choices[0]?.message?.content || '';
+  }
+  throw new Error(`Unknown provider: ${config.provider}`);
 }
 
 export interface EnhanceTextOptions {
@@ -16,11 +70,9 @@ export interface EnhanceTextOptions {
 
 export async function enhanceText(
   text: string,
-  apiKey: string,
+  config: AIConfig,
   options: EnhanceTextOptions = {}
 ): Promise<string> {
-  const client = getClient(apiKey);
-
   const styleGuides = {
     professional: 'zakelijk en professioneel, formele toon',
     friendly: 'vriendelijk en toegankelijk, maar nog steeds professioneel',
@@ -37,38 +89,23 @@ export async function enhanceText(
   const style = styleGuides[options.style || 'professional'];
   const context = contextGuides[options.context || 'quote'];
 
-  const response = await client.messages.create({
-    model: 'claude-sonnet-4-20250514',
-    max_tokens: 1024,
-    messages: [
-      {
-        role: 'user',
-        content: `Verbeter de volgende Nederlandse tekst. Maak het ${style}. ${context}
+  const prompt = `Verbeter de volgende Nederlandse tekst. Maak het ${style}. ${context}
 
 Behoud de oorspronkelijke betekenis maar maak het professioneler en duidelijker.
 Geef alleen de verbeterde tekst terug, zonder uitleg of commentaar.
 
 Tekst:
-${text}`,
-      },
-    ],
-  });
+${text}`;
 
-  const content = response.content[0];
-  if (content.type === 'text') {
-    return content.text;
-  }
-
-  return text;
+  const result = await complete(config, prompt, 1024);
+  return result || text;
 }
 
 export async function translateText(
   text: string,
-  apiKey: string,
+  config: AIConfig,
   targetLanguage: 'en' | 'de' | 'fr' | 'es'
 ): Promise<string> {
-  const client = getClient(apiKey);
-
   const languageNames = {
     en: 'English',
     de: 'Deutsch',
@@ -76,44 +113,23 @@ export async function translateText(
     es: 'Español',
   };
 
-  const response = await client.messages.create({
-    model: 'claude-sonnet-4-20250514',
-    max_tokens: 2048,
-    messages: [
-      {
-        role: 'user',
-        content: `Vertaal de volgende Nederlandse tekst naar ${languageNames[targetLanguage]}.
+  const prompt = `Vertaal de volgende Nederlandse tekst naar ${languageNames[targetLanguage]}.
 Dit is voor een zakelijke offerte, dus behoud een professionele toon.
 Geef alleen de vertaling terug, zonder uitleg of commentaar.
 
 Tekst:
-${text}`,
-      },
-    ],
-  });
+${text}`;
 
-  const content = response.content[0];
-  if (content.type === 'text') {
-    return content.text;
-  }
-
-  return text;
+  const result = await complete(config, prompt, 2048);
+  return result || text;
 }
 
 export async function generateDescription(
   productName: string,
-  apiKey: string,
+  config: AIConfig,
   context?: string
 ): Promise<string> {
-  const client = getClient(apiKey);
-
-  const response = await client.messages.create({
-    model: 'claude-sonnet-4-20250514',
-    max_tokens: 512,
-    messages: [
-      {
-        role: 'user',
-        content: `Genereer een korte, professionele Nederlandse beschrijving voor het volgende product/dienst in een offerte.
+  const prompt = `Genereer een korte, professionele Nederlandse beschrijving voor het volgende product/dienst in een offerte.
 
 Product/Dienst: ${productName}
 ${context ? `Extra context: ${context}` : ''}
@@ -124,17 +140,9 @@ Eisen:
 - Focus op waarde voor de klant
 - Geen marketingtaal of overdrijving
 
-Geef alleen de beschrijving terug, zonder uitleg.`,
-      },
-    ],
-  });
+Geef alleen de beschrijving terug, zonder uitleg.`;
 
-  const content = response.content[0];
-  if (content.type === 'text') {
-    return content.text;
-  }
-
-  return '';
+  return await complete(config, prompt, 512);
 }
 
 export async function summarizeQuote(
@@ -146,10 +154,8 @@ export async function summarizeQuote(
     }>;
     total: number;
   },
-  apiKey: string
+  config: AIConfig
 ): Promise<string> {
-  const client = getClient(apiKey);
-
   const quoteDescription = quoteData.blocks
     .map((block) => {
       const lines = block.lines.map((l) => `- ${l.description}`).join('\n');
@@ -157,13 +163,7 @@ export async function summarizeQuote(
     })
     .join('\n\n');
 
-  const response = await client.messages.create({
-    model: 'claude-sonnet-4-20250514',
-    max_tokens: 512,
-    messages: [
-      {
-        role: 'user',
-        content: `Schrijf een korte, professionele introductietekst voor de volgende offerte.
+  const prompt = `Schrijf een korte, professionele introductietekst voor de volgende offerte.
 
 Titel: ${quoteData.title}
 Totaalbedrag: €${quoteData.total.toFixed(2)}
@@ -177,15 +177,59 @@ Eisen:
 - Benoem kort wat er geleverd wordt
 - Eindig positief
 
-Geef alleen de introductietekst terug.`,
-      },
-    ],
-  });
+Geef alleen de introductietekst terug.`;
 
-  const content = response.content[0];
-  if (content.type === 'text') {
-    return content.text;
-  }
+  return await complete(config, prompt, 512);
+}
 
-  return '';
+// Legacy functions for backward compatibility (single API key)
+export async function enhanceTextLegacy(
+  text: string,
+  apiKey: string,
+  options: EnhanceTextOptions = {}
+): Promise<string> {
+  return enhanceText(text, { provider: 'anthropic', anthropicKey: apiKey }, options);
+}
+
+export async function translateTextLegacy(
+  text: string,
+  apiKey: string,
+  targetLanguage: 'en' | 'de' | 'fr' | 'es'
+): Promise<string> {
+  return translateText(text, { provider: 'anthropic', anthropicKey: apiKey }, targetLanguage);
+}
+
+export async function generateDescriptionLegacy(
+  productName: string,
+  apiKey: string,
+  context?: string
+): Promise<string> {
+  return generateDescription(productName, { provider: 'anthropic', anthropicKey: apiKey }, context);
+}
+
+export async function summarizeQuoteLegacy(
+  quoteData: {
+    title: string;
+    blocks: Array<{
+      title?: string;
+      lines: Array<{ description: string; quantity: number; unitPrice: number }>;
+    }>;
+    total: number;
+  },
+  apiKey: string
+): Promise<string> {
+  return summarizeQuote(quoteData, { provider: 'anthropic', anthropicKey: apiKey });
+}
+
+// Helper to build config from KV
+export async function getAIConfig(kv: KVNamespace): Promise<AIConfig> {
+  const provider = (await kv.get('ai_provider')) as AIProvider || 'anthropic';
+  const anthropicKey = await kv.get('api_key_anthropic');
+  const openaiKey = await kv.get('api_key_openai');
+
+  return {
+    provider,
+    anthropicKey: anthropicKey || undefined,
+    openaiKey: openaiKey || undefined,
+  };
 }

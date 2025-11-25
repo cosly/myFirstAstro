@@ -426,6 +426,100 @@ export const teamMembersRelations = relations(teamMembers, ({ many }) => ({
 }));
 
 // ============================================
+// QUOTE ACTIVITIES (Real-time klant tracking)
+// ============================================
+export const quoteActivities = sqliteTable('quote_activities', {
+  id: text('id').primaryKey(),
+  quoteId: text('quote_id').references(() => quotes.id, { onDelete: 'cascade' }).notNull(),
+
+  // Session tracking
+  sessionId: text('session_id').notNull(), // Unique per visit session
+
+  // Event details
+  eventType: text('event_type', {
+    enum: [
+      'page_open',      // Klant opent de pagina
+      'page_close',     // Klant sluit de pagina
+      'section_view',   // Klant bekijkt specifieke sectie
+      'scroll',         // Scroll positie update
+      'option_toggle',  // Klant selecteert/deselecteert optie
+      'idle_start',     // Klant is inactief geworden
+      'idle_end',       // Klant is weer actief
+      'tab_blur',       // Klant wisselt van tab
+      'tab_focus',      // Klant komt terug naar tab
+      'signature_start', // Klant begint met tekenen
+      'copy_text',      // Klant kopieert tekst
+    ]
+  }).notNull(),
+
+  // Event-specific data
+  eventData: text('event_data', { mode: 'json' }), // { sectionId, scrollDepth, optionId, copiedText, etc. }
+
+  // Device info
+  deviceType: text('device_type', { enum: ['desktop', 'tablet', 'mobile'] }),
+  browserName: text('browser_name'),
+  osName: text('os_name'),
+
+  // Network info
+  ipAddress: text('ip_address'),
+  userAgent: text('user_agent'),
+  country: text('country'),
+  city: text('city'),
+
+  // Timing
+  pageLoadTime: integer('page_load_time'), // ms since page opened
+  createdAt: integer('created_at', { mode: 'timestamp' }).notNull().$defaultFn(() => new Date()),
+});
+
+export const quoteActivitiesRelations = relations(quoteActivities, ({ one }) => ({
+  quote: one(quotes, {
+    fields: [quoteActivities.quoteId],
+    references: [quotes.id],
+  }),
+}));
+
+// ============================================
+// QUOTE SESSIONS (Bezoek sessies)
+// ============================================
+export const quoteSessions = sqliteTable('quote_sessions', {
+  id: text('id').primaryKey(),
+  quoteId: text('quote_id').references(() => quotes.id, { onDelete: 'cascade' }).notNull(),
+
+  // Session info
+  sessionId: text('session_id').notNull().unique(),
+
+  // Visitor info
+  ipAddress: text('ip_address'),
+  userAgent: text('user_agent'),
+  deviceType: text('device_type', { enum: ['desktop', 'tablet', 'mobile'] }),
+  browserName: text('browser_name'),
+  osName: text('os_name'),
+  country: text('country'),
+  city: text('city'),
+
+  // Session stats
+  startedAt: integer('started_at', { mode: 'timestamp' }).notNull().$defaultFn(() => new Date()),
+  lastActiveAt: integer('last_active_at', { mode: 'timestamp' }).notNull().$defaultFn(() => new Date()),
+  endedAt: integer('ended_at', { mode: 'timestamp' }),
+
+  // Engagement metrics
+  totalTimeSeconds: integer('total_time_seconds').default(0),
+  maxScrollDepth: integer('max_scroll_depth').default(0), // percentage 0-100
+  sectionsViewed: text('sections_viewed', { mode: 'json' }), // array of section ids
+  optionsToggled: integer('options_toggled').default(0),
+
+  // Status
+  isActive: integer('is_active', { mode: 'boolean' }).default(true),
+});
+
+export const quoteSessionsRelations = relations(quoteSessions, ({ one }) => ({
+  quote: one(quotes, {
+    fields: [quoteSessions.quoteId],
+    references: [quotes.id],
+  }),
+}));
+
+// ============================================
 // TYPE EXPORTS
 // ============================================
 export type TeamMember = typeof teamMembers.$inferSelect;
@@ -456,3 +550,8 @@ export type AuditLogEntry = typeof auditLog.$inferSelect;
 export type EmailTemplate = typeof emailTemplates.$inferSelect;
 export type TextTemplate = typeof textTemplates.$inferSelect;
 export type NewTextTemplate = typeof textTemplates.$inferInsert;
+
+export type QuoteActivity = typeof quoteActivities.$inferSelect;
+export type NewQuoteActivity = typeof quoteActivities.$inferInsert;
+export type QuoteSession = typeof quoteSessions.$inferSelect;
+export type NewQuoteSession = typeof quoteSessions.$inferInsert;

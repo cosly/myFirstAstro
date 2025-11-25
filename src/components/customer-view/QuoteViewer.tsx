@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
@@ -6,6 +6,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { SignaturePad } from '@/components/signature/SignaturePad';
 import type { Quote, QuoteBlock, QuoteLine } from '@/components/quote-builder/types';
 import { cn, formatCurrency, formatDate, calculateLineTotal } from '@/lib/utils';
+import { createQuoteTracker, type QuoteTracker } from '@/lib/quote-tracker';
 
 interface Comment {
   id: string;
@@ -222,6 +223,26 @@ export function QuoteViewer({
   const [newMessage, setNewMessage] = useState('');
   const [isLoadingComments, setIsLoadingComments] = useState(false);
 
+  // Activity tracker
+  const trackerRef = useRef<QuoteTracker | null>(null);
+
+  // Initialize activity tracker on mount
+  useEffect(() => {
+    if (typeof window !== 'undefined' && quote.id) {
+      const tracker = createQuoteTracker({
+        quoteId: quote.id,
+        userType: 'customer',
+        userName: customer.contactName,
+      });
+      tracker.init();
+      trackerRef.current = tracker;
+
+      return () => {
+        tracker.destroy();
+      };
+    }
+  }, [quote.id, customer.contactName]);
+
   // Load comments on mount and when chat is opened
   const loadComments = useCallback(async () => {
     setIsLoadingComments(true);
@@ -279,6 +300,13 @@ export function QuoteViewer({
         throw new Error('Failed to update selection');
       }
 
+      // Track option toggle
+      const block = quote.blocks.find(b => b.id === blockId);
+      const optionName = lineId
+        ? block?.lines.find(l => l.id === lineId)?.description || lineId
+        : block?.title || blockId;
+      trackerRef.current?.trackOptionToggle(lineId || blockId, optionName, selected);
+
       // Update local state
       setQuote(prev => ({
         ...prev,
@@ -302,7 +330,7 @@ export function QuoteViewer({
       setErrorMessage(t.errors.selectionFailed);
       setTimeout(() => setErrorMessage(''), 3000);
     }
-  }, [publicToken]);
+  }, [publicToken, quote.blocks]);
 
   // Accept quote via API
   const handleAccept = useCallback(async (signatureData: { signatureDataUrl: string; name: string; function: string }) => {
@@ -562,7 +590,10 @@ export function QuoteViewer({
             </Button>
             <Button
               variant="tesoro"
-              onClick={() => setShowSignature(true)}
+              onClick={() => {
+                trackerRef.current?.trackSignatureStart();
+                setShowSignature(true);
+              }}
             >
               ✍️ {t.actions.accept}
             </Button>

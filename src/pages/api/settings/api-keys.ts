@@ -22,6 +22,11 @@ const API_KEY_CONFIG = {
     description: 'AI tekst assistentie',
     envKey: 'ANTHROPIC_API_KEY',
   },
+  openai: {
+    name: 'OpenAI (GPT)',
+    description: 'AI tekst assistentie',
+    envKey: 'OPENAI_API_KEY',
+  },
 };
 
 type ApiKeyType = keyof typeof API_KEY_CONFIG;
