@@ -1,6 +1,5 @@
 import type { APIRoute } from 'astro';
 import { createDb, emailTemplates } from '@/lib/db';
-import { eq } from 'drizzle-orm';
 import { defaultTemplates } from '@/lib/email';
 
 // GET: Fetch all email templates

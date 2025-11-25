@@ -5,7 +5,7 @@ import { createDb } from '../../lib/db';
 import { quotes, auditLog, appSettings } from '../../lib/db/schema';
 import { eq } from 'drizzle-orm';
 import { generateId } from '../../lib/utils';
-import { resolveLocale, t, formatDateLocale, getTranslations, localeNames, type Locale } from '@/i18n';
+import { resolveLocale, t, formatDateLocale, getTranslations, localeNames } from '@/i18n';
 
 const { token } = Astro.params;
 
@@ -137,7 +137,6 @@ settingsData.forEach(s => {
 });
 const companyEmail = settings['company_email'] || 'info@tesoro.nl';
 const companyPhone = settings['company_phone'] || '+31 6 12345678';
-const companyName = settings['company_name'] || 'Tesoro';
 
 // Translations for JavaScript
 const jsTranslations = {

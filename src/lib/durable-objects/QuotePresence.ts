@@ -50,7 +50,7 @@ export class QuotePresence {
   private sessions: Map<WebSocket, Session> = new Map();
   private quoteId: string = '';
 
-  constructor(state: DurableObjectState, env: unknown) {
+  constructor(state: DurableObjectState, _env: unknown) {
     this.state = state;
 
     // Restore sessions from hibernation
@@ -238,7 +238,7 @@ export class QuotePresence {
     }
   }
 
-  async webSocketClose(ws: WebSocket, code: number, reason: string, wasClean: boolean): Promise<void> {
+  async webSocketClose(ws: WebSocket, _code: number, _reason: string, _wasClean: boolean): Promise<void> {
     const session = this.sessions.get(ws);
     if (session) {
       // Broadcast viewer left
@@ -264,10 +264,10 @@ export class QuotePresence {
 
   private broadcast(event: ActivityEvent): void {
     const message = JSON.stringify(event);
-    for (const [ws, session] of this.sessions) {
+    for (const [ws] of this.sessions) {
       try {
         ws.send(message);
-      } catch (error) {
+      } catch {
         // WebSocket might be closed
         this.sessions.delete(ws);
       }
@@ -280,7 +280,7 @@ export class QuotePresence {
       if (session.userType === 'team') {
         try {
           ws.send(message);
-        } catch (error) {
+        } catch {
           this.sessions.delete(ws);
         }
       }

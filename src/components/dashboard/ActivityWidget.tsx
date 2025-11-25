@@ -64,7 +64,6 @@ export function ActivityWidget({ quotes }: ActivityWidgetProps) {
   const [activities, setActivities] = useState<Activity[]>([]);
   const [activeSessions, setActiveSessions] = useState<Session[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [lastFetch, setLastFetch] = useState<number>(Date.now());
 
   // Fetch activities for all recent quotes
   useEffect(() => {
@@ -99,7 +98,6 @@ export function ActivityWidget({ quotes }: ActivityWidgetProps) {
       setActivities(allActivities.slice(0, 15));
       setActiveSessions(allSessions.filter(s => s.isActive));
       setIsLoading(false);
-      setLastFetch(Date.now());
     };
 
     if (quotes.length > 0) {
@@ -107,18 +105,6 @@ export function ActivityWidget({ quotes }: ActivityWidgetProps) {
     } else {
       setIsLoading(false);
     }
-  }, [quotes]);
-
-  // Poll for new activities every 30 seconds
-  useEffect(() => {
-    const interval = setInterval(() => {
-      if (quotes.length > 0) {
-        // Simplified refetch - just update the lastFetch to trigger useEffect
-        setLastFetch(Date.now());
-      }
-    }, 30000);
-
-    return () => clearInterval(interval);
   }, [quotes]);
 
   const formatTime = (dateString: string) => {

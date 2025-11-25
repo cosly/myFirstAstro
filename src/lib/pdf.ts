@@ -222,7 +222,7 @@ export function generateQuotePdfHtml(quote: QuoteWithBlocks): string {
 }
 
 // API endpoint will use a service like Cloudflare Browser Rendering or external PDF service
-export async function generatePdf(html: string): Promise<Uint8Array> {
+export async function generatePdf(_html: string): Promise<Uint8Array> {
   // In production, use one of these options:
   // 1. Cloudflare Browser Rendering (puppeteer in Workers)
   // 2. External service like PDFShift, DocRaptor, or html2pdf.app

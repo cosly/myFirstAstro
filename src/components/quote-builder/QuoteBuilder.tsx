@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import { useState, useCallback } from 'react';
 import {
   DndContext,
   closestCenter,
@@ -256,7 +256,7 @@ export function QuoteBuilder({
       };
 
       if (onSave) {
-        await onSave(quote);
+        onSave(quote);
       } else {
         const response = await fetch('/api/quotes', {
           method: 'POST',

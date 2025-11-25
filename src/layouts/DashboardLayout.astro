@@ -1,5 +1,7 @@
 ---
 import Layout from './Layout.astro';
+import { createDb, quoteRequests } from '../lib/db';
+import { eq, sql } from 'drizzle-orm';
 
 interface Props {
   title: string;
@@ -7,9 +9,21 @@ interface Props {
 
 const { title } = Astro.props;
 
+// Get count of pending quote requests
+let pendingRequestsCount = 0;
+try {
+  const db = createDb(Astro.locals.runtime.env.DB);
+  const result = await db.select({ count: sql<number>`count(*)` })
+    .from(quoteRequests)
+    .where(eq(quoteRequests.status, 'new'));
+  pendingRequestsCount = result[0]?.count || 0;
+} catch (error) {
+  console.error('Failed to fetch pending requests count:', error);
+}
+
 const navigation = [
   { name: 'Dashboard', href: '/dashboard', icon: 'home' },
-  { name: 'Aanvragen', href: '/aanvragen', icon: 'inbox', badge: true },
+  { name: 'Aanvragen', href: '/aanvragen', icon: 'inbox', badge: pendingRequestsCount > 0 ? pendingRequestsCount : null },
   { name: 'Offertes', href: '/offertes', icon: 'file-text' },
   { name: 'Activiteiten', href: '/activiteiten', icon: 'activity' },
   { name: 'Klanten', href: '/klanten', icon: 'users' },
@@ -51,7 +65,7 @@ const currentPath = Astro.url.pathname;
                 {item.name}
                 {item.badge && (
                   <span class="ml-auto flex h-5 w-5 items-center justify-center rounded-full bg-destructive text-xs text-white">
-                    3
+                    {item.badge}
                   </span>
                 )}
               </a>
