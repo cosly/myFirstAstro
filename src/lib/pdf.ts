@@ -173,7 +173,7 @@ export function generateQuotePdfHtml(quote: QuoteWithBlocks): string {
           <div class="party">
             <div class="party-label">Van</div>
             <div class="party-name">Tesoro CRM</div>
-            <div>info@tesorocrm.nl</div>
+            <div>info@quote.tesorhq.io</div>
             <div>020-1234567</div>
           </div>
           <div class="party">
