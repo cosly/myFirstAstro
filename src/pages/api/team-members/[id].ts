@@ -77,9 +77,7 @@ export const PUT: APIRoute = async ({ params, request, locals }) => {
       });
     }
 
-    const updateData: Record<string, unknown> = {
-      updatedAt: new Date(),
-    };
+    const updateData: Record<string, unknown> = {};
 
     if (body.name) updateData.name = body.name;
     if (body.email) updateData.email = body.email;
@@ -88,18 +86,27 @@ export const PUT: APIRoute = async ({ params, request, locals }) => {
     if (body.isActive !== undefined) updateData.isActive = body.isActive;
     if (body.password) updateData.passwordHash = await hashPassword(body.password);
 
+    // Only update if there's something to update
+    if (Object.keys(updateData).length === 0) {
+      return new Response(JSON.stringify({ error: 'No fields to update', received: body }), {
+        status: 400,
+        headers: { 'Content-Type': 'application/json' },
+      });
+    }
+
     await db
       .update(teamMembers)
       .set(updateData)
       .where(eq(teamMembers.id, id));
 
-    return new Response(JSON.stringify({ success: true }), {
+    return new Response(JSON.stringify({ success: true, updated: Object.keys(updateData) }), {
       status: 200,
       headers: { 'Content-Type': 'application/json' },
     });
   } catch (error) {
     console.error('Failed to update team member:', error);
-    return new Response(JSON.stringify({ error: 'Failed to update team member' }), {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    return new Response(JSON.stringify({ error: 'Failed to update team member', details: errorMessage }), {
       status: 500,
       headers: { 'Content-Type': 'application/json' },
     });
