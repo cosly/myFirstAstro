@@ -10,6 +10,7 @@ const publicRoutes = [
   '/api/auth/login',
   '/api/quote-requests',
   '/api/public/',
+  '/api/debug',
 ];
 
 // Check if path matches any public route
