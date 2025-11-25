@@ -141,24 +141,221 @@ const signerFunction = quote.signedByFunction ? ` (${quote.signedByFunction})` :
 
   {isAccepted ? (
     <div class="min-h-screen bg-gradient-to-b from-green-50 to-white py-8 px-4">
-      <div class="mx-auto max-w-4xl">
-        <div class="rounded-xl border border-green-200 bg-white p-8 text-center shadow-sm">
-          <div class="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-green-100">
-            <svg class="h-8 w-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
-            </svg>
+      <div class="mx-auto max-w-4xl space-y-6">
+        <!-- Success Banner -->
+        <div class="rounded-xl border border-green-200 bg-white p-6 shadow-sm">
+          <div class="flex items-start gap-4">
+            <div class="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-full bg-green-100">
+              <svg class="h-6 w-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+              </svg>
+            </div>
+            <div class="flex-1">
+              <h1 class="text-xl font-bold text-green-900">{t('customerPortal.status.accepted.title', locale)}</h1>
+              <p class="mt-1 text-green-700">
+                {t('customerPortal.status.accepted.message', locale, {
+                  date: signedDate,
+                  name: quote.signedByName || t('customerPortal.unknown', locale).toLowerCase(),
+                  function: signerFunction
+                })}
+              </p>
+            </div>
           </div>
-          <h1 class="text-2xl font-bold text-green-900">{t('customerPortal.status.accepted.title', locale)}</h1>
-          <p class="mt-2 text-green-700">
-            {t('customerPortal.status.accepted.message', locale, {
-              date: signedDate,
-              name: quote.signedByName || t('customerPortal.unknown', locale).toLowerCase(),
-              function: signerFunction
-            })}
+        </div>
+
+        <!-- Quick Actions -->
+        <div class="rounded-xl border bg-white p-6 shadow-sm">
+          <h2 class="mb-4 text-lg font-semibold">{t('customerPortal.acceptedQuote.actions', locale)}</h2>
+          <div class="flex flex-wrap gap-3">
+            <a
+              href={`/api/public/quote/${token}/pdf`}
+              target="_blank"
+              class="inline-flex items-center gap-2 rounded-lg bg-tesoro-600 px-4 py-2 text-sm font-medium text-white hover:bg-tesoro-700 transition-colors"
+            >
+              <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+              </svg>
+              {t('customerPortal.acceptedQuote.downloadPdf', locale)}
+            </a>
+            <button
+              id="show-question-form"
+              class="inline-flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+            >
+              <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
+              </svg>
+              {t('customerPortal.acceptedQuote.askQuestion', locale)}
+            </button>
+          </div>
+
+          <!-- Question Form (hidden by default) -->
+          <div id="question-form" class="mt-4 hidden">
+            <textarea
+              id="question-text"
+              rows="3"
+              class="w-full rounded-lg border border-gray-300 p-3 text-sm focus:border-tesoro-500 focus:ring-1 focus:ring-tesoro-500"
+              placeholder={t('customerPortal.acceptedQuote.questionPlaceholder', locale)}
+            ></textarea>
+            <div class="mt-2 flex gap-2">
+              <button
+                id="send-question"
+                class="rounded-lg bg-tesoro-600 px-4 py-2 text-sm font-medium text-white hover:bg-tesoro-700"
+              >
+                {t('customerPortal.acceptedQuote.sendQuestion', locale)}
+              </button>
+              <button
+                id="cancel-question"
+                class="rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+              >
+                {t('common.cancel', locale)}
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Quote Summary -->
+        <div class="rounded-xl border bg-white shadow-sm overflow-hidden">
+          <div class="border-b bg-gray-50 px-6 py-4">
+            <div class="flex items-center justify-between">
+              <div>
+                <h2 class="text-lg font-semibold">{t('customerPortal.acceptedQuote.summary', locale)}</h2>
+                <p class="text-sm text-gray-600">{quote.quoteNumber} - {quote.title}</p>
+              </div>
+              <span class="inline-flex items-center rounded-full bg-green-100 px-3 py-1 text-sm font-medium text-green-800">
+                {t('quotes.status.accepted', locale)}
+              </span>
+            </div>
+          </div>
+
+          <div class="p-6 space-y-6">
+            {/* Intro text */}
+            {quote.introText && (
+              <div class="prose prose-sm max-w-none text-gray-600">
+                <p>{quote.introText}</p>
+              </div>
+            )}
+
+            {/* Quote blocks */}
+            {quoteData.blocks.map((block) => (
+              <div class="border rounded-lg overflow-hidden">
+                {block.title && (
+                  <div class="bg-gray-50 px-4 py-3 border-b">
+                    <h3 class="font-medium text-gray-900">{block.title}</h3>
+                    {block.description && <p class="text-sm text-gray-600 mt-1">{block.description}</p>}
+                  </div>
+                )}
+                {block.blockType === 'pricing_table' && block.lines.length > 0 && (
+                  <div class="overflow-x-auto">
+                    <table class="w-full text-sm">
+                      <thead class="bg-gray-50 text-left">
+                        <tr>
+                          <th class="px-4 py-3 font-medium text-gray-700">{t('quotes.fields.description', locale)}</th>
+                          <th class="px-4 py-3 font-medium text-gray-700 text-right">{t('quotes.fields.quantity', locale)}</th>
+                          <th class="px-4 py-3 font-medium text-gray-700 text-right">{t('quotes.fields.unitPrice', locale)}</th>
+                          <th class="px-4 py-3 font-medium text-gray-700 text-right">{t('quotes.fields.total', locale)}</th>
+                        </tr>
+                      </thead>
+                      <tbody class="divide-y">
+                        {block.lines.filter(l => l.isSelectedByCustomer !== false).map((line) => (
+                          <tr class={line.isOptional ? 'bg-blue-50' : ''}>
+                            <td class="px-4 py-3">
+                              {line.description}
+                              {line.isOptional && (
+                                <span class="ml-2 text-xs text-blue-600">({t('quotes.optional', locale)})</span>
+                              )}
+                            </td>
+                            <td class="px-4 py-3 text-right">{line.quantity} {line.unit}</td>
+                            <td class="px-4 py-3 text-right">€{line.unitPrice.toFixed(2)}</td>
+                            <td class="px-4 py-3 text-right font-medium">€{(line.quantity * line.unitPrice).toFixed(2)}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </div>
+            ))}
+
+            {/* Totals */}
+            <div class="border-t pt-4">
+              <div class="flex justify-end">
+                <div class="w-64 space-y-2">
+                  <div class="flex justify-between text-sm">
+                    <span class="text-gray-600">{t('quotes.fields.subtotal', locale)}</span>
+                    <span>€{quoteData.subtotal.toFixed(2)}</span>
+                  </div>
+                  <div class="flex justify-between text-sm">
+                    <span class="text-gray-600">{t('quotes.fields.btw', locale)}</span>
+                    <span>€{quoteData.btwAmount.toFixed(2)}</span>
+                  </div>
+                  <div class="flex justify-between font-semibold text-lg border-t pt-2">
+                    <span>{t('quotes.fields.total', locale)}</span>
+                    <span>€{quoteData.total.toFixed(2)}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Footer text */}
+            {quote.footerText && (
+              <div class="prose prose-sm max-w-none text-gray-600 border-t pt-4">
+                <p>{quote.footerText}</p>
+              </div>
+            )}
+          </div>
+        </div>
+
+        <!-- Signature Details -->
+        <div class="rounded-xl border bg-white p-6 shadow-sm">
+          <h2 class="mb-4 text-lg font-semibold">{t('customerPortal.acceptedQuote.signatureDetails', locale)}</h2>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+            <div>
+              <span class="text-gray-600">{t('customerPortal.acceptedQuote.signedBy', locale)}:</span>
+              <p class="font-medium">{quote.signedByName || t('customerPortal.unknown', locale)}</p>
+            </div>
+            {quote.signedByFunction && (
+              <div>
+                <span class="text-gray-600">{t('customerPortal.acceptedQuote.function', locale)}:</span>
+                <p class="font-medium">{quote.signedByFunction}</p>
+              </div>
+            )}
+            <div>
+              <span class="text-gray-600">{t('customerPortal.acceptedQuote.signedOn', locale)}:</span>
+              <p class="font-medium">{signedDate}</p>
+            </div>
+            <div>
+              <span class="text-gray-600">{t('customerPortal.acceptedQuote.quoteNumber', locale)}:</span>
+              <p class="font-medium">{quote.quoteNumber}</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Contact Info -->
+        <div class="rounded-xl border bg-white p-6 shadow-sm">
+          <h2 class="mb-4 text-lg font-semibold">{t('customerPortal.acceptedQuote.contactUs', locale)}</h2>
+          <p class="text-sm text-gray-600 mb-4">
+            {t('customerPortal.acceptedQuote.contactDescription', locale)}
           </p>
-          <p class="mt-4 text-sm text-gray-600">
-            {t('customerPortal.status.accepted.followUp', locale)}
-          </p>
+          <div class="flex flex-wrap gap-4">
+            <a
+              href="mailto:info@tesoro.nl"
+              class="inline-flex items-center gap-2 text-sm text-tesoro-600 hover:text-tesoro-700"
+            >
+              <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+              </svg>
+              info@tesoro.nl
+            </a>
+            <a
+              href="tel:+31612345678"
+              class="inline-flex items-center gap-2 text-sm text-tesoro-600 hover:text-tesoro-700"
+            >
+              <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
+              </svg>
+              +31 6 12345678
+            </a>
+          </div>
         </div>
       </div>
     </div>
@@ -228,6 +425,57 @@ const signerFunction = quote.signedByFunction ? ` (${quote.signedByFunction})` :
       window.location.reload();
     } catch (error) {
       console.error('Failed to set locale:', error);
+    }
+  });
+
+  // Question form handling for accepted quotes
+  const showQuestionBtn = document.getElementById('show-question-form');
+  const questionForm = document.getElementById('question-form');
+  const cancelQuestionBtn = document.getElementById('cancel-question');
+  const sendQuestionBtn = document.getElementById('send-question');
+  const questionText = document.getElementById('question-text') as HTMLTextAreaElement;
+
+  showQuestionBtn?.addEventListener('click', () => {
+    questionForm?.classList.remove('hidden');
+    showQuestionBtn.classList.add('hidden');
+  });
+
+  cancelQuestionBtn?.addEventListener('click', () => {
+    questionForm?.classList.add('hidden');
+    showQuestionBtn?.classList.remove('hidden');
+    if (questionText) questionText.value = '';
+  });
+
+  sendQuestionBtn?.addEventListener('click', async () => {
+    const question = questionText?.value?.trim();
+    if (!question) return;
+
+    const token = window.location.pathname.split('/').pop();
+
+    try {
+      sendQuestionBtn.textContent = 'Verzenden...';
+      sendQuestionBtn.setAttribute('disabled', 'true');
+
+      const response = await fetch(`/api/public/quote/${token}/question`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ question }),
+      });
+
+      if (response.ok) {
+        questionForm?.classList.add('hidden');
+        showQuestionBtn?.classList.remove('hidden');
+        if (questionText) questionText.value = '';
+        alert('Uw vraag is verzonden. Wij nemen zo spoedig mogelijk contact met u op.');
+      } else {
+        throw new Error('Failed to send question');
+      }
+    } catch (error) {
+      console.error('Failed to send question:', error);
+      alert('Er is een fout opgetreden. Probeer het later opnieuw.');
+    } finally {
+      sendQuestionBtn.textContent = 'Verzenden';
+      sendQuestionBtn.removeAttribute('disabled');
     }
   });
 </script>
