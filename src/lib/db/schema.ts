@@ -33,6 +33,7 @@ export const customers = sqliteTable('customers', {
   kvkNumber: text('kvk_number'),
   isTesororClient: integer('is_tesoro_client', { mode: 'boolean' }).default(false),
   notes: text('notes'),
+  locale: text('locale', { enum: ['nl', 'en', 'es'] }).default('nl'), // Preferred language for emails
   createdAt: integer('created_at', { mode: 'timestamp' }).notNull().$defaultFn(() => new Date()),
   updatedAt: integer('updated_at', { mode: 'timestamp' }).notNull().$defaultFn(() => new Date()),
 });

@@ -76,6 +76,14 @@ const companyBtw = (settings.company_btw as string) || '';
 const quoteValidityDays = (settings.quote_validity_days as number) || 30;
 const quoteNumberPrefix = (settings.quote_number_prefix as string) || '2024-';
 const autoRemindersEnabled = (settings.auto_reminders_enabled as boolean) ?? true;
+const adminLocale = (settings.admin_locale as string) || 'nl';
+
+// Available locales for dropdown
+const availableLocales = [
+  { code: 'nl', name: 'Nederlands' },
+  { code: 'en', name: 'English' },
+  { code: 'es', name: 'Español' },
+];
 ---
 
 <DashboardLayout title="Instellingen">
@@ -163,6 +171,31 @@ const autoRemindersEnabled = (settings.auto_reminders_enabled as boolean) ?? tru
               Opslaan
             </button>
             <span id="quote-save-status" class="ml-2 text-sm text-green-600 hidden">Opgeslagen!</span>
+          </form>
+        </div>
+
+        <div class="rounded-xl border bg-card p-6">
+          <h3 class="font-semibold mb-4">Taalvoorkeuren</h3>
+          <form id="locale-settings-form" class="space-y-4 max-w-lg">
+            <div class="space-y-2">
+              <label class="text-sm font-medium">Dashboard taal</label>
+              <select name="admin_locale" class="flex h-10 w-48 rounded-lg border border-input bg-background px-3 py-2 text-sm">
+                {availableLocales.map((loc) => (
+                  <option value={loc.code} selected={loc.code === adminLocale}>{loc.name}</option>
+                ))}
+              </select>
+              <p class="text-xs text-muted-foreground">De taal van het admin dashboard (komt binnenkort)</p>
+            </div>
+            <div class="space-y-2">
+              <label class="text-sm font-medium">Standaard email taal</label>
+              <p class="text-xs text-muted-foreground">
+                Emails worden verstuurd in de taal van de klant. Als de klant geen taalvoorkeur heeft, wordt de standaard taal (Nederlands) gebruikt.
+              </p>
+            </div>
+            <button type="submit" class="rounded-lg bg-tesoro-500 px-4 py-2 text-sm font-medium text-white hover:bg-tesoro-600">
+              Opslaan
+            </button>
+            <span id="locale-save-status" class="ml-2 text-sm text-green-600 hidden">Opgeslagen!</span>
           </form>
         </div>
       </div>
@@ -767,6 +800,15 @@ const autoRemindersEnabled = (settings.auto_reminders_enabled as boolean) ?? tru
   quoteSettingsForm?.addEventListener('submit', async (e) => {
     e.preventDefault();
     await saveSettings(new FormData(quoteSettingsForm), quoteSaveStatus);
+  });
+
+  // Locale settings form
+  const localeSettingsForm = document.getElementById('locale-settings-form') as HTMLFormElement;
+  const localeSaveStatus = document.getElementById('locale-save-status');
+
+  localeSettingsForm?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    await saveSettings(new FormData(localeSettingsForm), localeSaveStatus);
   });
 
   // Team Member Modal

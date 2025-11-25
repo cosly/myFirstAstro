@@ -23,7 +23,14 @@ type Customer = {
   kvkNumber: string | null;
   isTesororClient: boolean | null;
   notes: string | null;
+  locale: string | null;
   createdAt: Date;
+};
+
+const localeNames: Record<string, string> = {
+  nl: 'Nederlands',
+  en: 'English',
+  es: 'Español',
 };
 
 type Quote = {
@@ -148,6 +155,10 @@ const formatCurrency = (amount: number) => {
               <dd><a href={`tel:${customer.phone}`} class="hover:underline">{customer.phone}</a></dd>
             </div>
           )}
+          <div>
+            <dt class="text-muted-foreground">Taal emails</dt>
+            <dd>{localeNames[customer.locale || 'nl']}</dd>
+          </div>
           {(customer.address || customer.city) && (
             <div>
               <dt class="text-muted-foreground">Adres</dt>
