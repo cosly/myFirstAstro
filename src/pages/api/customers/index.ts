@@ -51,6 +51,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
       kvkNumber: body.kvkNumber || null,
       isTesororClient: body.isTesororClient || false,
       notes: body.notes || null,
+      locale: body.locale || 'nl',
     });
 
     return new Response(JSON.stringify({ id: customerId }), {

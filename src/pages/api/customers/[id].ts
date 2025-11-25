@@ -65,6 +65,7 @@ export const PUT: APIRoute = async ({ params, request, locals }) => {
         kvkNumber: body.kvkNumber,
         isTesororClient: body.isTesororClient,
         notes: body.notes,
+        locale: body.locale,
         updatedAt: new Date(),
       })
       .where(eq(customers.id, id));
