@@ -2,14 +2,23 @@
 import DashboardLayout from '../../../layouts/DashboardLayout.astro';
 import { createDb, emailTemplates } from '../../../lib/db';
 import { defaultTemplates } from '../../../lib/email';
-import { eq } from 'drizzle-orm';
+import { eq, and } from 'drizzle-orm';
 
 const { type } = Astro.params;
+
+// Get locale from URL query param, default to 'nl'
+const locale = (Astro.url.searchParams.get('locale') || 'nl') as 'nl' | 'en' | 'es';
+const validLocales = ['nl', 'en', 'es'];
+const localeNames: Record<string, string> = { nl: 'Nederlands', en: 'English', es: 'Español' };
 
 const validTypes = ['quote_sent', 'quote_reminder', 'quote_accepted', 'quote_declined', 'payment_received', 'question_received'];
 
 if (!type || !validTypes.includes(type)) {
   return Astro.redirect('/instellingen?tab=emails');
+}
+
+if (!validLocales.includes(locale)) {
+  return Astro.redirect(`/instellingen/email-templates/${type}?locale=nl`);
 }
 
 const templateNames: Record<string, { name: string; description: string }> = {
@@ -41,7 +50,10 @@ try {
   const db = createDb(Astro.locals.runtime.env.DB);
 
   const dbTemplate = await db.query.emailTemplates.findFirst({
-    where: eq(emailTemplates.type, type as typeof emailTemplates.type.enumValues[number]),
+    where: and(
+      eq(emailTemplates.type, type as typeof emailTemplates.type.enumValues[number]),
+      eq(emailTemplates.locale, locale)
+    ),
   });
 
   if (dbTemplate) {
@@ -51,8 +63,8 @@ try {
       bodyText: dbTemplate.bodyText,
       isCustomized: true,
     };
-  } else {
-    // Use default template
+  } else if (locale === 'nl') {
+    // Use default template (only available in Dutch)
     const defaultTemplate = defaultTemplates[type as keyof typeof defaultTemplates];
     if (defaultTemplate) {
       template = {
@@ -63,6 +75,7 @@ try {
       };
     }
   }
+  // For non-Dutch locales without a saved template, fields stay empty
 } catch (error) {
   console.error('Failed to fetch email template:', error);
 }
@@ -98,6 +111,20 @@ const availableVariables = [
         <p class="text-muted-foreground">{templateInfo.description}</p>
       </div>
       <div class="flex items-center gap-2">
+        <!-- Locale Selector -->
+        <div class="flex items-center gap-1 rounded-lg border p-1">
+          {validLocales.map((loc) => (
+            <a
+              href={`/instellingen/email-templates/${type}?locale=${loc}`}
+              class:list={[
+                'rounded-md px-3 py-1 text-sm font-medium transition-colors',
+                loc === locale ? 'bg-tesoro-500 text-white' : 'text-gray-600 hover:bg-gray-100'
+              ]}
+            >
+              {localeNames[loc]}
+            </a>
+          ))}
+        </div>
         {template.isCustomized ? (
           <span class="rounded-full bg-tesoro-100 px-3 py-1 text-xs font-medium text-tesoro-700">
             Aangepast
@@ -256,7 +283,7 @@ const availableVariables = [
   </div>
 </DashboardLayout>
 
-<script define:vars={{ templateType: type }}>
+<script define:vars={{ templateType: type, templateLocale: locale }}>
   const form = document.getElementById('template-form');
   const subjectInput = document.getElementById('template-subject');
   const bodyHtmlInput = document.getElementById('template-body-html');
@@ -329,7 +356,7 @@ const availableVariables = [
     e.preventDefault();
 
     try {
-      const response = await fetch(`/api/email-templates/${templateType}`, {
+      const response = await fetch(`/api/email-templates/${templateType}?locale=${templateLocale}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -358,7 +385,7 @@ const availableVariables = [
     }
 
     try {
-      const response = await fetch(`/api/email-templates/${templateType}`, { method: 'DELETE' });
+      const response = await fetch(`/api/email-templates/${templateType}?locale=${templateLocale}`, { method: 'DELETE' });
 
       if (response.ok) {
         window.location.reload();

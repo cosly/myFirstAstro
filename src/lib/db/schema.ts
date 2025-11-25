@@ -1,4 +1,4 @@
-import { sqliteTable, text, integer, real, blob } from 'drizzle-orm/sqlite-core';
+import { sqliteTable, text, integer, real, blob, uniqueIndex } from 'drizzle-orm/sqlite-core';
 import { relations } from 'drizzle-orm';
 
 // ============================================
@@ -306,7 +306,12 @@ export const emailTemplates = sqliteTable('email_templates', {
       'question_received',
       'question_answered'
     ]
-  }).notNull().unique(),
+  }).notNull(),
+
+  // Locale for multi-language support
+  locale: text('locale', {
+    enum: ['nl', 'en', 'es']
+  }).notNull().default('nl'),
 
   // Content
   subject: text('subject').notNull(),
@@ -317,7 +322,9 @@ export const emailTemplates = sqliteTable('email_templates', {
   availableVariables: text('available_variables', { mode: 'json' }),
 
   updatedAt: integer('updated_at', { mode: 'timestamp' }).notNull().$defaultFn(() => new Date()),
-});
+}, (table) => [
+  uniqueIndex('email_templates_type_locale_idx').on(table.type, table.locale),
+]);
 
 // ============================================
 // APP SETTINGS

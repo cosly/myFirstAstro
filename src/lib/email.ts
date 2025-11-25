@@ -1,5 +1,5 @@
 import { emailTemplates, appSettings, type Quote, type Customer } from './db';
-import { eq } from 'drizzle-orm';
+import { eq, and } from 'drizzle-orm';
 import type { Database } from './db';
 import { formatCurrencyLocale, formatDateLocale, type Locale } from '@/i18n';
 
@@ -68,11 +68,16 @@ async function getCompanySettings(db: Database): Promise<Record<string, string>>
 // Get email template from database or use default
 async function getEmailTemplate(
   db: Database,
-  type: string
+  type: string,
+  locale: Locale = 'nl'
 ): Promise<{ subject: string; bodyHtml: string; bodyText: string } | null> {
   try {
+    // First try to find template for specific locale
     const template = await db.query.emailTemplates.findFirst({
-      where: eq(emailTemplates.type, type as typeof emailTemplates.type.enumValues[number]),
+      where: and(
+        eq(emailTemplates.type, type as typeof emailTemplates.type.enumValues[number]),
+        eq(emailTemplates.locale, locale)
+      ),
     });
 
     if (template) {
@@ -82,13 +87,31 @@ async function getEmailTemplate(
         bodyText: template.bodyText,
       };
     }
+
+    // If no template for this locale, fall back to Dutch template in database
+    if (locale !== 'nl') {
+      const dutchTemplate = await db.query.emailTemplates.findFirst({
+        where: and(
+          eq(emailTemplates.type, type as typeof emailTemplates.type.enumValues[number]),
+          eq(emailTemplates.locale, 'nl')
+        ),
+      });
+
+      if (dutchTemplate) {
+        return {
+          subject: dutchTemplate.subject,
+          bodyHtml: dutchTemplate.bodyHtml,
+          bodyText: dutchTemplate.bodyText,
+        };
+      }
+    }
   } catch (error) {
     console.error('Failed to fetch email template:', error);
   }
 
-  // Fall back to default template
-  const defaultTemplate = defaultTemplates[type as keyof typeof defaultTemplates];
-  return defaultTemplate || null;
+  // Fall back to localized default template
+  const localizedDefault = getLocalizedDefaultTemplate(type, locale);
+  return localizedDefault || null;
 }
 
 // Localized default email templates
@@ -886,13 +909,13 @@ export async function sendQuoteEmail(
   // Determine locale from customer preference or default to 'nl'
   const customerLocale: Locale = (locale || customer.locale || 'nl') as Locale;
 
-  // Get template from database or use localized default
+  // Get template from database (with locale) or use localized default
   let template;
   if (db) {
-    template = await getEmailTemplate(db, type);
+    template = await getEmailTemplate(db, type, customerLocale);
   }
 
-  // If no custom template in database, use localized default
+  // If still no template, use localized default
   if (!template) {
     template = getLocalizedDefaultTemplate(type, customerLocale);
   }
