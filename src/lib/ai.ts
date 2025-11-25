@@ -1,65 +1,126 @@
-import Anthropic from '@anthropic-ai/sdk';
-import OpenAI from 'openai';
+/**
+ * AI module with Cloudflare AI Gateway support
+ *
+ * Cloudflare AI Gateway provides:
+ * - Unified endpoint for multiple AI providers
+ * - Caching to reduce costs
+ * - Rate limiting and analytics
+ * - Fallback support
+ * - Request logging
+ */
 
 export type AIProvider = 'anthropic' | 'openai';
 
+export interface AIGatewayConfig {
+  accountId: string;
+  gatewayName: string;
+  provider: AIProvider;
+  apiKey: string;  // The provider's API key (still needed for auth)
+}
+
 interface AIConfig {
   provider: AIProvider;
-  anthropicKey?: string;
-  openaiKey?: string;
+  apiKey: string;
+  gateway?: {
+    accountId: string;
+    gatewayName: string;
+  };
 }
 
-// Client instances
-let anthropicClient: Anthropic | null = null;
-let openaiClient: OpenAI | null = null;
+// Model configurations
+const MODELS = {
+  anthropic: 'claude-sonnet-4-20250514',
+  openai: 'gpt-4o',
+};
 
-function getAnthropicClient(apiKey: string): Anthropic {
-  if (!anthropicClient) {
-    anthropicClient = new Anthropic({ apiKey });
+/**
+ * Build the API URL - either via CF AI Gateway or direct
+ */
+function getApiUrl(config: AIConfig, endpoint: string): string {
+  if (config.gateway?.accountId && config.gateway?.gatewayName) {
+    // Use Cloudflare AI Gateway
+    const baseUrl = `https://gateway.ai.cloudflare.com/v1/${config.gateway.accountId}/${config.gateway.gatewayName}`;
+
+    if (config.provider === 'openai') {
+      return `${baseUrl}/openai/${endpoint}`;
+    } else if (config.provider === 'anthropic') {
+      return `${baseUrl}/anthropic/${endpoint}`;
+    }
   }
-  return anthropicClient;
-}
 
-function getOpenAIClient(apiKey: string): OpenAI {
-  if (!openaiClient) {
-    openaiClient = new OpenAI({ apiKey });
+  // Direct API calls (fallback)
+  if (config.provider === 'openai') {
+    return `https://api.openai.com/v1/${endpoint}`;
+  } else if (config.provider === 'anthropic') {
+    return `https://api.anthropic.com/${endpoint}`;
   }
-  return openaiClient;
+
+  throw new Error(`Unknown provider: ${config.provider}`);
 }
 
-// Generic completion function that works with both providers
+/**
+ * Generic completion function using fetch (works with both direct API and Gateway)
+ */
 async function complete(
   config: AIConfig,
   prompt: string,
   maxTokens: number = 1024
 ): Promise<string> {
-  if (config.provider === 'anthropic') {
-    if (!config.anthropicKey) {
-      throw new Error('Anthropic API key not configured');
-    }
-    const client = getAnthropicClient(config.anthropicKey);
-    const response = await client.messages.create({
-      model: 'claude-sonnet-4-20250514',
-      max_tokens: maxTokens,
-      messages: [{ role: 'user', content: prompt }],
-    });
-    const content = response.content[0];
-    if (content.type === 'text') {
-      return content.text;
-    }
-    return '';
-  } else if (config.provider === 'openai') {
-    if (!config.openaiKey) {
-      throw new Error('OpenAI API key not configured');
-    }
-    const client = getOpenAIClient(config.openaiKey);
-    const response = await client.chat.completions.create({
-      model: 'gpt-4o',
-      max_tokens: maxTokens,
-      messages: [{ role: 'user', content: prompt }],
-    });
-    return response.choices[0]?.message?.content || '';
+  if (!config.apiKey) {
+    throw new Error(`API key not configured for ${config.provider}`);
   }
+
+  if (config.provider === 'openai') {
+    const url = getApiUrl(config, 'chat/completions');
+
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${config.apiKey}`,
+      },
+      body: JSON.stringify({
+        model: MODELS.openai,
+        max_tokens: maxTokens,
+        messages: [{ role: 'user', content: prompt }],
+      }),
+    });
+
+    if (!response.ok) {
+      const error = await response.text();
+      throw new Error(`OpenAI API error: ${error}`);
+    }
+
+    const data = await response.json();
+    return data.choices?.[0]?.message?.content || '';
+
+  } else if (config.provider === 'anthropic') {
+    const url = getApiUrl(config, 'v1/messages');
+
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': config.apiKey,
+        'anthropic-version': '2023-06-01',
+      },
+      body: JSON.stringify({
+        model: MODELS.anthropic,
+        max_tokens: maxTokens,
+        messages: [{ role: 'user', content: prompt }],
+      }),
+    });
+
+    if (!response.ok) {
+      const error = await response.text();
+      throw new Error(`Anthropic API error: ${error}`);
+    }
+
+    const data = await response.json();
+    const content = data.content?.[0];
+    return content?.type === 'text' ? content.text : '';
+  }
+
   throw new Error(`Unknown provider: ${config.provider}`);
 }
 
@@ -182,54 +243,62 @@ Geef alleen de introductietekst terug.`;
   return await complete(config, prompt, 512);
 }
 
-// Legacy functions for backward compatibility (single API key)
-export async function enhanceTextLegacy(
-  text: string,
-  apiKey: string,
-  options: EnhanceTextOptions = {}
-): Promise<string> {
-  return enhanceText(text, { provider: 'anthropic', anthropicKey: apiKey }, options);
-}
-
-export async function translateTextLegacy(
-  text: string,
-  apiKey: string,
-  targetLanguage: 'en' | 'de' | 'fr' | 'es'
-): Promise<string> {
-  return translateText(text, { provider: 'anthropic', anthropicKey: apiKey }, targetLanguage);
-}
-
-export async function generateDescriptionLegacy(
-  productName: string,
-  apiKey: string,
-  context?: string
-): Promise<string> {
-  return generateDescription(productName, { provider: 'anthropic', anthropicKey: apiKey }, context);
-}
-
-export async function summarizeQuoteLegacy(
-  quoteData: {
-    title: string;
-    blocks: Array<{
-      title?: string;
-      lines: Array<{ description: string; quantity: number; unitPrice: number }>;
-    }>;
-    total: number;
-  },
-  apiKey: string
-): Promise<string> {
-  return summarizeQuote(quoteData, { provider: 'anthropic', anthropicKey: apiKey });
-}
-
-// Helper to build config from KV
+/**
+ * Helper to build AI config from KV storage
+ * Supports both CF AI Gateway and direct API calls
+ */
 export async function getAIConfig(kv: KVNamespace): Promise<AIConfig> {
+  // Get provider preference
   const provider = (await kv.get('ai_provider')) as AIProvider || 'anthropic';
-  const anthropicKey = await kv.get('api_key_anthropic');
-  const openaiKey = await kv.get('api_key_openai');
+
+  // Get API key for the selected provider
+  const apiKey = await kv.get(`api_key_${provider}`) || '';
+
+  // Get gateway configuration (optional)
+  const gatewayAccountId = await kv.get('ai_gateway_account_id');
+  const gatewayName = await kv.get('ai_gateway_name');
+
+  const config: AIConfig = {
+    provider,
+    apiKey,
+  };
+
+  // Add gateway config if both values are set
+  if (gatewayAccountId && gatewayName) {
+    config.gateway = {
+      accountId: gatewayAccountId,
+      gatewayName: gatewayName,
+    };
+  }
+
+  return config;
+}
+
+/**
+ * Check if AI is properly configured
+ */
+export async function isAIConfigured(kv: KVNamespace): Promise<{
+  configured: boolean;
+  provider: AIProvider;
+  hasGateway: boolean;
+  error?: string;
+}> {
+  const config = await getAIConfig(kv);
+
+  const hasGateway = !!(config.gateway?.accountId && config.gateway?.gatewayName);
+
+  if (!config.apiKey) {
+    return {
+      configured: false,
+      provider: config.provider,
+      hasGateway,
+      error: `${config.provider === 'openai' ? 'OpenAI' : 'Anthropic'} API key niet geconfigureerd`,
+    };
+  }
 
   return {
-    provider,
-    anthropicKey: anthropicKey || undefined,
-    openaiKey: openaiKey || undefined,
+    configured: true,
+    provider: config.provider,
+    hasGateway,
   };
 }

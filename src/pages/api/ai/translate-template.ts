@@ -1,7 +1,5 @@
 import type { APIRoute } from 'astro';
 import { getAIConfig } from '@/lib/ai';
-import Anthropic from '@anthropic-ai/sdk';
-import OpenAI from 'openai';
 
 interface TranslateTemplateRequest {
   subject: string;
@@ -31,15 +29,10 @@ export const POST: APIRoute = async ({ request, locals }) => {
 
     const config = await getAIConfig(kv);
 
-    // Check if the selected provider has an API key
-    if (config.provider === 'anthropic' && !config.anthropicKey) {
-      return new Response(JSON.stringify({ error: 'Anthropic API key niet geconfigureerd' }), {
-        status: 400,
-        headers: { 'Content-Type': 'application/json' },
-      });
-    }
-    if (config.provider === 'openai' && !config.openaiKey) {
-      return new Response(JSON.stringify({ error: 'OpenAI API key niet geconfigureerd' }), {
+    if (!config.apiKey) {
+      return new Response(JSON.stringify({
+        error: `${config.provider === 'openai' ? 'OpenAI' : 'Anthropic'} API key niet geconfigureerd`
+      }), {
         status: 400,
         headers: { 'Content-Type': 'application/json' },
       });
@@ -92,23 +85,59 @@ Geef alleen de JSON terug, zonder extra uitleg.`;
 
     let result: string;
 
-    if (config.provider === 'anthropic') {
-      const client = new Anthropic({ apiKey: config.anthropicKey });
-      const response = await client.messages.create({
-        model: 'claude-sonnet-4-20250514',
-        max_tokens: 4096,
-        messages: [{ role: 'user', content: prompt }],
+    // Build API URL (with or without CF AI Gateway)
+    if (config.provider === 'openai') {
+      const url = config.gateway
+        ? `https://gateway.ai.cloudflare.com/v1/${config.gateway.accountId}/${config.gateway.gatewayName}/openai/chat/completions`
+        : 'https://api.openai.com/v1/chat/completions';
+
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${config.apiKey}`,
+        },
+        body: JSON.stringify({
+          model: 'gpt-4o',
+          max_tokens: 4096,
+          messages: [{ role: 'user', content: prompt }],
+        }),
       });
-      const content = response.content[0];
-      result = content.type === 'text' ? content.text : '';
+
+      if (!response.ok) {
+        const error = await response.text();
+        throw new Error(`OpenAI API error: ${error}`);
+      }
+
+      const data = await response.json();
+      result = data.choices?.[0]?.message?.content || '';
     } else {
-      const client = new OpenAI({ apiKey: config.openaiKey });
-      const response = await client.chat.completions.create({
-        model: 'gpt-4o',
-        max_tokens: 4096,
-        messages: [{ role: 'user', content: prompt }],
+      const url = config.gateway
+        ? `https://gateway.ai.cloudflare.com/v1/${config.gateway.accountId}/${config.gateway.gatewayName}/anthropic/v1/messages`
+        : 'https://api.anthropic.com/v1/messages';
+
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': config.apiKey,
+          'anthropic-version': '2023-06-01',
+        },
+        body: JSON.stringify({
+          model: 'claude-sonnet-4-20250514',
+          max_tokens: 4096,
+          messages: [{ role: 'user', content: prompt }],
+        }),
       });
-      result = response.choices[0]?.message?.content || '';
+
+      if (!response.ok) {
+        const error = await response.text();
+        throw new Error(`Anthropic API error: ${error}`);
+      }
+
+      const data = await response.json();
+      const content = data.content?.[0];
+      result = content?.type === 'text' ? content.text : '';
     }
 
     // Parse the JSON response
@@ -135,6 +164,7 @@ Geef alleen de JSON terug, zonder extra uitleg.`;
           bodyText: translated.bodyText || bodyText,
         },
         provider: config.provider,
+        gateway: !!config.gateway,
         targetLanguage,
       }), {
         status: 200,
@@ -152,7 +182,8 @@ Geef alleen de JSON terug, zonder extra uitleg.`;
     }
   } catch (error) {
     console.error('Template translation error:', error);
-    return new Response(JSON.stringify({ error: 'Vertaling mislukt' }), {
+    const errorMessage = error instanceof Error ? error.message : 'Vertaling mislukt';
+    return new Response(JSON.stringify({ error: errorMessage }), {
       status: 500,
       headers: { 'Content-Type': 'application/json' },
     });
