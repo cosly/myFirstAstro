@@ -3,6 +3,7 @@ import DashboardLayout from '../layouts/DashboardLayout.astro';
 import { createDb, quotes, quoteRequests } from '../lib/db';
 import { formatCurrency, formatRelativeTime } from '../lib/utils';
 import { eq, desc, sql, and, gte } from 'drizzle-orm';
+import { ActivityWidget } from '../components/dashboard/ActivityWidget';
 
 // Initialize variables
 let openRequestsCount = 0;
@@ -90,6 +91,13 @@ try {
 } catch (error) {
   console.error('Failed to fetch dashboard data:', error);
 }
+
+// Prepare quotes for activity widget
+const activityQuotes = recentQuotes.map(q => ({
+  id: q.quoteId,
+  quoteNumber: q.id,
+  customerName: q.company,
+}));
 
 const stats = [
   { label: 'Openstaande aanvragen', value: openRequestsCount, change: 'actief' },
@@ -234,5 +242,8 @@ const serviceTypeLabels: Record<string, string> = {
         )}
       </div>
     </div>
+
+    <!-- Live Activity -->
+    <ActivityWidget quotes={activityQuotes} client:load />
   </div>
 </DashboardLayout>
