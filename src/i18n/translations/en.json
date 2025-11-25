@@ -1,0 +1,227 @@
+{
+  "common": {
+    "save": "Save",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "edit": "Edit",
+    "add": "Add",
+    "search": "Search",
+    "loading": "Loading...",
+    "error": "Something went wrong",
+    "success": "Success",
+    "confirm": "Confirm",
+    "close": "Close",
+    "back": "Back",
+    "next": "Next",
+    "previous": "Previous",
+    "yes": "Yes",
+    "no": "No",
+    "or": "or",
+    "and": "and",
+    "preview": "Preview",
+    "download": "Download",
+    "send": "Send",
+    "status": "Status",
+    "actions": "Actions",
+    "details": "Details",
+    "settings": "Settings",
+    "language": "Language"
+  },
+  "nav": {
+    "dashboard": "Dashboard",
+    "quotes": "Quotes",
+    "customers": "Customers",
+    "services": "Services",
+    "settings": "Settings",
+    "logout": "Logout"
+  },
+  "dashboard": {
+    "title": "Dashboard",
+    "welcome": "Welcome back",
+    "recentQuotes": "Recent quotes",
+    "stats": {
+      "totalQuotes": "Total quotes",
+      "pendingQuotes": "Pending",
+      "acceptedQuotes": "Accepted",
+      "revenue": "Revenue"
+    }
+  },
+  "quotes": {
+    "title": "Quotes",
+    "newQuote": "New quote",
+    "quoteNumber": "Quote number",
+    "customer": "Customer",
+    "total": "Total",
+    "validUntil": "Valid until",
+    "createdAt": "Created at",
+    "status": {
+      "draft": "Draft",
+      "sent": "Sent",
+      "viewed": "Viewed",
+      "accepted": "Accepted",
+      "declined": "Declined",
+      "expired": "Expired"
+    },
+    "actions": {
+      "view": "View",
+      "edit": "Edit",
+      "send": "Send",
+      "duplicate": "Duplicate",
+      "delete": "Delete",
+      "downloadPdf": "Download PDF"
+    },
+    "sendConfirm": "Are you sure you want to send this quote to the customer?",
+    "sendSuccess": "Quote sent successfully!",
+    "deleteConfirm": "Are you sure you want to delete this quote?"
+  },
+  "customers": {
+    "title": "Customers",
+    "newCustomer": "New customer",
+    "name": "Name",
+    "company": "Company",
+    "email": "Email",
+    "phone": "Phone",
+    "address": "Address",
+    "totalQuotes": "Total quotes",
+    "noCustomers": "No customers yet"
+  },
+  "services": {
+    "title": "Services",
+    "newService": "New service",
+    "name": "Name",
+    "description": "Description",
+    "price": "Price",
+    "unit": "Unit",
+    "category": "Category"
+  },
+  "settings": {
+    "title": "Settings",
+    "tabs": {
+      "general": "General",
+      "emails": "Email Templates",
+      "texts": "Text Templates",
+      "team": "Team",
+      "integrations": "Integrations"
+    },
+    "company": {
+      "title": "Company details",
+      "name": "Company name",
+      "email": "Email",
+      "phone": "Phone",
+      "address": "Address",
+      "kvk": "Chamber of Commerce number",
+      "vat": "VAT number"
+    },
+    "quoteSettings": {
+      "title": "Quote settings",
+      "validityDays": "Default validity (days)",
+      "prefix": "Quote number prefix"
+    },
+    "apiKeys": {
+      "title": "API Keys",
+      "description": "Configure API keys for external services. Keys are stored securely and not visible after saving.",
+      "configured": "Configured",
+      "notConfigured": "Not configured",
+      "save": "Save",
+      "delete": "Delete",
+      "deleteConfirm": "Are you sure you want to delete this API key?",
+      "saved": "API key saved!",
+      "deleted": "API key deleted!",
+      "enterKey": "Enter an API key",
+      "saveError": "Error saving API key",
+      "deleteError": "Error deleting API key"
+    },
+    "emailTemplates": {
+      "title": "Email Templates",
+      "description": "Customize automatic emails",
+      "edit": "Edit",
+      "preview": "Preview",
+      "types": {
+        "quote_sent": "Quote sent",
+        "quote_reminder": "Reminder",
+        "quote_accepted": "Quote accepted",
+        "quote_declined": "Quote declined",
+        "payment_received": "Payment received",
+        "question_received": "Question received"
+      }
+    }
+  },
+  "customerPortal": {
+    "quoteFor": "Quote for",
+    "preparedBy": "Prepared by",
+    "quoteNumber": "Quote number",
+    "validUntil": "Valid until",
+    "expired": "This quote has expired",
+    "total": "Total",
+    "subtotal": "Subtotal",
+    "vat": "VAT",
+    "optional": "Optional",
+    "included": "Included",
+    "perUnit": "per",
+    "status": {
+      "accepted": {
+        "title": "Quote Accepted",
+        "message": "This quote was accepted on {date} by {name}{function}.",
+        "followUp": "You will receive a confirmation email with the next steps shortly."
+      },
+      "declined": {
+        "title": "Quote Declined",
+        "message": "This quote has been declined. If you have any questions, please contact us."
+      },
+      "expired": {
+        "title": "Quote Expired",
+        "message": "This quote expired on {date}.",
+        "followUp": "Please contact us for a new quote."
+      }
+    },
+    "actions": {
+      "accept": "Accept quote",
+      "decline": "Decline",
+      "askQuestion": "Ask a question",
+      "downloadPdf": "Download PDF"
+    },
+    "acceptConfirm": "Are you sure you want to accept this quote?",
+    "declineConfirm": "Are you sure you want to decline this quote?",
+    "acceptSuccess": "Thank you! The quote has been accepted.",
+    "declineSuccess": "The quote has been declined.",
+    "signature": {
+      "title": "Signature",
+      "instruction": "Sign below to accept the quote",
+      "name": "Name",
+      "function": "Function",
+      "clear": "Clear",
+      "confirm": "Confirm & Accept"
+    },
+    "question": {
+      "title": "Ask a question",
+      "placeholder": "Type your question here...",
+      "send": "Send question",
+      "success": "Your question has been sent!"
+    }
+  },
+  "errors": {
+    "notFound": "Page not found",
+    "unauthorized": "Unauthorized",
+    "serverError": "Server error",
+    "networkError": "Network error",
+    "validationError": "Validation error",
+    "required": "This field is required",
+    "invalidEmail": "Invalid email address",
+    "invalidPhone": "Invalid phone number"
+  },
+  "dates": {
+    "today": "Today",
+    "yesterday": "Yesterday",
+    "daysAgo": "{days} days ago",
+    "formats": {
+      "short": "MM/DD/YYYY",
+      "long": "MMMM D, YYYY",
+      "withTime": "MM/DD/YYYY HH:mm"
+    }
+  },
+  "currency": {
+    "symbol": "€",
+    "code": "EUR",
+    "format": "€{amount}"
+  }
+}

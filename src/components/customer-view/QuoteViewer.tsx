@@ -18,6 +18,44 @@ interface Comment {
   createdAt: string;
 }
 
+interface CustomerPortalTranslations {
+  quoteFor: string;
+  preparedBy: string;
+  quoteNumber: string;
+  validUntil: string;
+  expired: string;
+  total: string;
+  subtotal: string;
+  vat: string;
+  optional: string;
+  included: string;
+  perUnit: string;
+  actions: {
+    accept: string;
+    decline: string;
+    askQuestion: string;
+    downloadPdf: string;
+  };
+  acceptConfirm: string;
+  declineConfirm: string;
+  acceptSuccess: string;
+  declineSuccess: string;
+  signature: {
+    title: string;
+    instruction: string;
+    name: string;
+    function: string;
+    clear: string;
+    confirm: string;
+  };
+  question: {
+    title: string;
+    placeholder: string;
+    send: string;
+    success: string;
+  };
+}
+
 interface QuoteViewerProps {
   quote: Quote;
   customer: {
@@ -26,13 +64,57 @@ interface QuoteViewerProps {
     email: string;
   };
   publicToken: string;
+  locale?: string;
+  translations?: CustomerPortalTranslations;
 }
+
+// Default translations (Dutch)
+const defaultTranslations: CustomerPortalTranslations = {
+  quoteFor: 'Offerte voor',
+  preparedBy: 'Opgesteld door',
+  quoteNumber: 'Offertenummer',
+  validUntil: 'Geldig tot',
+  expired: 'Deze offerte is verlopen',
+  total: 'Totaal',
+  subtotal: 'Subtotaal',
+  vat: 'BTW',
+  optional: 'Optioneel',
+  included: 'Inbegrepen',
+  perUnit: 'per',
+  actions: {
+    accept: 'Offerte accepteren',
+    decline: 'Afwijzen',
+    askQuestion: 'Stel een vraag',
+    downloadPdf: 'Download PDF',
+  },
+  acceptConfirm: 'Weet je zeker dat je deze offerte wilt accepteren?',
+  declineConfirm: 'Weet je zeker dat je deze offerte wilt afwijzen?',
+  acceptSuccess: 'Bedankt! De offerte is geaccepteerd.',
+  declineSuccess: 'De offerte is afgewezen.',
+  signature: {
+    title: 'Handtekening',
+    instruction: 'Teken hieronder om de offerte te accepteren',
+    name: 'Naam',
+    function: 'Functie',
+    clear: 'Wissen',
+    confirm: 'Bevestig & Accepteer',
+  },
+  question: {
+    title: 'Stel een vraag',
+    placeholder: 'Typ hier uw vraag...',
+    send: 'Verstuur vraag',
+    success: 'Uw vraag is verstuurd!',
+  },
+};
 
 export function QuoteViewer({
   quote: initialQuote,
   customer,
   publicToken,
+  locale = 'nl',
+  translations = defaultTranslations,
 }: QuoteViewerProps) {
+  const t = translations;
   const [quote, setQuote] = useState(initialQuote);
   const [showSignature, setShowSignature] = useState(false);
   const [showDeclineModal, setShowDeclineModal] = useState(false);

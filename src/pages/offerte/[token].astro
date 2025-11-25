@@ -5,12 +5,22 @@ import { createDb } from '../../lib/db';
 import { quotes, auditLog } from '../../lib/db/schema';
 import { eq } from 'drizzle-orm';
 import { generateId } from '../../lib/utils';
+import { resolveLocale, t, formatDateLocale, getTranslations, localeNames, type Locale } from '@/i18n';
 
 const { token } = Astro.params;
 
 if (!token) {
   return Astro.redirect('/');
 }
+
+// Resolve locale
+const locale = resolveLocale(
+  Astro.url,
+  Astro.request.headers.get('cookie'),
+  Astro.request.headers.get('accept-language')
+);
+
+const translations = getTranslations(locale);
 
 const db = createDb(Astro.locals.runtime.env.DB);
 
@@ -100,8 +110,8 @@ const customerData = quote.customer ? {
   contactName: quote.customer.contactName,
   email: quote.customer.email,
 } : {
-  companyName: 'Onbekend',
-  contactName: 'Onbekend',
+  companyName: locale === 'nl' ? 'Onbekend' : 'Unknown',
+  contactName: locale === 'nl' ? 'Onbekend' : 'Unknown',
   email: '',
 };
 
@@ -109,9 +119,26 @@ const customerData = quote.customer ? {
 const isExpired = quote.validUntil && new Date(quote.validUntil) < new Date();
 const isAccepted = quote.status === 'accepted';
 const isDeclined = quote.status === 'declined';
+
+// Format dates
+const signedDate = quote.signedAt ? formatDateLocale(quote.signedAt, locale, 'long') : (locale === 'nl' ? 'onbekende datum' : 'unknown date');
+const expiredDate = quote.validUntil ? formatDateLocale(quote.validUntil, locale, 'long') : (locale === 'nl' ? 'onbekende datum' : 'unknown date');
+const signerFunction = quote.signedByFunction ? ` (${quote.signedByFunction})` : '';
 ---
 
-<Layout title={`Offerte ${quote.quoteNumber}`} description="Bekijk en accepteer uw offerte van Tesoro CRM">
+<Layout title={`${t('customerPortal.quoteFor', locale)} ${quote.quoteNumber}`} description={t('customerPortal.quoteFor', locale)}>
+  <!-- Language Switcher -->
+  <div class="fixed top-4 right-4 z-50">
+    <select
+      id="language-switcher"
+      class="rounded-lg border bg-white px-3 py-1.5 text-sm shadow-sm"
+    >
+      {Object.entries(localeNames).map(([code, name]) => (
+        <option value={code} selected={code === locale}>{name}</option>
+      ))}
+    </select>
+  </div>
+
   {isAccepted ? (
     <div class="min-h-screen bg-gradient-to-b from-green-50 to-white py-8 px-4">
       <div class="mx-auto max-w-4xl">
@@ -121,13 +148,16 @@ const isDeclined = quote.status === 'declined';
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
             </svg>
           </div>
-          <h1 class="text-2xl font-bold text-green-900">Offerte Geaccepteerd</h1>
+          <h1 class="text-2xl font-bold text-green-900">{t('customerPortal.status.accepted.title', locale)}</h1>
           <p class="mt-2 text-green-700">
-            Deze offerte is geaccepteerd op {quote.signedAt ? new Date(quote.signedAt).toLocaleDateString('nl-NL', { day: 'numeric', month: 'long', year: 'numeric' }) : 'onbekende datum'}
-            door {quote.signedByName || 'onbekend'}{quote.signedByFunction ? ` (${quote.signedByFunction})` : ''}.
+            {t('customerPortal.status.accepted.message', locale, {
+              date: signedDate,
+              name: quote.signedByName || (locale === 'nl' ? 'onbekend' : 'unknown'),
+              function: signerFunction
+            })}
           </p>
           <p class="mt-4 text-sm text-gray-600">
-            U ontvangt binnenkort een bevestigingsmail met de volgende stappen.
+            {t('customerPortal.status.accepted.followUp', locale)}
           </p>
         </div>
       </div>
@@ -141,9 +171,9 @@ const isDeclined = quote.status === 'declined';
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
             </svg>
           </div>
-          <h1 class="text-2xl font-bold text-red-900">Offerte Afgewezen</h1>
+          <h1 class="text-2xl font-bold text-red-900">{t('customerPortal.status.declined.title', locale)}</h1>
           <p class="mt-2 text-red-700">
-            Deze offerte is afgewezen. Heeft u vragen? Neem gerust contact met ons op.
+            {t('customerPortal.status.declined.message', locale)}
           </p>
         </div>
       </div>
@@ -157,12 +187,12 @@ const isDeclined = quote.status === 'declined';
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
           </div>
-          <h1 class="text-2xl font-bold text-amber-900">Offerte Verlopen</h1>
+          <h1 class="text-2xl font-bold text-amber-900">{t('customerPortal.status.expired.title', locale)}</h1>
           <p class="mt-2 text-amber-700">
-            Deze offerte is verlopen op {quote.validUntil ? new Date(quote.validUntil).toLocaleDateString('nl-NL', { day: 'numeric', month: 'long', year: 'numeric' }) : 'onbekende datum'}.
+            {t('customerPortal.status.expired.message', locale, { date: expiredDate })}
           </p>
           <p class="mt-4 text-sm text-gray-600">
-            Neem contact met ons op voor een nieuwe offerte.
+            {t('customerPortal.status.expired.followUp', locale)}
           </p>
         </div>
       </div>
@@ -174,7 +204,30 @@ const isDeclined = quote.status === 'declined';
         quote={quoteData}
         customer={customerData}
         publicToken={token}
+        locale={locale}
+        translations={translations.customerPortal}
       />
     </div>
   )}
 </Layout>
+
+<script>
+  const switcher = document.getElementById('language-switcher') as HTMLSelectElement;
+
+  switcher?.addEventListener('change', async (e) => {
+    const locale = (e.target as HTMLSelectElement).value;
+
+    try {
+      await fetch('/api/locale', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ locale }),
+      });
+
+      // Reload page to apply new locale
+      window.location.reload();
+    } catch (error) {
+      console.error('Failed to set locale:', error);
+    }
+  });
+</script>
