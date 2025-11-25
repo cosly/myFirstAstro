@@ -10,7 +10,7 @@ export const GET: APIRoute = async ({ locals }) => {
     const allRequests = await db.query.quoteRequests.findMany({
       with: {
         customer: true,
-        assignedToMember: true,
+        assignedMember: true,
       },
       orderBy: (requests, { desc }) => [desc(requests.createdAt)],
     });
@@ -33,8 +33,9 @@ export const POST: APIRoute = async ({ request, locals }) => {
     const db = createDb(locals.runtime.env.DB);
     const body = await request.json();
 
-    // Validate required fields
-    if (!body.serviceType || !body.description || !body.contactEmail || !body.contactName) {
+    // Validate required fields (form sends 'email', not 'contactEmail')
+    const contactEmail = body.contactEmail || body.email;
+    if (!body.serviceType || !body.description || !contactEmail || !body.contactName) {
       return new Response(
         JSON.stringify({ error: 'Missing required fields' }),
         {
@@ -61,7 +62,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
     await db.insert(quoteRequests).values({
       id: requestId,
       customerId,
-      contactEmail: body.email,
+      contactEmail,
       contactName: body.contactName,
       companyName: body.companyName,
       phone: body.phone,

@@ -262,6 +262,7 @@ try {
 </DashboardLayout>
 
 <script>
+  // Modal functionality
   const modal = document.getElementById('customer-modal');
   const addBtn = document.getElementById('add-customer-btn');
   const addFirstBtn = document.getElementById('add-first-customer-btn');
@@ -306,4 +307,38 @@ try {
       alert('Er is iets misgegaan');
     }
   });
+
+  // Search and filter functionality
+  const searchInput = document.querySelector('input[type="search"]') as HTMLInputElement;
+  const filterSelect = document.querySelector('select') as HTMLSelectElement;
+  const tableRows = document.querySelectorAll('tbody tr');
+
+  function filterTable() {
+    const searchTerm = searchInput?.value.toLowerCase() || '';
+    const filterValue = filterSelect?.value || '';
+
+    tableRows.forEach((row) => {
+      const companyName = row.querySelector('td:nth-child(1)')?.textContent?.toLowerCase() || '';
+      const contactName = row.querySelector('td:nth-child(2) p:first-child')?.textContent?.toLowerCase() || '';
+      const email = row.querySelector('td:nth-child(2) p:last-child')?.textContent?.toLowerCase() || '';
+      const isTesoro = row.querySelector('td:nth-child(5) .bg-tesoro-100') !== null;
+
+      // Search filter
+      const matchesSearch = searchTerm === '' ||
+        companyName.includes(searchTerm) ||
+        contactName.includes(searchTerm) ||
+        email.includes(searchTerm);
+
+      // Type filter
+      const matchesFilter = filterValue === '' ||
+        (filterValue === 'tesoro' && isTesoro) ||
+        (filterValue === 'other' && !isTesoro);
+
+      // Show/hide row
+      (row as HTMLElement).style.display = matchesSearch && matchesFilter ? '' : 'none';
+    });
+  }
+
+  searchInput?.addEventListener('input', filterTable);
+  filterSelect?.addEventListener('change', filterTable);
 </script>

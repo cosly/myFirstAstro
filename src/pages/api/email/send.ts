@@ -70,13 +70,14 @@ export const POST: APIRoute = async ({ request, locals }) => {
     // Get app URL
     const appUrl = locals.runtime.env.APP_URL || 'https://quote.tesorohq.io';
 
-    // Send email
+    // Send email with database templates and company settings
     const result = await sendQuoteEmail(
       type as 'quote_sent' | 'quote_accepted' | 'quote_reminder' | 'quote_declined',
       quote,
       quote.customer,
       resendApiKey,
-      appUrl
+      appUrl,
+      db
     );
 
     if (!result.success) {

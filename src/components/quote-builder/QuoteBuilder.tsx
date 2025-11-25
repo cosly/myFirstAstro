@@ -23,8 +23,18 @@ import { AddBlockMenu } from './AddBlockMenu';
 import type { Quote, QuoteBlock, QuoteLine } from './types';
 import { generateId, calculateLineTotal } from '@/lib/utils';
 
+interface Customer {
+  id: string;
+  companyName: string;
+  contactName: string;
+  email: string;
+}
+
 interface QuoteBuilderProps {
   initialQuote?: Partial<Quote>;
+  customers?: Customer[];
+  initialCustomerId?: string | null;
+  requestId?: string | null;
   onSave?: (quote: Quote) => void;
   onSend?: (quote: Quote) => void;
 }
@@ -42,9 +52,18 @@ const defaultQuote: Quote = {
   total: 0,
 };
 
-export function QuoteBuilder({ initialQuote, onSave, onSend }: QuoteBuilderProps) {
+export function QuoteBuilder({
+  initialQuote,
+  customers = [],
+  initialCustomerId,
+  requestId,
+  onSave,
+}: QuoteBuilderProps) {
   const [quote, setQuote] = useState<Quote>({ ...defaultQuote, ...initialQuote });
+  const [customerId, setCustomerId] = useState<string>(initialCustomerId || '');
   const [isSaving, setIsSaving] = useState(false);
+  const [saveMessage, setSaveMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+  const [validityDays, setValidityDays] = useState(30);
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -206,30 +225,115 @@ export function QuoteBuilder({ initialQuote, onSave, onSend }: QuoteBuilderProps
   };
 
   // Save handler
-  const handleSave = async () => {
+  const handleSave = async (sendAfterSave = false) => {
+    // Validate customer selection
+    if (!customerId) {
+      setSaveMessage({ type: 'error', text: 'Selecteer eerst een klant' });
+      setTimeout(() => setSaveMessage(null), 3000);
+      return;
+    }
+
+    // Validate blocks
+    if (quote.blocks.length === 0) {
+      setSaveMessage({ type: 'error', text: 'Voeg minimaal één blok toe' });
+      setTimeout(() => setSaveMessage(null), 3000);
+      return;
+    }
+
     setIsSaving(true);
+    setSaveMessage(null);
+
     try {
+      const validUntil = new Date();
+      validUntil.setDate(validUntil.getDate() + validityDays);
+
+      const payload = {
+        ...quote,
+        customerId,
+        requestId: requestId || undefined,
+        validUntil: validUntil.toISOString(),
+        status: sendAfterSave ? 'sent' : 'draft',
+      };
+
       if (onSave) {
         await onSave(quote);
       } else {
-        // Default save to API
-        await fetch('/api/quotes', {
-          method: quote.id ? 'PUT' : 'POST',
+        const response = await fetch('/api/quotes', {
+          method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(quote),
+          body: JSON.stringify(payload),
         });
+
+        if (!response.ok) {
+          const data = await response.json();
+          throw new Error(data.error || 'Failed to save quote');
+        }
+
+        const data = await response.json();
+
+        setSaveMessage({
+          type: 'success',
+          text: sendAfterSave ? 'Offerte verstuurd!' : 'Offerte opgeslagen!'
+        });
+
+        // Redirect to quote detail page after short delay
+        setTimeout(() => {
+          window.location.href = `/offertes/${data.id}`;
+        }, 1000);
       }
     } catch (error) {
       console.error('Failed to save quote:', error);
+      setSaveMessage({
+        type: 'error',
+        text: error instanceof Error ? error.message : 'Kon offerte niet opslaan'
+      });
+      setTimeout(() => setSaveMessage(null), 5000);
     } finally {
       setIsSaving(false);
     }
   };
 
+  const selectedCustomer = customers.find(c => c.id === customerId);
+
   return (
     <div className="flex gap-6">
       {/* Main Editor */}
       <div className="flex-1 space-y-6">
+        {/* Status Messages */}
+        {saveMessage && (
+          <div className={`rounded-lg p-4 ${
+            saveMessage.type === 'success'
+              ? 'bg-green-50 border border-green-200 text-green-800'
+              : 'bg-red-50 border border-red-200 text-red-800'
+          }`}>
+            {saveMessage.text}
+          </div>
+        )}
+
+        {/* Customer Selection */}
+        <div className="rounded-xl border bg-card p-6 space-y-4">
+          <div className="space-y-2">
+            <label className="text-sm font-medium">Klant *</label>
+            <select
+              value={customerId}
+              onChange={(e) => setCustomerId(e.target.value)}
+              className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-tesoro-500"
+            >
+              <option value="">Selecteer een klant...</option>
+              {customers.map((customer) => (
+                <option key={customer.id} value={customer.id}>
+                  {customer.companyName} - {customer.contactName}
+                </option>
+              ))}
+            </select>
+            {selectedCustomer && (
+              <p className="text-sm text-muted-foreground">
+                {selectedCustomer.email}
+              </p>
+            )}
+          </div>
+        </div>
+
         {/* Quote Header */}
         <div className="rounded-xl border bg-card p-6 space-y-4">
           <div className="space-y-2">
@@ -310,20 +414,40 @@ export function QuoteBuilder({ initialQuote, onSave, onSend }: QuoteBuilderProps
         {/* Price Summary */}
         <PriceSummary quote={quote} />
 
+        {/* Validity */}
+        <div className="rounded-xl border bg-card p-4 space-y-3">
+          <label className="text-sm font-medium">Geldigheid</label>
+          <select
+            value={validityDays}
+            onChange={(e) => setValidityDays(Number(e.target.value))}
+            className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+          >
+            <option value={14}>14 dagen</option>
+            <option value={30}>30 dagen</option>
+            <option value={60}>60 dagen</option>
+            <option value={90}>90 dagen</option>
+          </select>
+        </div>
+
         {/* Actions */}
         <div className="rounded-xl border bg-card p-4 space-y-3">
           <Button
             variant="outline"
             className="w-full"
-            onClick={handleSave}
+            onClick={() => handleSave(false)}
             disabled={isSaving}
           >
             {isSaving ? 'Opslaan...' : 'Opslaan als concept'}
           </Button>
-          <Button variant="outline" className="w-full">
+          <Button variant="outline" className="w-full" disabled>
             Voorbeeld bekijken
           </Button>
-          <Button variant="tesoro" className="w-full" onClick={() => onSend?.(quote)}>
+          <Button
+            variant="tesoro"
+            className="w-full"
+            onClick={() => handleSave(true)}
+            disabled={isSaving}
+          >
             Verstuur naar klant
           </Button>
         </div>

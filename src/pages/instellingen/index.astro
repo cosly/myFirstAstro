@@ -1,14 +1,23 @@
 ---
 import DashboardLayout from '../../layouts/DashboardLayout.astro';
+import { createDb, appSettings, teamMembers as teamMembersTable } from '../../lib/db';
+import { desc } from 'drizzle-orm';
 
 const tabs = [
   { id: 'algemeen', label: 'Algemeen', icon: '⚙️' },
   { id: 'emails', label: 'Email Templates', icon: '✉️' },
+  { id: 'teksten', label: 'Tekst Templates', icon: '📝' },
   { id: 'team', label: 'Team', icon: '👥' },
   { id: 'integraties', label: 'Integraties', icon: '🔗' },
 ];
 
-const emailTemplates = [
+const textTemplateTypes = [
+  { id: 'intro', name: 'Introductie', description: 'Standaard introductietekst voor offertes' },
+  { id: 'footer', name: 'Afsluiting', description: 'Standaard afsluittekst voor offertes' },
+  { id: 'terms', name: 'Voorwaarden', description: 'Algemene voorwaarden en condities' },
+];
+
+const emailTemplateTypes = [
   { id: 'quote_sent', name: 'Offerte verstuurd', description: 'Wanneer een offerte naar de klant wordt verstuurd' },
   { id: 'quote_reminder', name: 'Herinnering', description: 'Automatische herinnering voor verlopen offerte' },
   { id: 'quote_accepted', name: 'Offerte geaccepteerd', description: 'Bevestiging wanneer klant accepteert' },
@@ -17,11 +26,56 @@ const emailTemplates = [
   { id: 'question_received', name: 'Vraag ontvangen', description: 'Wanneer klant een vraag stelt' },
 ];
 
-const teamMembers = [
-  { id: '1', name: 'Jan de Vries', email: 'jan@tesorocrm.nl', role: 'admin', active: true },
-  { id: '2', name: 'Sophie Bakker', email: 'sophie@tesorocrm.nl', role: 'member', active: true },
-  { id: '3', name: 'Piet Jansen', email: 'piet@tesorocrm.nl', role: 'member', active: false },
-];
+// Fetch data from database
+let settings: Record<string, unknown> = {};
+let teamMembers: Array<{
+  id: string;
+  name: string;
+  email: string;
+  role: string;
+  isActive: boolean;
+}> = [];
+
+try {
+  const db = createDb(Astro.locals.runtime.env.DB);
+
+  // Fetch settings
+  const settingsRows = await db.select().from(appSettings);
+  settingsRows.forEach(row => {
+    try {
+      settings[row.key] = typeof row.value === 'string' ? JSON.parse(row.value) : row.value;
+    } catch {
+      settings[row.key] = row.value;
+    }
+  });
+
+  // Fetch team members
+  const members = await db
+    .select({
+      id: teamMembersTable.id,
+      name: teamMembersTable.name,
+      email: teamMembersTable.email,
+      role: teamMembersTable.role,
+      isActive: teamMembersTable.isActive,
+    })
+    .from(teamMembersTable)
+    .orderBy(desc(teamMembersTable.createdAt));
+
+  teamMembers = members;
+} catch (error) {
+  console.error('Failed to fetch settings:', error);
+}
+
+// Default values
+const companyName = (settings.company_name as string) || '';
+const companyEmail = (settings.company_email as string) || '';
+const companyPhone = (settings.company_phone as string) || '';
+const companyAddress = (settings.company_address as string) || '';
+const companyKvk = (settings.company_kvk as string) || '';
+const companyBtw = (settings.company_btw as string) || '';
+const quoteValidityDays = (settings.quote_validity_days as number) || 30;
+const quoteNumberPrefix = (settings.quote_number_prefix as string) || '2024-';
+const autoRemindersEnabled = (settings.auto_reminders_enabled as boolean) ?? true;
 ---
 
 <DashboardLayout title="Instellingen">
@@ -54,59 +108,61 @@ const teamMembers = [
       <div id="tab-algemeen" class="space-y-6">
         <div class="rounded-xl border bg-card p-6">
           <h3 class="font-semibold mb-4">Bedrijfsgegevens</h3>
-          <form class="space-y-4 max-w-lg">
+          <form id="company-form" class="space-y-4 max-w-lg">
             <div class="space-y-2">
               <label class="text-sm font-medium">Bedrijfsnaam</label>
-              <input type="text" value="Tesoro CRM" class="flex h-10 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm" />
+              <input type="text" name="company_name" value={companyName} class="flex h-10 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm" />
             </div>
             <div class="grid gap-4 sm:grid-cols-2">
               <div class="space-y-2">
                 <label class="text-sm font-medium">Email</label>
-                <input type="email" value="info@tesorocrm.nl" class="flex h-10 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm" />
+                <input type="email" name="company_email" value={companyEmail} class="flex h-10 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm" />
               </div>
               <div class="space-y-2">
                 <label class="text-sm font-medium">Telefoon</label>
-                <input type="tel" value="020-1234567" class="flex h-10 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm" />
+                <input type="tel" name="company_phone" value={companyPhone} class="flex h-10 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm" />
               </div>
             </div>
             <div class="space-y-2">
               <label class="text-sm font-medium">Adres</label>
-              <input type="text" value="Voorbeeldstraat 123, 1234 AB Amsterdam" class="flex h-10 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm" />
+              <input type="text" name="company_address" value={companyAddress} class="flex h-10 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm" />
             </div>
             <div class="grid gap-4 sm:grid-cols-2">
               <div class="space-y-2">
                 <label class="text-sm font-medium">KVK nummer</label>
-                <input type="text" value="12345678" class="flex h-10 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm" />
+                <input type="text" name="company_kvk" value={companyKvk} class="flex h-10 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm" />
               </div>
               <div class="space-y-2">
                 <label class="text-sm font-medium">BTW nummer</label>
-                <input type="text" value="NL123456789B01" class="flex h-10 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm" />
+                <input type="text" name="company_btw" value={companyBtw} class="flex h-10 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm" />
               </div>
             </div>
             <button type="submit" class="rounded-lg bg-tesoro-500 px-4 py-2 text-sm font-medium text-white hover:bg-tesoro-600">
               Opslaan
             </button>
+            <span id="company-save-status" class="ml-2 text-sm text-green-600 hidden">Opgeslagen!</span>
           </form>
         </div>
 
         <div class="rounded-xl border bg-card p-6">
           <h3 class="font-semibold mb-4">Offerte instellingen</h3>
-          <form class="space-y-4 max-w-lg">
+          <form id="quote-settings-form" class="space-y-4 max-w-lg">
             <div class="space-y-2">
               <label class="text-sm font-medium">Standaard geldigheid (dagen)</label>
-              <input type="number" value="30" class="flex h-10 w-32 rounded-lg border border-input bg-background px-3 py-2 text-sm" />
+              <input type="number" name="quote_validity_days" value={quoteValidityDays} class="flex h-10 w-32 rounded-lg border border-input bg-background px-3 py-2 text-sm" />
             </div>
             <div class="space-y-2">
               <label class="text-sm font-medium">Offerte nummerprefix</label>
-              <input type="text" value="2024-" class="flex h-10 w-32 rounded-lg border border-input bg-background px-3 py-2 text-sm" />
+              <input type="text" name="quote_number_prefix" value={quoteNumberPrefix} class="flex h-10 w-32 rounded-lg border border-input bg-background px-3 py-2 text-sm" />
             </div>
             <label class="flex items-center gap-2">
-              <input type="checkbox" checked class="h-4 w-4 rounded border-gray-300 text-tesoro-500" />
+              <input type="checkbox" name="auto_reminders_enabled" checked={autoRemindersEnabled} class="h-4 w-4 rounded border-gray-300 text-tesoro-500" />
               <span class="text-sm">Stuur automatische herinneringen</span>
             </label>
             <button type="submit" class="rounded-lg bg-tesoro-500 px-4 py-2 text-sm font-medium text-white hover:bg-tesoro-600">
               Opslaan
             </button>
+            <span id="quote-save-status" class="ml-2 text-sm text-green-600 hidden">Opgeslagen!</span>
           </form>
         </div>
       </div>
@@ -119,13 +175,17 @@ const teamMembers = [
             <p class="text-sm text-muted-foreground">Pas de automatische emails aan</p>
           </div>
           <div class="divide-y">
-            {emailTemplates.map((template) => (
+            {emailTemplateTypes.map((template) => (
               <div class="flex items-center justify-between px-6 py-4 hover:bg-muted/30">
                 <div>
                   <p class="font-medium">{template.name}</p>
                   <p class="text-sm text-muted-foreground">{template.description}</p>
                 </div>
-                <button class="rounded-lg border px-3 py-1.5 text-sm hover:bg-muted">
+                <button
+                  class="edit-template-btn rounded-lg border px-3 py-1.5 text-sm hover:bg-muted"
+                  data-template-id={template.id}
+                  data-template-name={template.name}
+                >
                   Bewerken
                 </button>
               </div>
@@ -134,10 +194,50 @@ const teamMembers = [
         </div>
       </div>
 
+      <!-- Tekst Templates -->
+      <div id="tab-teksten" class="hidden space-y-6">
+        <div class="flex justify-between items-center">
+          <div>
+            <h3 class="font-semibold">Tekst Templates</h3>
+            <p class="text-sm text-muted-foreground">Beheer standaard teksten voor offertes</p>
+          </div>
+          <button id="add-text-template-btn" class="inline-flex items-center gap-2 rounded-lg bg-tesoro-500 px-4 py-2 text-sm font-medium text-white hover:bg-tesoro-600">
+            <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+            </svg>
+            Nieuwe template
+          </button>
+        </div>
+
+        <!-- Template Categories -->
+        {textTemplateTypes.map((type) => (
+          <div class="rounded-xl border bg-card overflow-hidden" data-template-category={type.id}>
+            <div class="border-b bg-muted/30 px-6 py-4 flex items-center justify-between">
+              <div>
+                <h4 class="font-semibold">{type.name}</h4>
+                <p class="text-sm text-muted-foreground">{type.description}</p>
+              </div>
+              <button
+                class="add-category-template-btn rounded-lg border px-3 py-1.5 text-sm hover:bg-muted"
+                data-category={type.id}
+                data-category-name={type.name}
+              >
+                + Toevoegen
+              </button>
+            </div>
+            <div class="divide-y template-list" data-type={type.id}>
+              <div class="p-6 text-center text-muted-foreground text-sm">
+                <p>Laden...</p>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+
       <!-- Team -->
       <div id="tab-team" class="hidden space-y-6">
         <div class="flex justify-end">
-          <button class="inline-flex items-center gap-2 rounded-lg bg-tesoro-500 px-4 py-2 text-sm font-medium text-white hover:bg-tesoro-600">
+          <button id="add-member-btn" class="inline-flex items-center gap-2 rounded-lg bg-tesoro-500 px-4 py-2 text-sm font-medium text-white hover:bg-tesoro-600">
             <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
             </svg>
@@ -145,49 +245,77 @@ const teamMembers = [
           </button>
         </div>
         <div class="rounded-xl border bg-card overflow-hidden">
-          <table class="w-full">
-            <thead class="border-b bg-muted/50">
-              <tr>
-                <th class="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase">Naam</th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase">Email</th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase">Rol</th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase">Status</th>
-                <th class="px-6 py-3 text-right text-xs font-medium text-muted-foreground uppercase">Acties</th>
-              </tr>
-            </thead>
-            <tbody class="divide-y">
-              {teamMembers.map((member) => (
-                <tr class="hover:bg-muted/30">
-                  <td class="px-6 py-4 font-medium">{member.name}</td>
-                  <td class="px-6 py-4 text-sm">{member.email}</td>
-                  <td class="px-6 py-4">
-                    <span class:list={[
-                      'inline-flex rounded-full px-2.5 py-0.5 text-xs font-medium',
-                      member.role === 'admin' ? 'bg-purple-100 text-purple-800' : 'bg-gray-100 text-gray-800'
-                    ]}>
-                      {member.role === 'admin' ? 'Beheerder' : 'Lid'}
-                    </span>
-                  </td>
-                  <td class="px-6 py-4">
-                    <span class:list={[
-                      'inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-medium',
-                      member.active ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
-                    ]}>
-                      <span class:list={['h-1.5 w-1.5 rounded-full', member.active ? 'bg-green-500' : 'bg-gray-400']}></span>
-                      {member.active ? 'Actief' : 'Inactief'}
-                    </span>
-                  </td>
-                  <td class="px-6 py-4 text-right">
-                    <button class="p-1.5 text-muted-foreground hover:text-foreground rounded-lg hover:bg-muted">
-                      <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
-                      </svg>
-                    </button>
-                  </td>
+          {teamMembers.length === 0 ? (
+            <div class="p-12 text-center">
+              <svg class="mx-auto h-12 w-12 text-muted-foreground/50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+              </svg>
+              <h3 class="mt-4 text-lg font-medium">Geen teamleden</h3>
+              <p class="mt-2 text-sm text-muted-foreground">Voeg je eerste teamlid toe om te beginnen.</p>
+            </div>
+          ) : (
+            <table class="w-full">
+              <thead class="border-b bg-muted/50">
+                <tr>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase">Naam</th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase">Email</th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase">Rol</th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase">Status</th>
+                  <th class="px-6 py-3 text-right text-xs font-medium text-muted-foreground uppercase">Acties</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody class="divide-y">
+                {teamMembers.map((member) => (
+                  <tr class="hover:bg-muted/30">
+                    <td class="px-6 py-4 font-medium">{member.name}</td>
+                    <td class="px-6 py-4 text-sm">{member.email}</td>
+                    <td class="px-6 py-4">
+                      <span class:list={[
+                        'inline-flex rounded-full px-2.5 py-0.5 text-xs font-medium',
+                        member.role === 'admin' ? 'bg-purple-100 text-purple-800' : 'bg-gray-100 text-gray-800'
+                      ]}>
+                        {member.role === 'admin' ? 'Beheerder' : 'Lid'}
+                      </span>
+                    </td>
+                    <td class="px-6 py-4">
+                      <span class:list={[
+                        'inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-medium',
+                        member.isActive ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
+                      ]}>
+                        <span class:list={['h-1.5 w-1.5 rounded-full', member.isActive ? 'bg-green-500' : 'bg-gray-400']}></span>
+                        {member.isActive ? 'Actief' : 'Inactief'}
+                      </span>
+                    </td>
+                    <td class="px-6 py-4 text-right">
+                      <div class="flex items-center justify-end gap-1">
+                        <button
+                          class="edit-member-btn p-1.5 text-muted-foreground hover:text-foreground rounded-lg hover:bg-muted"
+                          data-member-id={member.id}
+                          data-member-name={member.name}
+                          data-member-email={member.email}
+                          data-member-role={member.role}
+                          data-member-active={member.isActive ? 'true' : 'false'}
+                        >
+                          <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                          </svg>
+                        </button>
+                        <button
+                          class="delete-member-btn p-1.5 text-muted-foreground hover:text-red-500 rounded-lg hover:bg-muted"
+                          data-member-id={member.id}
+                          data-member-name={member.name}
+                        >
+                          <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                          </svg>
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
         </div>
       </div>
 
@@ -286,6 +414,234 @@ const teamMembers = [
       </div>
     </div>
   </div>
+
+  <!-- Add/Edit Team Member Modal -->
+  <div id="member-modal" class="fixed inset-0 z-50 hidden">
+    <div class="fixed inset-0 bg-black/50" id="member-modal-backdrop"></div>
+    <div class="fixed inset-0 flex items-center justify-center p-4">
+      <div class="relative w-full max-w-md rounded-2xl bg-card p-6 shadow-xl">
+        <button id="close-member-modal" class="absolute right-4 top-4 p-1 text-muted-foreground hover:text-foreground">
+          <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+
+        <h2 id="member-modal-title" class="text-xl font-semibold mb-6">Nieuw Teamlid</h2>
+
+        <form id="member-form" class="space-y-4">
+          <input type="hidden" id="member-id" name="id" />
+
+          <div class="space-y-2">
+            <label class="text-sm font-medium">Naam *</label>
+            <input type="text" id="member-name" name="name" required class="flex h-10 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm" />
+          </div>
+
+          <div class="space-y-2">
+            <label class="text-sm font-medium">Email *</label>
+            <input type="email" id="member-email" name="email" required class="flex h-10 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm" />
+          </div>
+
+          <div class="space-y-2">
+            <label class="text-sm font-medium">Wachtwoord <span id="password-required">*</span></label>
+            <input type="password" id="member-password" name="password" class="flex h-10 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm" />
+            <p id="password-hint" class="text-xs text-muted-foreground hidden">Laat leeg om wachtwoord niet te wijzigen</p>
+          </div>
+
+          <div class="space-y-2">
+            <label class="text-sm font-medium">Rol</label>
+            <select id="member-role" name="role" class="flex h-10 w-full rounded-lg border border-input bg-background px-3 text-sm">
+              <option value="member">Lid</option>
+              <option value="admin">Beheerder</option>
+            </select>
+          </div>
+
+          <div id="member-active-container" class="hidden">
+            <label class="flex items-center gap-2">
+              <input type="checkbox" id="member-active" name="isActive" checked class="h-4 w-4 rounded border-gray-300 text-tesoro-500" />
+              <span class="text-sm">Actief</span>
+            </label>
+          </div>
+
+          <div class="flex justify-end gap-3 pt-4">
+            <button type="button" id="cancel-member-btn" class="rounded-lg border px-4 py-2 text-sm font-medium hover:bg-muted">
+              Annuleren
+            </button>
+            <button type="submit" class="rounded-lg bg-tesoro-500 px-4 py-2 text-sm font-medium text-white hover:bg-tesoro-600">
+              Opslaan
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Delete Confirmation Modal -->
+  <div id="delete-modal" class="fixed inset-0 z-50 hidden">
+    <div class="fixed inset-0 bg-black/50" id="delete-modal-backdrop"></div>
+    <div class="fixed inset-0 flex items-center justify-center p-4">
+      <div class="relative w-full max-w-sm rounded-2xl bg-card p-6 shadow-xl">
+        <h2 class="text-lg font-semibold mb-2">Teamlid verwijderen</h2>
+        <p id="delete-message" class="text-sm text-muted-foreground mb-6"></p>
+        <input type="hidden" id="delete-member-id" />
+        <div class="flex justify-end gap-3">
+          <button id="cancel-delete-btn" class="rounded-lg border px-4 py-2 text-sm font-medium hover:bg-muted">
+            Annuleren
+          </button>
+          <button id="confirm-delete-btn" class="rounded-lg bg-red-500 px-4 py-2 text-sm font-medium text-white hover:bg-red-600">
+            Verwijderen
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Email Template Editor Modal -->
+  <div id="template-modal" class="fixed inset-0 z-50 hidden">
+    <div class="fixed inset-0 bg-black/50" id="template-modal-backdrop"></div>
+    <div class="fixed inset-0 flex items-center justify-center p-4 overflow-y-auto">
+      <div class="relative w-full max-w-4xl rounded-2xl bg-card p-6 shadow-xl my-8">
+        <button id="close-template-modal" class="absolute right-4 top-4 p-1 text-muted-foreground hover:text-foreground">
+          <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+
+        <h2 id="template-modal-title" class="text-xl font-semibold mb-2">Email Template Bewerken</h2>
+        <p id="template-modal-description" class="text-sm text-muted-foreground mb-6"></p>
+
+        <form id="template-form" class="space-y-4">
+          <input type="hidden" id="template-type" name="type" />
+
+          <div class="space-y-2">
+            <label class="text-sm font-medium">Onderwerp</label>
+            <input type="text" id="template-subject" name="subject" required
+              class="flex h-10 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
+              placeholder="Bijv: Uw offerte van Tesoro CRM - {{quote_number}}" />
+          </div>
+
+          <div class="space-y-2">
+            <label class="text-sm font-medium">HTML Inhoud</label>
+            <textarea id="template-body-html" name="bodyHtml" rows="15" required
+              class="flex w-full rounded-lg border border-input bg-background px-3 py-2 text-sm font-mono"
+              placeholder="HTML template..."></textarea>
+          </div>
+
+          <div class="space-y-2">
+            <label class="text-sm font-medium">Platte tekst (fallback)</label>
+            <textarea id="template-body-text" name="bodyText" rows="6"
+              class="flex w-full rounded-lg border border-input bg-background px-3 py-2 text-sm font-mono"
+              placeholder="Platte tekst versie..."></textarea>
+          </div>
+
+          <!-- Available Variables -->
+          <div class="rounded-lg border bg-muted/30 p-4">
+            <p class="text-sm font-medium mb-2">Beschikbare variabelen:</p>
+            <div class="flex flex-wrap gap-2">
+              <code class="rounded bg-muted px-2 py-1 text-xs cursor-pointer hover:bg-tesoro-100" data-var="quote_number">{`{{quote_number}}`}</code>
+              <code class="rounded bg-muted px-2 py-1 text-xs cursor-pointer hover:bg-tesoro-100" data-var="quote_title">{`{{quote_title}}`}</code>
+              <code class="rounded bg-muted px-2 py-1 text-xs cursor-pointer hover:bg-tesoro-100" data-var="quote_total">{`{{quote_total}}`}</code>
+              <code class="rounded bg-muted px-2 py-1 text-xs cursor-pointer hover:bg-tesoro-100" data-var="quote_valid_until">{`{{quote_valid_until}}`}</code>
+              <code class="rounded bg-muted px-2 py-1 text-xs cursor-pointer hover:bg-tesoro-100" data-var="quote_url">{`{{quote_url}}`}</code>
+              <code class="rounded bg-muted px-2 py-1 text-xs cursor-pointer hover:bg-tesoro-100" data-var="customer_name">{`{{customer_name}}`}</code>
+              <code class="rounded bg-muted px-2 py-1 text-xs cursor-pointer hover:bg-tesoro-100" data-var="customer_company">{`{{customer_company}}`}</code>
+              <code class="rounded bg-muted px-2 py-1 text-xs cursor-pointer hover:bg-tesoro-100" data-var="company_name">{`{{company_name}}`}</code>
+              <code class="rounded bg-muted px-2 py-1 text-xs cursor-pointer hover:bg-tesoro-100" data-var="company_email">{`{{company_email}}`}</code>
+              <code class="rounded bg-muted px-2 py-1 text-xs cursor-pointer hover:bg-tesoro-100" data-var="signed_by">{`{{signed_by}}`}</code>
+              <code class="rounded bg-muted px-2 py-1 text-xs cursor-pointer hover:bg-tesoro-100" data-var="signed_at">{`{{signed_at}}`}</code>
+            </div>
+            <p class="text-xs text-muted-foreground mt-2">Klik op een variabele om te kopieren</p>
+          </div>
+
+          <div class="flex items-center justify-between pt-4 border-t">
+            <button type="button" id="reset-template-btn"
+              class="text-sm text-muted-foreground hover:text-destructive">
+              Reset naar standaard
+            </button>
+            <div class="flex gap-3">
+              <button type="button" id="cancel-template-btn" class="rounded-lg border px-4 py-2 text-sm font-medium hover:bg-muted">
+                Annuleren
+              </button>
+              <button type="submit" class="rounded-lg bg-tesoro-500 px-4 py-2 text-sm font-medium text-white hover:bg-tesoro-600">
+                Opslaan
+              </button>
+            </div>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Text Template Editor Modal -->
+  <div id="text-template-modal" class="fixed inset-0 z-50 hidden">
+    <div class="fixed inset-0 bg-black/50" id="text-template-modal-backdrop"></div>
+    <div class="fixed inset-0 flex items-center justify-center p-4 overflow-y-auto">
+      <div class="relative w-full max-w-2xl rounded-2xl bg-card p-6 shadow-xl my-8">
+        <button id="close-text-template-modal" class="absolute right-4 top-4 p-1 text-muted-foreground hover:text-foreground">
+          <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+
+        <h2 id="text-template-modal-title" class="text-xl font-semibold mb-2">Tekst Template</h2>
+        <p id="text-template-modal-description" class="text-sm text-muted-foreground mb-6"></p>
+
+        <form id="text-template-form" class="space-y-4">
+          <input type="hidden" id="text-template-id" name="id" />
+          <input type="hidden" id="text-template-type" name="type" />
+
+          <div class="space-y-2">
+            <label class="text-sm font-medium">Naam *</label>
+            <input type="text" id="text-template-name" name="name" required
+              class="flex h-10 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
+              placeholder="Bijv: Standaard introductie" />
+          </div>
+
+          <div class="space-y-2">
+            <label class="text-sm font-medium">Beschrijving</label>
+            <input type="text" id="text-template-description" name="description"
+              class="flex h-10 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
+              placeholder="Korte beschrijving van dit template" />
+          </div>
+
+          <div class="space-y-2">
+            <label class="text-sm font-medium">Inhoud *</label>
+            <textarea id="text-template-content" name="content" rows="10" required
+              class="flex w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
+              placeholder="De template tekst..."></textarea>
+          </div>
+
+          <!-- Available Variables -->
+          <div class="rounded-lg border bg-muted/30 p-4">
+            <p class="text-sm font-medium mb-2">Beschikbare variabelen:</p>
+            <div class="flex flex-wrap gap-2">
+              <code class="rounded bg-muted px-2 py-1 text-xs cursor-pointer hover:bg-tesoro-100 text-var-copy" data-var="customer_name">{`{{customer_name}}`}</code>
+              <code class="rounded bg-muted px-2 py-1 text-xs cursor-pointer hover:bg-tesoro-100 text-var-copy" data-var="customer_company">{`{{customer_company}}`}</code>
+              <code class="rounded bg-muted px-2 py-1 text-xs cursor-pointer hover:bg-tesoro-100 text-var-copy" data-var="quote_title">{`{{quote_title}}`}</code>
+              <code class="rounded bg-muted px-2 py-1 text-xs cursor-pointer hover:bg-tesoro-100 text-var-copy" data-var="company_name">{`{{company_name}}`}</code>
+            </div>
+            <p class="text-xs text-muted-foreground mt-2">Klik op een variabele om te kopieren</p>
+          </div>
+
+          <label class="flex items-center gap-2">
+            <input type="checkbox" id="text-template-default" name="isDefault" class="h-4 w-4 rounded border-gray-300 text-tesoro-500" />
+            <span class="text-sm">Instellen als standaard voor dit type</span>
+          </label>
+
+          <div class="flex justify-end gap-3 pt-4 border-t">
+            <button type="button" id="delete-text-template-btn" class="text-sm text-destructive hover:text-destructive/80 mr-auto hidden">
+              Verwijderen
+            </button>
+            <button type="button" id="cancel-text-template-btn" class="rounded-lg border px-4 py-2 text-sm font-medium hover:bg-muted">
+              Annuleren
+            </button>
+            <button type="submit" class="rounded-lg bg-tesoro-500 px-4 py-2 text-sm font-medium text-white hover:bg-tesoro-600">
+              Opslaan
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
 </DashboardLayout>
 
 <script>
@@ -297,7 +653,6 @@ const teamMembers = [
     tab.addEventListener('click', () => {
       const tabId = tab.getAttribute('data-tab');
 
-      // Update tab styles
       tabs.forEach((t) => {
         t.classList.remove('border-tesoro-500', 'text-tesoro-600');
         t.classList.add('border-transparent', 'text-muted-foreground');
@@ -305,7 +660,6 @@ const teamMembers = [
       tab.classList.add('border-tesoro-500', 'text-tesoro-600');
       tab.classList.remove('border-transparent', 'text-muted-foreground');
 
-      // Show/hide content
       tabContents.forEach((content) => {
         if (content.id === `tab-${tabId}`) {
           content.classList.remove('hidden');
@@ -316,7 +670,555 @@ const teamMembers = [
     });
   });
 
+  // Settings forms
+  const companyForm = document.getElementById('company-form') as HTMLFormElement;
+  const quoteSettingsForm = document.getElementById('quote-settings-form') as HTMLFormElement;
+  const companySaveStatus = document.getElementById('company-save-status');
+  const quoteSaveStatus = document.getElementById('quote-save-status');
+
+  async function saveSettings(formData: FormData, statusEl: HTMLElement | null) {
+    const data: Record<string, unknown> = {};
+    formData.forEach((value, key) => {
+      if (key.includes('checkbox') || value === 'on') return;
+      data[key] = value;
+    });
+
+    // Handle checkboxes
+    const checkboxes = document.querySelectorAll('input[type="checkbox"]');
+    checkboxes.forEach((cb) => {
+      const input = cb as HTMLInputElement;
+      if (input.name && !input.name.includes('member') && !input.name.includes('Active')) {
+        data[input.name] = input.checked;
+      }
+    });
+
+    try {
+      const response = await fetch('/api/settings', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+      });
+
+      if (response.ok && statusEl) {
+        statusEl.classList.remove('hidden');
+        setTimeout(() => statusEl.classList.add('hidden'), 2000);
+      } else {
+        alert('Er is iets misgegaan bij het opslaan');
+      }
+    } catch {
+      alert('Er is iets misgegaan bij het opslaan');
+    }
+  }
+
+  companyForm?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    await saveSettings(new FormData(companyForm), companySaveStatus);
+  });
+
+  quoteSettingsForm?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    await saveSettings(new FormData(quoteSettingsForm), quoteSaveStatus);
+  });
+
+  // Team Member Modal
+  const memberModal = document.getElementById('member-modal');
+  const memberModalTitle = document.getElementById('member-modal-title');
+  const memberForm = document.getElementById('member-form') as HTMLFormElement;
+  const memberIdInput = document.getElementById('member-id') as HTMLInputElement;
+  const memberNameInput = document.getElementById('member-name') as HTMLInputElement;
+  const memberEmailInput = document.getElementById('member-email') as HTMLInputElement;
+  const memberPasswordInput = document.getElementById('member-password') as HTMLInputElement;
+  const memberRoleInput = document.getElementById('member-role') as HTMLSelectElement;
+  const memberActiveInput = document.getElementById('member-active') as HTMLInputElement;
+  const memberActiveContainer = document.getElementById('member-active-container');
+  const passwordRequired = document.getElementById('password-required');
+  const passwordHint = document.getElementById('password-hint');
+
+  function showMemberModal(editMode = false) {
+    memberModal?.classList.remove('hidden');
+    if (memberModalTitle) {
+      memberModalTitle.textContent = editMode ? 'Teamlid Bewerken' : 'Nieuw Teamlid';
+    }
+    if (editMode) {
+      memberActiveContainer?.classList.remove('hidden');
+      passwordRequired?.classList.add('hidden');
+      passwordHint?.classList.remove('hidden');
+      memberPasswordInput.required = false;
+    } else {
+      memberActiveContainer?.classList.add('hidden');
+      passwordRequired?.classList.remove('hidden');
+      passwordHint?.classList.add('hidden');
+      memberPasswordInput.required = true;
+    }
+  }
+
+  function hideMemberModal() {
+    memberModal?.classList.add('hidden');
+    memberForm?.reset();
+    if (memberIdInput) memberIdInput.value = '';
+  }
+
+  document.getElementById('add-member-btn')?.addEventListener('click', () => showMemberModal(false));
+  document.getElementById('close-member-modal')?.addEventListener('click', hideMemberModal);
+  document.getElementById('cancel-member-btn')?.addEventListener('click', hideMemberModal);
+  document.getElementById('member-modal-backdrop')?.addEventListener('click', hideMemberModal);
+
+  // Edit member buttons
+  document.querySelectorAll('.edit-member-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const id = btn.getAttribute('data-member-id');
+      const name = btn.getAttribute('data-member-name');
+      const email = btn.getAttribute('data-member-email');
+      const role = btn.getAttribute('data-member-role');
+      const active = btn.getAttribute('data-member-active') === 'true';
+
+      if (memberIdInput) memberIdInput.value = id || '';
+      if (memberNameInput) memberNameInput.value = name || '';
+      if (memberEmailInput) memberEmailInput.value = email || '';
+      if (memberRoleInput) memberRoleInput.value = role || 'member';
+      if (memberActiveInput) memberActiveInput.checked = active;
+
+      showMemberModal(true);
+    });
+  });
+
+  // Member form submit
+  memberForm?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const formData = new FormData(memberForm);
+    const data: Record<string, unknown> = {};
+    formData.forEach((value, key) => {
+      if (key === 'isActive') return;
+      if (value) data[key] = value;
+    });
+    data.isActive = memberActiveInput?.checked ?? true;
+
+    const isEdit = Boolean(data.id);
+
+    try {
+      const url = isEdit ? `/api/team-members/${data.id}` : '/api/team-members';
+      const method = isEdit ? 'PUT' : 'POST';
+
+      const response = await fetch(url, {
+        method,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+      });
+
+      if (response.ok) {
+        window.location.reload();
+      } else {
+        const error = await response.json();
+        alert(error.error || 'Er is iets misgegaan');
+      }
+    } catch {
+      alert('Er is iets misgegaan');
+    }
+  });
+
+  // Delete Modal
+  const deleteModal = document.getElementById('delete-modal');
+  const deleteMessage = document.getElementById('delete-message');
+  const deleteMemberIdInput = document.getElementById('delete-member-id') as HTMLInputElement;
+
+  function showDeleteModal(id: string, name: string) {
+    deleteModal?.classList.remove('hidden');
+    if (deleteMessage) {
+      deleteMessage.textContent = `Weet je zeker dat je "${name}" wilt verwijderen?`;
+    }
+    if (deleteMemberIdInput) deleteMemberIdInput.value = id;
+  }
+
+  function hideDeleteModal() {
+    deleteModal?.classList.add('hidden');
+    if (deleteMemberIdInput) deleteMemberIdInput.value = '';
+  }
+
+  document.getElementById('cancel-delete-btn')?.addEventListener('click', hideDeleteModal);
+  document.getElementById('delete-modal-backdrop')?.addEventListener('click', hideDeleteModal);
+
+  document.querySelectorAll('.delete-member-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const id = btn.getAttribute('data-member-id');
+      const name = btn.getAttribute('data-member-name');
+      if (id && name) showDeleteModal(id, name);
+    });
+  });
+
+  document.getElementById('confirm-delete-btn')?.addEventListener('click', async () => {
+    const id = deleteMemberIdInput?.value;
+    if (!id) return;
+
+    try {
+      const response = await fetch(`/api/team-members/${id}`, { method: 'DELETE' });
+
+      if (response.ok) {
+        window.location.reload();
+      } else {
+        const error = await response.json();
+        alert(error.error || 'Er is iets misgegaan');
+      }
+    } catch {
+      alert('Er is iets misgegaan');
+    }
+  });
+
+  // Email Template Modal
+  const templateModal = document.getElementById('template-modal');
+  const templateModalTitle = document.getElementById('template-modal-title');
+  const templateModalDescription = document.getElementById('template-modal-description');
+  const templateForm = document.getElementById('template-form') as HTMLFormElement;
+  const templateTypeInput = document.getElementById('template-type') as HTMLInputElement;
+  const templateSubjectInput = document.getElementById('template-subject') as HTMLInputElement;
+  const templateBodyHtmlInput = document.getElementById('template-body-html') as HTMLTextAreaElement;
+  const templateBodyTextInput = document.getElementById('template-body-text') as HTMLTextAreaElement;
+
+  const templateNames: Record<string, string> = {
+    'quote_sent': 'Offerte verstuurd',
+    'quote_reminder': 'Herinnering',
+    'quote_accepted': 'Offerte geaccepteerd',
+    'quote_declined': 'Offerte afgewezen',
+    'payment_received': 'Betaling ontvangen',
+    'question_received': 'Vraag ontvangen',
+    'question_answered': 'Vraag beantwoord',
+  };
+
+  function showTemplateModal() {
+    templateModal?.classList.remove('hidden');
+  }
+
+  function hideTemplateModal() {
+    templateModal?.classList.add('hidden');
+    templateForm?.reset();
+  }
+
+  async function loadTemplate(type: string, name: string) {
+    try {
+      const response = await fetch(`/api/email-templates/${type}`);
+      if (response.ok) {
+        const template = await response.json();
+
+        if (templateTypeInput) templateTypeInput.value = type;
+        if (templateSubjectInput) templateSubjectInput.value = template.subject || '';
+        if (templateBodyHtmlInput) templateBodyHtmlInput.value = template.bodyHtml || '';
+        if (templateBodyTextInput) templateBodyTextInput.value = template.bodyText || '';
+        if (templateModalTitle) templateModalTitle.textContent = `${name} bewerken`;
+        if (templateModalDescription) {
+          templateModalDescription.textContent = template.isCustomized
+            ? 'Dit template is aangepast'
+            : 'Dit is het standaard template';
+        }
+
+        showTemplateModal();
+      } else {
+        alert('Kon template niet laden');
+      }
+    } catch {
+      alert('Kon template niet laden');
+    }
+  }
+
+  document.getElementById('close-template-modal')?.addEventListener('click', hideTemplateModal);
+  document.getElementById('cancel-template-btn')?.addEventListener('click', hideTemplateModal);
+  document.getElementById('template-modal-backdrop')?.addEventListener('click', hideTemplateModal);
+
+  // Edit template buttons
+  document.querySelectorAll('.edit-template-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const type = btn.getAttribute('data-template-id');
+      const name = btn.getAttribute('data-template-name');
+      if (type && name) loadTemplate(type, name);
+    });
+  });
+
+  // Template form submit
+  templateForm?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const type = templateTypeInput?.value;
+    if (!type) return;
+
+    try {
+      const response = await fetch(`/api/email-templates/${type}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          subject: templateSubjectInput?.value,
+          bodyHtml: templateBodyHtmlInput?.value,
+          bodyText: templateBodyTextInput?.value,
+        }),
+      });
+
+      if (response.ok) {
+        hideTemplateModal();
+        alert('Template opgeslagen!');
+      } else {
+        const error = await response.json();
+        alert(error.error || 'Er is iets misgegaan');
+      }
+    } catch {
+      alert('Er is iets misgegaan');
+    }
+  });
+
+  // Reset template to default
+  document.getElementById('reset-template-btn')?.addEventListener('click', async () => {
+    const type = templateTypeInput?.value;
+    if (!type) return;
+
+    if (!confirm('Weet je zeker dat je dit template wilt resetten naar de standaard?')) return;
+
+    try {
+      const response = await fetch(`/api/email-templates/${type}`, { method: 'DELETE' });
+
+      if (response.ok) {
+        // Reload the template
+        const name = templateNames[type] || type;
+        await loadTemplate(type, name);
+        alert('Template gereset naar standaard');
+      } else {
+        alert('Er is iets misgegaan');
+      }
+    } catch {
+      alert('Er is iets misgegaan');
+    }
+  });
+
+  // Click to copy variable
+  document.querySelectorAll('[data-var]').forEach(el => {
+    el.addEventListener('click', () => {
+      const varName = el.getAttribute('data-var');
+      if (varName) {
+        navigator.clipboard.writeText(`{{${varName}}}`);
+        el.classList.add('bg-green-100');
+        setTimeout(() => el.classList.remove('bg-green-100'), 500);
+      }
+    });
+  });
+
+  // =====================
+  // TEXT TEMPLATES
+  // =====================
+  const textTemplateModal = document.getElementById('text-template-modal');
+  const textTemplateModalTitle = document.getElementById('text-template-modal-title');
+  const textTemplateModalDescription = document.getElementById('text-template-modal-description');
+  const textTemplateForm = document.getElementById('text-template-form') as HTMLFormElement;
+  const textTemplateIdInput = document.getElementById('text-template-id') as HTMLInputElement;
+  const textTemplateTypeInput = document.getElementById('text-template-type') as HTMLInputElement;
+  const textTemplateNameInput = document.getElementById('text-template-name') as HTMLInputElement;
+  const textTemplateDescriptionInput = document.getElementById('text-template-description') as HTMLInputElement;
+  const textTemplateContentInput = document.getElementById('text-template-content') as HTMLTextAreaElement;
+  const textTemplateDefaultInput = document.getElementById('text-template-default') as HTMLInputElement;
+  const deleteTextTemplateBtn = document.getElementById('delete-text-template-btn');
+
+  interface TextTemplate {
+    id: string;
+    type: string;
+    name: string;
+    description: string | null;
+    content: string;
+    isDefault: boolean;
+  }
+
+  const typeNames: Record<string, string> = {
+    'intro': 'Introductie',
+    'footer': 'Afsluiting',
+    'terms': 'Voorwaarden',
+    'custom': 'Aangepast',
+  };
+
+  // Load text templates on page load
+  async function loadTextTemplates() {
+    try {
+      const response = await fetch('/api/text-templates');
+      if (!response.ok) return;
+
+      const templates: TextTemplate[] = await response.json();
+
+      // Group by type
+      const byType: Record<string, TextTemplate[]> = {};
+      templates.forEach(t => {
+        if (!byType[t.type]) byType[t.type] = [];
+        byType[t.type].push(t);
+      });
+
+      // Render each category
+      document.querySelectorAll('.template-list').forEach(list => {
+        const type = list.getAttribute('data-type');
+        if (!type) return;
+
+        const typeTemplates = byType[type] || [];
+
+        if (typeTemplates.length === 0) {
+          list.innerHTML = `
+            <div class="p-6 text-center text-muted-foreground text-sm">
+              <p>Geen templates voor dit type</p>
+            </div>
+          `;
+        } else {
+          list.innerHTML = typeTemplates.map(t => `
+            <div class="flex items-center justify-between px-6 py-4 hover:bg-muted/30">
+              <div class="flex-1">
+                <div class="flex items-center gap-2">
+                  <p class="font-medium">${t.name}</p>
+                  ${t.isDefault ? '<span class="text-xs bg-tesoro-100 text-tesoro-700 px-2 py-0.5 rounded-full">Standaard</span>' : ''}
+                </div>
+                ${t.description ? `<p class="text-sm text-muted-foreground">${t.description}</p>` : ''}
+              </div>
+              <button
+                class="edit-text-template-btn rounded-lg border px-3 py-1.5 text-sm hover:bg-muted"
+                data-template-id="${t.id}"
+              >
+                Bewerken
+              </button>
+            </div>
+          `).join('');
+
+          // Add click handlers
+          list.querySelectorAll('.edit-text-template-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+              const id = btn.getAttribute('data-template-id');
+              if (id) openTextTemplateForEdit(id);
+            });
+          });
+        }
+      });
+    } catch (error) {
+      console.error('Failed to load text templates:', error);
+    }
+  }
+
+  function showTextTemplateModal() {
+    textTemplateModal?.classList.remove('hidden');
+  }
+
+  function hideTextTemplateModal() {
+    textTemplateModal?.classList.add('hidden');
+    textTemplateForm?.reset();
+    if (textTemplateIdInput) textTemplateIdInput.value = '';
+    if (deleteTextTemplateBtn) deleteTextTemplateBtn.classList.add('hidden');
+  }
+
+  function openTextTemplateForNew(type: string, typeName: string) {
+    if (textTemplateIdInput) textTemplateIdInput.value = '';
+    if (textTemplateTypeInput) textTemplateTypeInput.value = type;
+    if (textTemplateNameInput) textTemplateNameInput.value = '';
+    if (textTemplateDescriptionInput) textTemplateDescriptionInput.value = '';
+    if (textTemplateContentInput) textTemplateContentInput.value = '';
+    if (textTemplateDefaultInput) textTemplateDefaultInput.checked = false;
+    if (textTemplateModalTitle) textTemplateModalTitle.textContent = `Nieuwe ${typeName} template`;
+    if (textTemplateModalDescription) textTemplateModalDescription.textContent = `Maak een nieuwe ${typeName.toLowerCase()} template`;
+    if (deleteTextTemplateBtn) deleteTextTemplateBtn.classList.add('hidden');
+    showTextTemplateModal();
+  }
+
+  async function openTextTemplateForEdit(id: string) {
+    try {
+      const response = await fetch(`/api/text-templates/${id}`);
+      if (!response.ok) {
+        alert('Kon template niet laden');
+        return;
+      }
+
+      const template: TextTemplate = await response.json();
+
+      if (textTemplateIdInput) textTemplateIdInput.value = template.id;
+      if (textTemplateTypeInput) textTemplateTypeInput.value = template.type;
+      if (textTemplateNameInput) textTemplateNameInput.value = template.name;
+      if (textTemplateDescriptionInput) textTemplateDescriptionInput.value = template.description || '';
+      if (textTemplateContentInput) textTemplateContentInput.value = template.content;
+      if (textTemplateDefaultInput) textTemplateDefaultInput.checked = template.isDefault;
+      if (textTemplateModalTitle) textTemplateModalTitle.textContent = `${template.name} bewerken`;
+      if (textTemplateModalDescription) textTemplateModalDescription.textContent = `${typeNames[template.type] || template.type} template`;
+      if (deleteTextTemplateBtn) deleteTextTemplateBtn.classList.remove('hidden');
+
+      showTextTemplateModal();
+    } catch {
+      alert('Kon template niet laden');
+    }
+  }
+
+  // Modal close handlers
+  document.getElementById('close-text-template-modal')?.addEventListener('click', hideTextTemplateModal);
+  document.getElementById('cancel-text-template-btn')?.addEventListener('click', hideTextTemplateModal);
+  document.getElementById('text-template-modal-backdrop')?.addEventListener('click', hideTextTemplateModal);
+
+  // Add template buttons
+  document.querySelectorAll('.add-category-template-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const type = btn.getAttribute('data-category');
+      const typeName = btn.getAttribute('data-category-name');
+      if (type && typeName) openTextTemplateForNew(type, typeName);
+    });
+  });
+
+  document.getElementById('add-text-template-btn')?.addEventListener('click', () => {
+    openTextTemplateForNew('custom', 'Aangepaste');
+  });
+
+  // Form submit
+  textTemplateForm?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+
+    const id = textTemplateIdInput?.value;
+    const isEdit = Boolean(id);
+
+    const data = {
+      type: textTemplateTypeInput?.value,
+      name: textTemplateNameInput?.value,
+      description: textTemplateDescriptionInput?.value || null,
+      content: textTemplateContentInput?.value,
+      isDefault: textTemplateDefaultInput?.checked,
+    };
+
+    try {
+      const url = isEdit ? `/api/text-templates/${id}` : '/api/text-templates';
+      const method = isEdit ? 'PUT' : 'POST';
+
+      const response = await fetch(url, {
+        method,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+      });
+
+      if (response.ok) {
+        hideTextTemplateModal();
+        loadTextTemplates();
+      } else {
+        const error = await response.json();
+        alert(error.error || 'Er is iets misgegaan');
+      }
+    } catch {
+      alert('Er is iets misgegaan');
+    }
+  });
+
+  // Delete template
+  deleteTextTemplateBtn?.addEventListener('click', async () => {
+    const id = textTemplateIdInput?.value;
+    if (!id) return;
+
+    if (!confirm('Weet je zeker dat je dit template wilt verwijderen?')) return;
+
+    try {
+      const response = await fetch(`/api/text-templates/${id}`, { method: 'DELETE' });
+
+      if (response.ok) {
+        hideTextTemplateModal();
+        loadTextTemplates();
+      } else {
+        alert('Kon template niet verwijderen');
+      }
+    } catch {
+      alert('Er is iets misgegaan');
+    }
+  });
+
+  // Load on page load
+  loadTextTemplates();
+
+  // =====================
   // API Key Management
+  // =====================
   async function loadApiKeyStatus() {
     try {
       const response = await fetch('/api/settings/api-keys');
@@ -412,6 +1314,6 @@ const teamMembers = [
     });
   });
 
-  // Load status on page load
+  // Load API key status on page load
   loadApiKeyStatus();
 </script>

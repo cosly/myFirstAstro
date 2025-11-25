@@ -7,9 +7,15 @@ const publicRoutes = [
   '/login',
   '/aanvraag',
   '/offerte/',
+  '/offertes/nieuw',
+  '/offertes',
+  '/test-simple',
+  '/test-db',
+  '/test-layout',
   '/api/auth/login',
   '/api/quote-requests',
   '/api/public/',
+  '/api/debug',
 ];
 
 // Check if path matches any public route

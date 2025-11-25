@@ -1,6 +1,53 @@
 ---
 import DashboardLayout from '../../layouts/DashboardLayout.astro';
-import { QuoteBuilder } from '../../components/quote-builder/QuoteBuilder';
+import { SimpleQuoteBuilder } from '../../components/SimpleQuoteBuilder';
+import { createDb } from '../../lib/db';
+import { customers as customersTable } from '../../lib/db/schema';
+import { desc } from 'drizzle-orm';
+
+// Get customer ID from query string if coming from customer page
+const customerId = Astro.url.searchParams.get('customer');
+const requestId = Astro.url.searchParams.get('request');
+
+// Initialize with empty data
+type Customer = { id: string; companyName: string; contactName: string; email: string };
+let customers: Customer[] = [];
+let requestData: { id: string; description: string; serviceType: string; companyName: string | null; contactName: string; contactEmail: string } | null = null;
+let dbError: string | null = null;
+
+try {
+  // Fetch all customers for dropdown
+  const db = createDb(Astro.locals.runtime.env.DB);
+  customers = await db
+    .select({
+      id: customersTable.id,
+      companyName: customersTable.companyName,
+      contactName: customersTable.contactName,
+      email: customersTable.email,
+    })
+    .from(customersTable)
+    .orderBy(desc(customersTable.createdAt));
+
+  // If requestId is provided, fetch the request data
+  if (requestId) {
+    const request = await db.query.quoteRequests.findFirst({
+      where: (requests, { eq }) => eq(requests.id, requestId),
+    });
+    if (request) {
+      requestData = {
+        id: request.id,
+        description: request.description,
+        serviceType: request.serviceType,
+        companyName: request.companyName,
+        contactName: request.contactName,
+        contactEmail: request.contactEmail,
+      };
+    }
+  }
+} catch (error) {
+  console.error('Failed to fetch data for quote builder:', error);
+  dbError = String(error);
+}
 ---
 
 <DashboardLayout title="Nieuwe Offerte">
@@ -11,9 +58,36 @@ import { QuoteBuilder } from '../../components/quote-builder/QuoteBuilder';
         <h1 class="text-2xl font-bold">Nieuwe Offerte</h1>
         <p class="text-muted-foreground">Maak een nieuwe offerte voor een klant</p>
       </div>
+      <a href="/offertes" class="text-sm text-muted-foreground hover:text-foreground">
+        ← Terug naar overzicht
+      </a>
     </div>
 
-    <!-- Quote Builder -->
-    <QuoteBuilder client:load />
+    {dbError && (
+      <div class="rounded-xl border border-red-200 bg-red-50 p-4">
+        <h3 class="font-medium text-red-900">Database Error</h3>
+        <p class="text-sm text-red-700 mt-1">{dbError}</p>
+        <p class="text-sm text-red-600 mt-2">
+          Controleer of de database correct is geconfigureerd en de tabellen bestaan.
+        </p>
+      </div>
+    )}
+
+    {requestData && (
+      <div class="rounded-xl border border-blue-200 bg-blue-50 p-4">
+        <h3 class="font-medium text-blue-900">Gebaseerd op aanvraag</h3>
+        <p class="text-sm text-blue-700 mt-1">
+          {requestData.companyName} - {requestData.serviceType}
+        </p>
+        <p class="text-sm text-blue-600 mt-1">{requestData.description}</p>
+      </div>
+    )}
+
+    <!-- Quote Builder with customer data -->
+    <SimpleQuoteBuilder
+      client:load
+      customers={customers}
+      initialCustomerId={customerId}
+    />
   </div>
 </DashboardLayout>

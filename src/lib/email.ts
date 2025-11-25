@@ -1,6 +1,7 @@
-import { createDb, emailTemplates, type Quote, type Customer } from './db';
+import { createDb, emailTemplates, appSettings, type Quote, type Customer } from './db';
 import { formatCurrency, formatDate } from './utils';
 import { eq } from 'drizzle-orm';
+import type { Database } from './db';
 
 export interface EmailData {
   to: string;
@@ -41,6 +42,53 @@ function replaceVariables(template: string, variables: TemplateVariables): strin
   return template.replace(/\{\{(\w+)\}\}/g, (_, key) => {
     return variables[key] || `{{${key}}}`;
   });
+}
+
+// Get company settings from database
+async function getCompanySettings(db: Database): Promise<Record<string, string>> {
+  const settings: Record<string, string> = {};
+
+  try {
+    const rows = await db.select().from(appSettings);
+    rows.forEach(row => {
+      try {
+        const value = typeof row.value === 'string' ? JSON.parse(row.value) : row.value;
+        settings[row.key] = String(value);
+      } catch {
+        settings[row.key] = String(row.value);
+      }
+    });
+  } catch (error) {
+    console.error('Failed to fetch company settings:', error);
+  }
+
+  return settings;
+}
+
+// Get email template from database or use default
+async function getEmailTemplate(
+  db: Database,
+  type: string
+): Promise<{ subject: string; bodyHtml: string; bodyText: string } | null> {
+  try {
+    const template = await db.query.emailTemplates.findFirst({
+      where: eq(emailTemplates.type, type as typeof emailTemplates.type.enumValues[number]),
+    });
+
+    if (template) {
+      return {
+        subject: template.subject,
+        bodyHtml: template.bodyHtml,
+        bodyText: template.bodyText,
+      };
+    }
+  } catch (error) {
+    console.error('Failed to fetch email template:', error);
+  }
+
+  // Fall back to default template
+  const defaultTemplate = defaultTemplates[type as keyof typeof defaultTemplates];
+  return defaultTemplate || null;
 }
 
 // Default email templates
@@ -170,6 +218,59 @@ De klant ontvangt een bevestigingsmail.
     `,
   },
 
+  quote_declined: {
+    subject: 'Offerte {{quote_number}} afgewezen',
+    bodyHtml: `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #333; }
+    .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+    .header { text-align: center; padding: 20px 0; border-bottom: 2px solid #ef4444; }
+    .logo { font-size: 24px; font-weight: bold; color: #f97316; }
+    .declined { color: #ef4444; font-size: 48px; }
+    .content { padding: 30px 0; }
+    .footer { border-top: 1px solid #eee; padding-top: 20px; font-size: 14px; color: #666; }
+    .quote-box { background: #fef2f2; border: 1px solid #fecaca; border-radius: 8px; padding: 20px; margin: 20px 0; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <div class="declined">✕</div>
+      <h1>Offerte Afgewezen</h1>
+    </div>
+    <div class="content">
+      <p>De offerte <strong>{{quote_number}}</strong> is afgewezen door {{customer_company}}.</p>
+
+      <div class="quote-box">
+        <p><strong>Offerte:</strong> {{quote_number}}</p>
+        <p><strong>Klant:</strong> {{customer_company}}</p>
+        <p><strong>Totaal:</strong> {{quote_total}}</p>
+      </div>
+
+      <p>De klant heeft de offerte afgewezen. Neem eventueel contact op om de redenen te bespreken.</p>
+    </div>
+    <div class="footer">
+      <p>Dit is een automatisch bericht van Tesoro CRM.</p>
+    </div>
+  </div>
+</body>
+</html>
+    `,
+    bodyText: `
+De offerte {{quote_number}} is afgewezen door {{customer_company}}.
+
+Offerte: {{quote_number}}
+Klant: {{customer_company}}
+Totaal: {{quote_total}}
+
+Dit is een automatisch bericht van Tesoro CRM.
+    `,
+  },
+
   quote_reminder: {
     subject: 'Herinnering: Uw offerte {{quote_number}} verloopt binnenkort',
     bodyHtml: `
@@ -264,17 +365,31 @@ export async function sendEmail(
   }
 }
 
-// Send quote email
+// Send quote email with database templates and company settings
 export async function sendQuoteEmail(
   type: 'quote_sent' | 'quote_accepted' | 'quote_reminder' | 'quote_declined',
   quote: Quote,
   customer: Customer,
   apiKey: string,
-  appUrl: string
+  appUrl: string,
+  db?: Database
 ): Promise<{ success: boolean; error?: string }> {
-  const template = defaultTemplates[type as keyof typeof defaultTemplates];
+  // Get template from database or use default
+  let template;
+  if (db) {
+    template = await getEmailTemplate(db, type);
+  } else {
+    template = defaultTemplates[type as keyof typeof defaultTemplates];
+  }
+
   if (!template) {
     return { success: false, error: 'Template not found' };
+  }
+
+  // Get company settings from database
+  let companySettings: Record<string, string> = {};
+  if (db) {
+    companySettings = await getCompanySettings(db);
   }
 
   const variables: TemplateVariables = {
@@ -286,9 +401,9 @@ export async function sendQuoteEmail(
     customer_name: customer.contactName,
     customer_company: customer.companyName,
     customer_email: customer.email,
-    company_name: 'Tesoro CRM',
-    company_email: 'info@tesorocrm.nl',
-    company_phone: '020-1234567',
+    company_name: companySettings.company_name || 'Tesoro CRM',
+    company_email: companySettings.company_email || 'info@tesorocrm.nl',
+    company_phone: companySettings.company_phone || '',
     signed_by: quote.signedByName || '',
     signed_at: quote.signedAt ? formatDate(quote.signedAt) : '',
   };
