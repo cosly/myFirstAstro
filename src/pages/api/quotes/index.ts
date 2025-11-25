@@ -1,6 +1,7 @@
 import type { APIRoute } from 'astro';
-import { createDb, quotes, quoteBlocks, quoteLines, quoteVersions } from '@/lib/db';
+import { createDb, quotes, quoteBlocks, quoteLines, quoteVersions, customers } from '@/lib/db';
 import { generateId, generateQuoteNumber, generatePublicToken } from '@/lib/utils';
+import { sendQuoteEmail } from '@/lib/email';
 import { eq } from 'drizzle-orm';
 
 export const GET: APIRoute = async ({ locals }) => {
@@ -125,6 +126,41 @@ export const POST: APIRoute = async ({ request, locals }) => {
       changedBy: `team:${user.id}`,
       changeType: 'created',
     });
+
+    // Send email if quote is being sent
+    if (status === 'sent') {
+      const resendApiKey = locals.runtime.env.RESEND_API_KEY;
+      const appUrl = locals.runtime.env.APP_URL || 'https://quote.tesorohq.io';
+
+      if (resendApiKey) {
+        // Get customer for email
+        const customer = await db.query.customers.findFirst({
+          where: eq(customers.id, body.customerId),
+        });
+
+        if (customer) {
+          // Get the created quote
+          const createdQuote = await db.query.quotes.findFirst({
+            where: eq(quotes.id, quoteId),
+          });
+
+          if (createdQuote) {
+            try {
+              await sendQuoteEmail(
+                'quote_sent',
+                createdQuote,
+                customer,
+                resendApiKey,
+                appUrl
+              );
+            } catch (emailError) {
+              console.error('Failed to send quote email:', emailError);
+              // Don't fail the request if email fails
+            }
+          }
+        }
+      }
+    }
 
     return new Response(
       JSON.stringify({

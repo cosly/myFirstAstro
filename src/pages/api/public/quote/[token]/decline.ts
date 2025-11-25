@@ -1,6 +1,7 @@
 import type { APIRoute } from 'astro';
 import { createDb, quotes, quoteVersions, auditLog } from '@/lib/db';
 import { generateId } from '@/lib/utils';
+import { sendQuoteEmail } from '@/lib/email';
 import { eq } from 'drizzle-orm';
 
 export const POST: APIRoute = async ({ params, request, locals }) => {
@@ -77,7 +78,24 @@ export const POST: APIRoute = async ({ params, request, locals }) => {
       userAgent: request.headers.get('User-Agent'),
     });
 
-    // TODO: Send notification email to team
+    // Send notification email to team
+    const resendApiKey = locals.runtime.env.RESEND_API_KEY;
+    const appUrl = locals.runtime.env.APP_URL || 'https://quote.tesorohq.io';
+
+    if (resendApiKey && quote.customer) {
+      try {
+        await sendQuoteEmail(
+          'quote_declined',
+          quote,
+          quote.customer,
+          resendApiKey,
+          appUrl
+        );
+      } catch (emailError) {
+        console.error('Failed to send decline notification:', emailError);
+        // Don't fail the request if email fails
+      }
+    }
 
     return new Response(
       JSON.stringify({

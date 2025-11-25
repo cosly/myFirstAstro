@@ -1,6 +1,7 @@
 import type { APIRoute } from 'astro';
 import { createDb, quotes, quoteVersions, auditLog } from '@/lib/db';
 import { generateId } from '@/lib/utils';
+import { sendQuoteEmail } from '@/lib/email';
 import { eq } from 'drizzle-orm';
 
 export const POST: APIRoute = async ({ params, request, locals }) => {
@@ -101,7 +102,35 @@ export const POST: APIRoute = async ({ params, request, locals }) => {
       userAgent: request.headers.get('User-Agent'),
     });
 
-    // TODO: Send confirmation emails
+    // Send confirmation email to team
+    const resendApiKey = locals.runtime.env.RESEND_API_KEY;
+    const appUrl = locals.runtime.env.APP_URL || 'https://quote.tesorohq.io';
+
+    if (resendApiKey && quote.customer) {
+      // Get the updated quote with signed info
+      const updatedQuote = await db.query.quotes.findFirst({
+        where: eq(quotes.id, quote.id),
+        with: { customer: true },
+      });
+
+      if (updatedQuote && updatedQuote.customer) {
+        try {
+          // Note: This sends the "quote_accepted" email which goes to the team
+          // The customer confirmation could be a separate template
+          await sendQuoteEmail(
+            'quote_accepted',
+            updatedQuote,
+            updatedQuote.customer,
+            resendApiKey,
+            appUrl
+          );
+        } catch (emailError) {
+          console.error('Failed to send acceptance email:', emailError);
+          // Don't fail the request if email fails
+        }
+      }
+    }
+
     // TODO: Generate PDF with signature
     // TODO: Add to queue for follow-up tasks
 
