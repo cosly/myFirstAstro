@@ -1,0 +1,306 @@
+---
+import DashboardLayout from '../../../layouts/DashboardLayout.astro';
+import { createDb, customers } from '../../../lib/db';
+import { eq } from 'drizzle-orm';
+
+const { id } = Astro.params;
+
+if (!id) {
+  return Astro.redirect('/klanten');
+}
+
+type Customer = {
+  id: string;
+  companyName: string;
+  contactName: string;
+  email: string;
+  phone: string | null;
+  address: string | null;
+  city: string | null;
+  postalCode: string | null;
+  country: string | null;
+  btwNumber: string | null;
+  kvkNumber: string | null;
+  isTesororClient: boolean | null;
+  notes: string | null;
+  locale: string | null;
+};
+
+let customer: Customer | null = null;
+
+try {
+  const db = createDb(Astro.locals.runtime.env.DB);
+
+  const result = await db
+    .select()
+    .from(customers)
+    .where(eq(customers.id, id))
+    .limit(1);
+
+  if (result.length > 0) {
+    customer = result[0];
+  }
+} catch (error) {
+  console.error('Failed to fetch customer:', error);
+}
+
+if (!customer) {
+  return Astro.redirect('/klanten');
+}
+---
+
+<DashboardLayout title={`${customer.companyName} bewerken`}>
+  <div class="max-w-2xl space-y-6">
+    <!-- Header -->
+    <div class="flex items-center gap-4">
+      <a href={`/klanten/${customer.id}`} class="rounded-lg p-2 hover:bg-muted">
+        <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+        </svg>
+      </a>
+      <div>
+        <h1 class="text-2xl font-bold">Klant bewerken</h1>
+        <p class="text-muted-foreground">{customer.companyName}</p>
+      </div>
+    </div>
+
+    <!-- Form -->
+    <form id="customer-form" class="space-y-6">
+      <input type="hidden" name="id" value={customer.id} />
+
+      <!-- Bedrijfsinformatie -->
+      <div class="rounded-xl border bg-card p-6">
+        <h2 class="font-semibold mb-4">Bedrijfsinformatie</h2>
+        <div class="space-y-4">
+          <div class="grid gap-4 sm:grid-cols-2">
+            <div class="space-y-2">
+              <label class="text-sm font-medium">Bedrijfsnaam *</label>
+              <input
+                type="text"
+                name="companyName"
+                required
+                value={customer.companyName}
+                class="flex h-10 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              />
+            </div>
+            <div class="space-y-2">
+              <label class="text-sm font-medium">Contactpersoon *</label>
+              <input
+                type="text"
+                name="contactName"
+                required
+                value={customer.contactName}
+                class="flex h-10 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              />
+            </div>
+          </div>
+
+          <div class="grid gap-4 sm:grid-cols-2">
+            <div class="space-y-2">
+              <label class="text-sm font-medium">KVK nummer</label>
+              <input
+                type="text"
+                name="kvkNumber"
+                value={customer.kvkNumber || ''}
+                class="flex h-10 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              />
+            </div>
+            <div class="space-y-2">
+              <label class="text-sm font-medium">BTW nummer</label>
+              <input
+                type="text"
+                name="btwNumber"
+                value={customer.btwNumber || ''}
+                class="flex h-10 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              />
+            </div>
+          </div>
+
+          <label class="flex items-center gap-3 cursor-pointer">
+            <input
+              type="checkbox"
+              name="isTesororClient"
+              checked={customer.isTesororClient || false}
+              class="h-4 w-4 rounded border-gray-300 text-tesoro-500 focus:ring-tesoro-500"
+            />
+            <span class="text-sm font-medium">Dit is een Tesoro CRM klant</span>
+          </label>
+        </div>
+      </div>
+
+      <!-- Contactgegevens -->
+      <div class="rounded-xl border bg-card p-6">
+        <h2 class="font-semibold mb-4">Contactgegevens</h2>
+        <div class="space-y-4">
+          <div class="grid gap-4 sm:grid-cols-2">
+            <div class="space-y-2">
+              <label class="text-sm font-medium">Email *</label>
+              <input
+                type="email"
+                name="email"
+                required
+                value={customer.email}
+                class="flex h-10 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              />
+            </div>
+            <div class="space-y-2">
+              <label class="text-sm font-medium">Telefoon</label>
+              <input
+                type="tel"
+                name="phone"
+                value={customer.phone || ''}
+                class="flex h-10 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              />
+            </div>
+          </div>
+
+          <div class="space-y-2">
+            <label class="text-sm font-medium">Adres</label>
+            <input
+              type="text"
+              name="address"
+              value={customer.address || ''}
+              class="flex h-10 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            />
+          </div>
+
+          <div class="grid gap-4 sm:grid-cols-3">
+            <div class="space-y-2">
+              <label class="text-sm font-medium">Postcode</label>
+              <input
+                type="text"
+                name="postalCode"
+                value={customer.postalCode || ''}
+                class="flex h-10 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              />
+            </div>
+            <div class="space-y-2 sm:col-span-2">
+              <label class="text-sm font-medium">Plaats</label>
+              <input
+                type="text"
+                name="city"
+                value={customer.city || ''}
+                class="flex h-10 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Voorkeuren -->
+      <div class="rounded-xl border bg-card p-6">
+        <h2 class="font-semibold mb-4">Voorkeuren</h2>
+        <div class="space-y-4">
+          <div class="space-y-2 max-w-xs">
+            <label class="text-sm font-medium">Taal voor emails</label>
+            <select
+              name="locale"
+              class="flex h-10 w-full rounded-lg border border-input bg-background px-3 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            >
+              <option value="nl" selected={customer.locale === 'nl' || !customer.locale}>Nederlands</option>
+              <option value="en" selected={customer.locale === 'en'}>English</option>
+              <option value="es" selected={customer.locale === 'es'}>Español</option>
+            </select>
+            <p class="text-xs text-muted-foreground">Deze taal wordt gebruikt voor automatische emails naar de klant.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Notities -->
+      <div class="rounded-xl border bg-card p-6">
+        <h2 class="font-semibold mb-4">Notities</h2>
+        <div class="space-y-2">
+          <textarea
+            name="notes"
+            rows="4"
+            placeholder="Interne notities over deze klant..."
+            class="flex w-full rounded-lg border border-input bg-background px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          >{customer.notes || ''}</textarea>
+        </div>
+      </div>
+
+      <!-- Actions -->
+      <div class="flex items-center justify-between pt-4">
+        <button
+          type="button"
+          id="delete-btn"
+          class="inline-flex items-center gap-2 rounded-lg border border-red-200 px-4 py-2 text-sm font-medium text-red-600 transition-colors hover:bg-red-50"
+        >
+          <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+          </svg>
+          Verwijderen
+        </button>
+        <div class="flex gap-3">
+          <a
+            href={`/klanten/${customer.id}`}
+            class="rounded-lg border px-4 py-2 text-sm font-medium hover:bg-muted"
+          >
+            Annuleren
+          </a>
+          <button
+            type="submit"
+            class="rounded-lg bg-tesoro-500 px-4 py-2 text-sm font-medium text-white hover:bg-tesoro-600"
+          >
+            Wijzigingen opslaan
+          </button>
+        </div>
+      </div>
+    </form>
+  </div>
+</DashboardLayout>
+
+<script define:vars={{ customerId: customer.id }}>
+  const form = document.getElementById('customer-form');
+  const deleteBtn = document.getElementById('delete-btn');
+
+  form?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const formData = new FormData(form);
+    const data = {};
+
+    formData.forEach((value, key) => {
+      if (key !== 'id') {
+        data[key] = value;
+      }
+    });
+
+    data.isTesororClient = formData.has('isTesororClient') && formData.get('isTesororClient') === 'on';
+
+    try {
+      const response = await fetch(`/api/customers/${customerId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+      });
+
+      if (response.ok) {
+        window.location.href = `/klanten/${customerId}`;
+      } else {
+        alert('Er is iets misgegaan bij het opslaan');
+      }
+    } catch {
+      alert('Er is iets misgegaan bij het opslaan');
+    }
+  });
+
+  deleteBtn?.addEventListener('click', async () => {
+    if (!confirm('Weet je zeker dat je deze klant wilt verwijderen? Dit kan niet ongedaan worden gemaakt.')) {
+      return;
+    }
+
+    try {
+      const response = await fetch(`/api/customers/${customerId}`, {
+        method: 'DELETE',
+      });
+
+      if (response.ok) {
+        window.location.href = '/klanten';
+      } else {
+        alert('Er is iets misgegaan bij het verwijderen');
+      }
+    } catch {
+      alert('Er is iets misgegaan bij het verwijderen');
+    }
+  });
+</script>
