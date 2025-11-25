@@ -242,6 +242,21 @@
     },
     "success": {
       "questionSent": "Uw vraag is verzonden! We nemen zo snel mogelijk contact met u op."
+    },
+    "acceptedQuote": {
+      "actions": "Acties",
+      "downloadPdf": "Download PDF",
+      "askQuestion": "Stel een vraag",
+      "questionPlaceholder": "Typ hier uw vraag over de offerte of het project...",
+      "sendQuestion": "Verstuur vraag",
+      "summary": "Offerte Overzicht",
+      "signatureDetails": "Ondertekeningsgegevens",
+      "signedBy": "Ondertekend door",
+      "function": "Functie",
+      "signedOn": "Ondertekend op",
+      "quoteNumber": "Offertenummer",
+      "contactUs": "Contact",
+      "contactDescription": "Heeft u vragen over uw offerte of het project? Neem gerust contact met ons op."
     }
   },
   "errors": {

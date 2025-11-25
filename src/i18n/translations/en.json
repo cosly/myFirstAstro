@@ -242,6 +242,21 @@
     },
     "success": {
       "questionSent": "Your question has been sent! We will contact you as soon as possible."
+    },
+    "acceptedQuote": {
+      "actions": "Actions",
+      "downloadPdf": "Download PDF",
+      "askQuestion": "Ask a question",
+      "questionPlaceholder": "Type your question about the quote or project here...",
+      "sendQuestion": "Send question",
+      "summary": "Quote Summary",
+      "signatureDetails": "Signature Details",
+      "signedBy": "Signed by",
+      "function": "Function",
+      "signedOn": "Signed on",
+      "quoteNumber": "Quote number",
+      "contactUs": "Contact",
+      "contactDescription": "Do you have questions about your quote or project? Feel free to contact us."
     }
   },
   "errors": {

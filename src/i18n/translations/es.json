@@ -242,6 +242,21 @@
     },
     "success": {
       "questionSent": "¡Tu pregunta ha sido enviada! Te contactaremos lo antes posible."
+    },
+    "acceptedQuote": {
+      "actions": "Acciones",
+      "downloadPdf": "Descargar PDF",
+      "askQuestion": "Hacer una pregunta",
+      "questionPlaceholder": "Escribe tu pregunta sobre el presupuesto o proyecto aquí...",
+      "sendQuestion": "Enviar pregunta",
+      "summary": "Resumen del Presupuesto",
+      "signatureDetails": "Detalles de la Firma",
+      "signedBy": "Firmado por",
+      "function": "Cargo",
+      "signedOn": "Firmado el",
+      "quoteNumber": "Número de presupuesto",
+      "contactUs": "Contacto",
+      "contactDescription": "¿Tienes preguntas sobre tu presupuesto o proyecto? No dudes en contactarnos."
     }
   },
   "errors": {
