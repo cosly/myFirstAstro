@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
@@ -46,7 +46,6 @@ export function QuoteViewer({
   const [errorMessage, setErrorMessage] = useState('');
 
   // Chat sidebar state
-  const [showChat, setShowChat] = useState(false);
   const [comments, setComments] = useState<Comment[]>([]);
   const [newMessage, setNewMessage] = useState('');
   const [isLoadingComments, setIsLoadingComments] = useState(false);

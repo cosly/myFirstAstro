@@ -1,4 +1,3 @@
-import React from 'react';
 import type { Quote } from './types';
 import { formatCurrency, calculateLineTotal } from '@/lib/utils';
 
