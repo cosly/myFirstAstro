@@ -390,6 +390,11 @@ export const quoteRequestsRelations = relations(quoteRequests, ({ one }) => ({
   }),
 }));
 
+export const teamMembersRelations = relations(teamMembers, ({ many }) => ({
+  quotes: many(quotes),
+  assignedRequests: many(quoteRequests),
+}));
+
 // ============================================
 // TYPE EXPORTS
 // ============================================
