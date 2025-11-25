@@ -847,7 +847,7 @@ export async function sendEmail(
         Authorization: `Bearer ${apiKey}`,
       },
       body: JSON.stringify({
-        from: 'Tesoro CRM <noreply@quote.tesorhq.io>',
+        from: 'Tesoro CRM <noreply@quote.tesorohq.io>',
         to: emailData.to,
         subject: emailData.subject,
         html: emailData.html,
@@ -920,7 +920,7 @@ export async function sendQuoteEmail(
     customer_company: customer.companyName,
     customer_email: customer.email,
     company_name: companySettings.company_name || 'Tesoro CRM',
-    company_email: companySettings.company_email || 'info@quote.tesorhq.io',
+    company_email: companySettings.company_email || 'info@quote.tesorohq.io',
     company_phone: companySettings.company_phone || '',
     signed_by: quote.signedByName || '',
     signed_at: quote.signedAt ? formatDateLocale(quote.signedAt, customerLocale, 'long') : '',
