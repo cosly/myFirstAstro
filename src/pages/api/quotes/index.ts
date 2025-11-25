@@ -33,24 +33,44 @@ export const POST: APIRoute = async ({ request, locals }) => {
     const db = createDb(locals.runtime.env.DB);
     const body = await request.json();
 
+    // Get user from auth context
+    const user = locals.user;
+    if (!user) {
+      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+        status: 401,
+        headers: { 'Content-Type': 'application/json' },
+      });
+    }
+
+    // Validate required fields
+    if (!body.customerId) {
+      return new Response(JSON.stringify({ error: 'Customer ID is required' }), {
+        status: 400,
+        headers: { 'Content-Type': 'application/json' },
+      });
+    }
+
     const quoteId = generateId();
     const quoteNumber = generateQuoteNumber();
     const publicToken = generatePublicToken();
+    const status = body.status === 'sent' ? 'sent' : 'draft';
+    const sentAt = status === 'sent' ? new Date() : null;
 
     // Create quote
     await db.insert(quotes).values({
       id: quoteId,
       quoteNumber,
       customerId: body.customerId,
-      requestId: body.requestId,
-      createdBy: body.createdBy || 'system', // TODO: get from auth
-      title: body.title,
-      introText: body.introText,
-      footerText: body.footerText,
+      requestId: body.requestId || null,
+      createdBy: user.id,
+      title: body.title || 'Offerte',
+      introText: body.introText || null,
+      footerText: body.footerText || null,
       subtotal: body.subtotal || 0,
       btwAmount: body.btwAmount || 0,
       total: body.total || 0,
-      status: 'draft',
+      status,
+      sentAt,
       publicToken,
       validUntil: body.validUntil ? new Date(body.validUntil) : null,
     });
@@ -101,8 +121,8 @@ export const POST: APIRoute = async ({ request, locals }) => {
       quoteId,
       versionNumber: 1,
       snapshot: JSON.stringify(body),
-      changeSummary: 'Offerte aangemaakt',
-      changedBy: body.createdBy || 'system',
+      changeSummary: status === 'sent' ? 'Offerte aangemaakt en verstuurd' : 'Offerte aangemaakt',
+      changedBy: `team:${user.id}`,
       changeType: 'created',
     });
 

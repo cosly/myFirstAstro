@@ -1,175 +1,180 @@
 ---
 import Layout from '../../layouts/Layout.astro';
 import { QuoteViewer } from '../../components/customer-view/QuoteViewer';
+import { createDb } from '../../lib/db';
+import { quotes, auditLog } from '../../lib/db/schema';
+import { eq } from 'drizzle-orm';
+import { generateId } from '../../lib/utils';
 
 const { token } = Astro.params;
 
-// In production, fetch quote from database using token
-// For now, use placeholder data
-const quote = {
-  id: 'demo',
-  quoteNumber: '2024-042',
-  title: 'Website Ontwikkeling & CRM Inrichting',
-  introText: `Beste heer/mevrouw,
+if (!token) {
+  return Astro.redirect('/');
+}
 
-Hartelijk dank voor uw interesse in onze diensten. Hieronder treft u onze offerte aan voor de besproken werkzaamheden.
+const db = createDb(Astro.locals.runtime.env.DB);
 
-We kijken ernaar uit om met u samen te werken!`,
-  footerText: `Deze offerte is 30 dagen geldig. Prijzen zijn exclusief BTW tenzij anders vermeld.
+// Fetch quote with customer and blocks
+const quote = await db.query.quotes.findFirst({
+  where: eq(quotes.publicToken, token),
+  with: {
+    customer: true,
+    blocks: {
+      with: {
+        lines: true,
+      },
+      orderBy: (blocks, { asc }) => [asc(blocks.position)],
+    },
+  },
+});
 
-Bij vragen kunt u altijd contact met ons opnemen via info@tesorocrm.nl of 020-1234567.`,
-  blocks: [
-    {
-      id: 'block-1',
-      blockType: 'pricing_table' as const,
-      title: 'Website Ontwikkeling',
-      isOptional: false,
-      isSelectedByCustomer: true,
-      position: 0,
-      lines: [
-        {
-          id: 'line-1',
-          description: 'Design homepage op maat',
-          quantity: 1,
-          unit: 'stuk',
-          unitPrice: 850,
-          btwRate: 21,
-          isOptional: false,
-          isSelectedByCustomer: true,
-          position: 0,
-        },
-        {
-          id: 'line-2',
-          description: 'Ontwikkeling responsive website',
-          quantity: 20,
-          unit: 'uur',
-          unitPrice: 95,
-          btwRate: 21,
-          isOptional: false,
-          isSelectedByCustomer: true,
-          position: 1,
-        },
-        {
-          id: 'line-3',
-          description: 'Extra subpagina\'s (5 stuks)',
-          quantity: 5,
-          unit: 'stuk',
-          unitPrice: 150,
-          btwRate: 21,
-          isOptional: true,
-          isSelectedByCustomer: false,
-          position: 2,
-        },
-      ],
-    },
-    {
-      id: 'block-2',
-      blockType: 'pricing_table' as const,
-      title: 'Tesoro CRM Inrichting',
-      isOptional: false,
-      isSelectedByCustomer: true,
-      position: 1,
-      lines: [
-        {
-          id: 'line-4',
-          description: 'Basis configuratie CRM',
-          quantity: 8,
-          unit: 'uur',
-          unitPrice: 95,
-          btwRate: 21,
-          isOptional: false,
-          isSelectedByCustomer: true,
-          position: 0,
-        },
-        {
-          id: 'line-5',
-          description: 'Data migratie',
-          quantity: 4,
-          unit: 'uur',
-          unitPrice: 95,
-          btwRate: 21,
-          isOptional: true,
-          isSelectedByCustomer: true,
-          position: 1,
-        },
-        {
-          id: 'line-6',
-          description: 'Training team (2 personen)',
-          quantity: 2,
-          unit: 'uur',
-          unitPrice: 125,
-          btwRate: 21,
-          isOptional: true,
-          isSelectedByCustomer: false,
-          position: 2,
-        },
-      ],
-    },
-    {
-      id: 'block-3',
-      blockType: 'pricing_table' as const,
-      title: 'Onderhoud & Support',
-      isOptional: true,
-      isSelectedByCustomer: false,
-      position: 2,
-      lines: [
-        {
-          id: 'line-7',
-          description: 'Maandelijks onderhoudspakket',
-          quantity: 12,
-          unit: 'maand',
-          unitPrice: 75,
-          btwRate: 21,
-          isOptional: false,
-          isSelectedByCustomer: true,
-          position: 0,
-        },
-        {
-          id: 'line-8',
-          description: 'Priority support',
-          quantity: 12,
-          unit: 'maand',
-          unitPrice: 50,
-          btwRate: 21,
-          isOptional: true,
-          isSelectedByCustomer: false,
-          position: 1,
-        },
-      ],
-    },
-  ],
-  status: 'sent' as const,
-  validUntil: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
-  subtotal: 0,
-  btwAmount: 0,
-  total: 0,
+if (!quote) {
+  return new Response(null, {
+    status: 404,
+    statusText: 'Not Found',
+  });
+}
+
+// Mark as viewed if first time
+if (quote.status === 'sent' && !quote.viewedAt) {
+  await db
+    .update(quotes)
+    .set({
+      status: 'viewed',
+      viewedAt: new Date(),
+      updatedAt: new Date(),
+    })
+    .where(eq(quotes.id, quote.id));
+
+  // Log the view
+  await db.insert(auditLog).values({
+    id: generateId(),
+    entityType: 'quote',
+    entityId: quote.id,
+    action: 'viewed',
+    userType: 'customer',
+    userEmail: quote.customer?.email || undefined,
+    ipAddress: Astro.request.headers.get('CF-Connecting-IP') || Astro.request.headers.get('X-Forwarded-For') || undefined,
+    userAgent: Astro.request.headers.get('User-Agent') || undefined,
+  });
+}
+
+// Transform data for component - sort lines by position
+const quoteData = {
+  id: quote.id,
+  quoteNumber: quote.quoteNumber,
+  title: quote.title,
+  introText: quote.introText || '',
+  footerText: quote.footerText || '',
+  status: quote.status,
+  validUntil: quote.validUntil ? new Date(quote.validUntil) : undefined,
+  subtotal: Number(quote.subtotal) || 0,
+  btwAmount: Number(quote.btwAmount) || 0,
+  total: Number(quote.total) || 0,
+  blocks: quote.blocks.map(block => ({
+    id: block.id,
+    blockType: block.blockType as 'text' | 'pricing_table' | 'pricing_plans' | 'image' | 'signature',
+    title: block.title || '',
+    description: block.description || '',
+    isOptional: block.isOptional || false,
+    isSelectedByCustomer: block.isSelectedByCustomer ?? true,
+    position: block.position,
+    lines: (block.lines || [])
+      .sort((a, b) => a.position - b.position)
+      .map(line => ({
+        id: line.id,
+        description: line.description,
+        quantity: Number(line.quantity),
+        unit: line.unit,
+        unitPrice: Number(line.unitPrice),
+        btwRate: Number(line.btwRate),
+        isOptional: line.isOptional || false,
+        isSelectedByCustomer: line.isSelectedByCustomer ?? true,
+        position: line.position,
+      })),
+  })),
 };
 
-const customer = {
-  companyName: 'Bakkerij De Korenschoof',
-  contactName: 'Jan Bakker',
-  email: 'jan@bakkerij-korenschoof.nl',
+const customerData = quote.customer ? {
+  companyName: quote.customer.companyName,
+  contactName: quote.customer.contactName,
+  email: quote.customer.email,
+} : {
+  companyName: 'Onbekend',
+  contactName: 'Onbekend',
+  email: '',
 };
+
+// Check quote status
+const isExpired = quote.validUntil && new Date(quote.validUntil) < new Date();
+const isAccepted = quote.status === 'accepted';
+const isDeclined = quote.status === 'declined';
 ---
 
 <Layout title={`Offerte ${quote.quoteNumber}`} description="Bekijk en accepteer uw offerte van Tesoro CRM">
-  <div class="min-h-screen bg-gradient-to-b from-tesoro-50 to-white py-8 px-4">
-    <QuoteViewer
-      client:load
-      quote={quote}
-      customer={customer}
-      onUpdateSelection={(blockId, lineId, selected) => {
-        console.log('Update selection:', blockId, lineId, selected);
-      }}
-      onAccept={(signatureData) => {
-        console.log('Accept:', signatureData);
-      }}
-      onDecline={(reason) => {
-        console.log('Decline:', reason);
-      }}
-      onAskQuestion={(message) => {
-        console.log('Question:', message);
-      }}
-    />
-  </div>
+  {isAccepted ? (
+    <div class="min-h-screen bg-gradient-to-b from-green-50 to-white py-8 px-4">
+      <div class="mx-auto max-w-4xl">
+        <div class="rounded-xl border border-green-200 bg-white p-8 text-center shadow-sm">
+          <div class="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-green-100">
+            <svg class="h-8 w-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+            </svg>
+          </div>
+          <h1 class="text-2xl font-bold text-green-900">Offerte Geaccepteerd</h1>
+          <p class="mt-2 text-green-700">
+            Deze offerte is geaccepteerd op {quote.signedAt ? new Date(quote.signedAt).toLocaleDateString('nl-NL', { day: 'numeric', month: 'long', year: 'numeric' }) : 'onbekende datum'}
+            door {quote.signedByName || 'onbekend'}{quote.signedByFunction ? ` (${quote.signedByFunction})` : ''}.
+          </p>
+          <p class="mt-4 text-sm text-gray-600">
+            U ontvangt binnenkort een bevestigingsmail met de volgende stappen.
+          </p>
+        </div>
+      </div>
+    </div>
+  ) : isDeclined ? (
+    <div class="min-h-screen bg-gradient-to-b from-red-50 to-white py-8 px-4">
+      <div class="mx-auto max-w-4xl">
+        <div class="rounded-xl border border-red-200 bg-white p-8 text-center shadow-sm">
+          <div class="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-red-100">
+            <svg class="h-8 w-8 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </div>
+          <h1 class="text-2xl font-bold text-red-900">Offerte Afgewezen</h1>
+          <p class="mt-2 text-red-700">
+            Deze offerte is afgewezen. Heeft u vragen? Neem gerust contact met ons op.
+          </p>
+        </div>
+      </div>
+    </div>
+  ) : isExpired ? (
+    <div class="min-h-screen bg-gradient-to-b from-amber-50 to-white py-8 px-4">
+      <div class="mx-auto max-w-4xl">
+        <div class="rounded-xl border border-amber-200 bg-white p-8 text-center shadow-sm">
+          <div class="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-amber-100">
+            <svg class="h-8 w-8 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+          </div>
+          <h1 class="text-2xl font-bold text-amber-900">Offerte Verlopen</h1>
+          <p class="mt-2 text-amber-700">
+            Deze offerte is verlopen op {quote.validUntil ? new Date(quote.validUntil).toLocaleDateString('nl-NL', { day: 'numeric', month: 'long', year: 'numeric' }) : 'onbekende datum'}.
+          </p>
+          <p class="mt-4 text-sm text-gray-600">
+            Neem contact met ons op voor een nieuwe offerte.
+          </p>
+        </div>
+      </div>
+    </div>
+  ) : (
+    <div class="min-h-screen bg-gradient-to-b from-tesoro-50 to-white py-8 px-4">
+      <QuoteViewer
+        client:load
+        quote={quoteData}
+        customer={customerData}
+        publicToken={token}
+      />
+    </div>
+  )}
 </Layout>
