@@ -21,7 +21,9 @@ interface Comment {
 interface CustomerPortalTranslations {
   quoteFor: string;
   preparedBy: string;
+  preparedFor: string;
   quoteNumber: string;
+  quoteNumberShort: string;
   validUntil: string;
   expired: string;
   total: string;
@@ -30,6 +32,9 @@ interface CustomerPortalTranslations {
   optional: string;
   included: string;
   perUnit: string;
+  unknown: string;
+  unknownDate: string;
+  open: string;
   actions: {
     accept: string;
     decline: string;
@@ -50,9 +55,49 @@ interface CustomerPortalTranslations {
   };
   question: {
     title: string;
+    titleAboutLine: string;
     placeholder: string;
     send: string;
     success: string;
+    aboutLine: string;
+    lineQuestion: string;
+    generalQuestion: string;
+    askAboutLine: string;
+  };
+  decline: {
+    title: string;
+    confirm: string;
+    reasonPlaceholder: string;
+    submitting: string;
+    cancel: string;
+  };
+  chat: {
+    title: string;
+    loading: string;
+    noMessages: string;
+    startConversation: string;
+    placeholder: string;
+    send: string;
+    sending: string;
+    you: string;
+    team: string;
+    replyTo: string;
+  };
+  table: {
+    description: string;
+    quantity: string;
+    price: string;
+    lineTotal: string;
+  };
+  errors: {
+    selectionFailed: string;
+    acceptFailed: string;
+    declineFailed: string;
+    questionFailed: string;
+    messageFailed: string;
+  };
+  success: {
+    questionSent: string;
   };
 }
 
@@ -72,7 +117,9 @@ interface QuoteViewerProps {
 const defaultTranslations: CustomerPortalTranslations = {
   quoteFor: 'Offerte voor',
   preparedBy: 'Opgesteld door',
+  preparedFor: 'Opgesteld voor',
   quoteNumber: 'Offertenummer',
+  quoteNumberShort: 'Offerte #',
   validUntil: 'Geldig tot',
   expired: 'Deze offerte is verlopen',
   total: 'Totaal',
@@ -81,6 +128,9 @@ const defaultTranslations: CustomerPortalTranslations = {
   optional: 'Optioneel',
   included: 'Inbegrepen',
   perUnit: 'per',
+  unknown: 'Onbekend',
+  unknownDate: 'onbekende datum',
+  open: 'Open',
   actions: {
     accept: 'Offerte accepteren',
     decline: 'Afwijzen',
@@ -101,9 +151,49 @@ const defaultTranslations: CustomerPortalTranslations = {
   },
   question: {
     title: 'Stel een vraag',
+    titleAboutLine: 'Vraag over regel',
     placeholder: 'Typ hier uw vraag...',
     send: 'Verstuur vraag',
     success: 'Uw vraag is verstuurd!',
+    aboutLine: 'Over',
+    lineQuestion: 'Stel uw vraag over deze regel. Wij nemen zo snel mogelijk contact met u op.',
+    generalQuestion: 'Heeft u een vraag over deze offerte? Wij nemen zo snel mogelijk contact met u op.',
+    askAboutLine: 'Vraag stellen over deze regel',
+  },
+  decline: {
+    title: 'Offerte afwijzen',
+    confirm: 'Weet u zeker dat u deze offerte wilt afwijzen? U kunt optioneel een reden opgeven.',
+    reasonPlaceholder: 'Reden voor afwijzing (optioneel)',
+    submitting: 'Bezig...',
+    cancel: 'Annuleren',
+  },
+  chat: {
+    title: 'Vragen & Opmerkingen',
+    loading: 'Laden...',
+    noMessages: 'Nog geen berichten',
+    startConversation: 'Stel een vraag over de offerte',
+    placeholder: 'Stel een vraag...',
+    send: 'Verstuur',
+    sending: 'Versturen...',
+    you: 'U',
+    team: 'Tesoro',
+    replyTo: 'Re',
+  },
+  table: {
+    description: 'Omschrijving',
+    quantity: 'Aantal',
+    price: 'Prijs',
+    lineTotal: 'Totaal',
+  },
+  errors: {
+    selectionFailed: 'Kon selectie niet opslaan. Probeer het opnieuw.',
+    acceptFailed: 'Kon offerte niet accepteren. Probeer het opnieuw.',
+    declineFailed: 'Kon offerte niet afwijzen. Probeer het opnieuw.',
+    questionFailed: 'Kon vraag niet versturen. Probeer het opnieuw.',
+    messageFailed: 'Kon bericht niet versturen. Probeer het opnieuw.',
+  },
+  success: {
+    questionSent: 'Uw vraag is verzonden! We nemen zo snel mogelijk contact met u op.',
   },
 };
 
@@ -209,7 +299,7 @@ export function QuoteViewer({
       }));
     } catch (error) {
       console.error('Failed to update selection:', error);
-      setErrorMessage('Kon selectie niet opslaan. Probeer het opnieuw.');
+      setErrorMessage(t.errors.selectionFailed);
       setTimeout(() => setErrorMessage(''), 3000);
     }
   }, [publicToken]);
@@ -235,7 +325,7 @@ export function QuoteViewer({
       window.location.reload();
     } catch (error) {
       console.error('Failed to accept quote:', error);
-      setErrorMessage(error instanceof Error ? error.message : 'Kon offerte niet accepteren. Probeer het opnieuw.');
+      setErrorMessage(error instanceof Error ? error.message : t.errors.acceptFailed);
       setShowSignature(false);
     } finally {
       setIsSubmitting(false);
@@ -262,7 +352,7 @@ export function QuoteViewer({
       window.location.reload();
     } catch (error) {
       console.error('Failed to decline quote:', error);
-      setErrorMessage(error instanceof Error ? error.message : 'Kon offerte niet afwijzen. Probeer het opnieuw.');
+      setErrorMessage(error instanceof Error ? error.message : t.errors.declineFailed);
     } finally {
       setIsSubmitting(false);
       setShowDeclineModal(false);
@@ -291,7 +381,7 @@ export function QuoteViewer({
         throw new Error(data.error || 'Failed to send question');
       }
 
-      setSuccessMessage('Uw vraag is verzonden! We nemen zo snel mogelijk contact met u op.');
+      setSuccessMessage(t.success.questionSent);
       setQuestionMessage('');
       setQuestionLineId(null);
       setQuestionLineDescription('');
@@ -301,7 +391,7 @@ export function QuoteViewer({
       setTimeout(() => setSuccessMessage(''), 5000);
     } catch (error) {
       console.error('Failed to send question:', error);
-      setErrorMessage(error instanceof Error ? error.message : 'Kon vraag niet versturen. Probeer het opnieuw.');
+      setErrorMessage(error instanceof Error ? error.message : t.errors.questionFailed);
     } finally {
       setIsSubmitting(false);
     }
@@ -390,15 +480,15 @@ export function QuoteViewer({
               <span className="text-xl font-semibold">Tesoro CRM</span>
             </div>
             <h1 className="text-2xl font-bold mt-4">{quote.title}</h1>
-            <p className="text-muted-foreground">Offerte #{quote.quoteNumber}</p>
+            <p className="text-muted-foreground">{t.quoteNumberShort}{quote.quoteNumber}</p>
           </div>
           <div className="text-right">
             <Badge variant={quote.status === 'sent' || quote.status === 'viewed' ? 'info' : 'secondary'}>
-              {quote.status === 'sent' || quote.status === 'viewed' ? 'Open' : quote.status}
+              {quote.status === 'sent' || quote.status === 'viewed' ? t.open : quote.status}
             </Badge>
             {quote.validUntil && (
               <p className="text-sm text-muted-foreground mt-2">
-                Geldig tot: {formatDate(quote.validUntil)}
+                {t.validUntil}: {formatDate(quote.validUntil)}
               </p>
             )}
           </div>
@@ -406,7 +496,7 @@ export function QuoteViewer({
 
         <div className="mt-6 pt-6 border-t grid sm:grid-cols-2 gap-4 text-sm">
           <div>
-            <p className="text-muted-foreground">Opgesteld voor:</p>
+            <p className="text-muted-foreground">{t.preparedFor}:</p>
             <p className="font-medium">{customer.companyName}</p>
             <p>{customer.contactName}</p>
             <p className="text-muted-foreground">{customer.email}</p>
@@ -429,6 +519,7 @@ export function QuoteViewer({
             onToggleBlock={(selected) => handleUpdateSelection(block.id, null, selected)}
             onToggleLine={(lineId, selected) => handleUpdateSelection(block.id, lineId, selected)}
             onAskLineQuestion={openLineQuestion}
+            translations={t}
           />
         ))}
       </div>
@@ -446,11 +537,11 @@ export function QuoteViewer({
           {/* Totals */}
           <div className="space-y-1">
             <div className="flex gap-6 text-sm">
-              <span className="text-muted-foreground">Subtotaal: {formatCurrency(totals.subtotal)}</span>
-              <span className="text-muted-foreground">BTW: {formatCurrency(totals.btwAmount)}</span>
+              <span className="text-muted-foreground">{t.subtotal}: {formatCurrency(totals.subtotal)}</span>
+              <span className="text-muted-foreground">{t.vat}: {formatCurrency(totals.btwAmount)}</span>
             </div>
             <p className="text-2xl font-bold">
-              Totaal: {formatCurrency(totals.total)}
+              {t.total}: {formatCurrency(totals.total)}
             </p>
           </div>
 
@@ -460,20 +551,20 @@ export function QuoteViewer({
               variant="outline"
               onClick={openGeneralQuestion}
             >
-              Vraag stellen
+              {t.actions.askQuestion}
             </Button>
             <Button
               variant="outline"
               className="text-destructive hover:bg-destructive/10"
               onClick={() => setShowDeclineModal(true)}
             >
-              Afwijzen
+              {t.actions.decline}
             </Button>
             <Button
               variant="tesoro"
               onClick={() => setShowSignature(true)}
             >
-              ✍️ Accepteren
+              ✍️ {t.actions.accept}
             </Button>
           </div>
         </div>
@@ -483,26 +574,26 @@ export function QuoteViewer({
       {showDeclineModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-xl p-6 max-w-md w-full">
-            <h3 className="text-lg font-semibold mb-4">Offerte afwijzen</h3>
+            <h3 className="text-lg font-semibold mb-4">{t.decline.title}</h3>
             <p className="text-muted-foreground mb-4">
-              Weet u zeker dat u deze offerte wilt afwijzen? U kunt optioneel een reden opgeven.
+              {t.decline.confirm}
             </p>
             <Textarea
-              placeholder="Reden voor afwijzing (optioneel)"
+              placeholder={t.decline.reasonPlaceholder}
               value={declineReason}
               onChange={(e) => setDeclineReason(e.target.value)}
               className="mb-4"
             />
             <div className="flex gap-3 justify-end">
               <Button variant="outline" onClick={() => setShowDeclineModal(false)}>
-                Annuleren
+                {t.decline.cancel}
               </Button>
               <Button
                 variant="destructive"
                 onClick={handleDecline}
                 disabled={isSubmitting}
               >
-                {isSubmitting ? 'Bezig...' : 'Afwijzen'}
+                {isSubmitting ? t.decline.submitting : t.actions.decline}
               </Button>
             </div>
           </div>
@@ -514,21 +605,19 @@ export function QuoteViewer({
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-xl p-6 max-w-md w-full">
             <h3 className="text-lg font-semibold mb-4">
-              {questionLineId ? 'Vraag over regel' : 'Vraag stellen'}
+              {questionLineId ? t.question.titleAboutLine : t.question.title}
             </h3>
             {questionLineId && questionLineDescription && (
               <div className="mb-4 p-3 bg-tesoro-50 rounded-lg border border-tesoro-200">
-                <p className="text-sm text-muted-foreground">Over:</p>
+                <p className="text-sm text-muted-foreground">{t.question.aboutLine}:</p>
                 <p className="font-medium text-tesoro-900">{questionLineDescription}</p>
               </div>
             )}
             <p className="text-muted-foreground mb-4">
-              {questionLineId
-                ? 'Stel uw vraag over deze regel. Wij nemen zo snel mogelijk contact met u op.'
-                : 'Heeft u een vraag over deze offerte? Wij nemen zo snel mogelijk contact met u op.'}
+              {questionLineId ? t.question.lineQuestion : t.question.generalQuestion}
             </p>
             <Textarea
-              placeholder="Uw vraag..."
+              placeholder={t.question.placeholder}
               value={questionMessage}
               onChange={(e) => setQuestionMessage(e.target.value)}
               className="mb-4"
@@ -540,14 +629,14 @@ export function QuoteViewer({
                 setQuestionLineId(null);
                 setQuestionLineDescription('');
               }}>
-                Annuleren
+                {t.decline.cancel}
               </Button>
               <Button
                 variant="tesoro"
                 onClick={handleAskQuestion}
                 disabled={isSubmitting || !questionMessage.trim()}
               >
-                {isSubmitting ? 'Versturen...' : 'Versturen'}
+                {isSubmitting ? t.chat.sending : t.question.send}
               </Button>
             </div>
           </div>
@@ -564,7 +653,7 @@ export function QuoteViewer({
               <svg className="w-5 h-5 text-tesoro-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
               </svg>
-              <h3 className="font-semibold">Vragen & Opmerkingen</h3>
+              <h3 className="font-semibold">{t.chat.title}</h3>
             </div>
             {comments.length > 0 && (
               <span className="flex h-5 w-5 items-center justify-center rounded-full bg-tesoro-500 text-xs text-white">
@@ -581,15 +670,15 @@ export function QuoteViewer({
                   <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                   <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
                 </svg>
-                Laden...
+                {t.chat.loading}
               </div>
             ) : comments.length === 0 ? (
               <div className="flex flex-col items-center justify-center h-full text-center text-muted-foreground">
                 <svg className="w-12 h-12 mb-3 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
                 </svg>
-                <p className="text-sm">Nog geen berichten</p>
-                <p className="text-xs mt-1">Stel een vraag over de offerte</p>
+                <p className="text-sm">{t.chat.noMessages}</p>
+                <p className="text-xs mt-1">{t.chat.startConversation}</p>
               </div>
             ) : (
               comments.map((comment) => (
@@ -607,14 +696,14 @@ export function QuoteViewer({
                       <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
                       </svg>
-                      Re: {comment.lineDescription}
+                      {t.chat.replyTo}: {comment.lineDescription}
                     </div>
                   )}
                   <p className="text-sm">{comment.message}</p>
                   <div className="flex items-center justify-between mt-2 text-xs text-muted-foreground">
-                    <span>{comment.authorType === 'team' ? 'Tesoro' : 'U'}</span>
+                    <span>{comment.authorType === 'team' ? t.chat.team : t.chat.you}</span>
                     <span>
-                      {new Date(comment.createdAt).toLocaleDateString('nl-NL', {
+                      {new Date(comment.createdAt).toLocaleDateString(locale === 'nl' ? 'nl-NL' : locale === 'es' ? 'es-ES' : 'en-US', {
                         day: 'numeric',
                         month: 'short',
                         hour: '2-digit',
@@ -631,7 +720,7 @@ export function QuoteViewer({
           <div className="border-t p-3">
             <div className="flex gap-2">
               <Textarea
-                placeholder="Stel een vraag..."
+                placeholder={t.chat.placeholder}
                 value={newMessage}
                 onChange={(e) => setNewMessage(e.target.value)}
                 className="min-h-[60px] resize-none text-sm"
@@ -651,7 +740,7 @@ export function QuoteViewer({
               onClick={handleSendMessage}
               disabled={isSubmitting || !newMessage.trim()}
             >
-              {isSubmitting ? 'Versturen...' : 'Verstuur'}
+              {isSubmitting ? t.chat.sending : t.chat.send}
             </Button>
           </div>
         </div>
@@ -666,11 +755,13 @@ function QuoteBlockView({
   onToggleBlock,
   onToggleLine,
   onAskLineQuestion,
+  translations,
 }: {
   block: QuoteBlock;
   onToggleBlock: (selected: boolean) => void;
   onToggleLine: (lineId: string, selected: boolean) => void;
   onAskLineQuestion: (lineId: string, lineDescription: string) => void;
+  translations: CustomerPortalTranslations;
 }) {
   const isEnabled = !block.isOptional || block.isSelectedByCustomer;
 
@@ -693,7 +784,7 @@ function QuoteBlockView({
           <div>
             <h3 className="font-semibold">{block.title}</h3>
             {block.isOptional && (
-              <span className="text-xs text-tesoro-600">Optioneel</span>
+              <span className="text-xs text-tesoro-600">{translations.optional}</span>
             )}
           </div>
         </div>
@@ -710,11 +801,11 @@ function QuoteBlockView({
             {/* Table Header */}
             <div className="grid grid-cols-12 gap-2 text-xs font-medium text-muted-foreground px-2 pb-2 border-b">
               <div className="col-span-1"></div>
-              <div className="col-span-4">Omschrijving</div>
+              <div className="col-span-4">{translations.table.description}</div>
               <div className="col-span-1"></div>
-              <div className="col-span-2 text-right">Aantal</div>
-              <div className="col-span-2 text-right">Prijs</div>
-              <div className="col-span-2 text-right">Totaal</div>
+              <div className="col-span-2 text-right">{translations.table.quantity}</div>
+              <div className="col-span-2 text-right">{translations.table.price}</div>
+              <div className="col-span-2 text-right">{translations.table.lineTotal}</div>
             </div>
 
             {/* Lines */}
@@ -725,6 +816,7 @@ function QuoteBlockView({
                 blockEnabled={isEnabled}
                 onToggle={(selected) => onToggleLine(line.id, selected)}
                 onAskQuestion={() => onAskLineQuestion(line.id, line.description)}
+                translations={translations}
               />
             ))}
           </div>
@@ -740,11 +832,13 @@ function QuoteLineView({
   blockEnabled,
   onToggle,
   onAskQuestion,
+  translations,
 }: {
   line: QuoteLine;
   blockEnabled: boolean;
   onToggle: (selected: boolean) => void;
   onAskQuestion: () => void;
+  translations: CustomerPortalTranslations;
 }) {
   const lineTotal = calculateLineTotal(
     line.quantity,
@@ -779,7 +873,7 @@ function QuoteLineView({
       <div className="col-span-4">
         <p className={cn(!isEnabled && 'line-through')}>{line.description}</p>
         {line.isOptional && (
-          <span className="text-xs text-tesoro-600">Optioneel</span>
+          <span className="text-xs text-tesoro-600">{translations.optional}</span>
         )}
       </div>
 
@@ -788,7 +882,7 @@ function QuoteLineView({
         <button
           onClick={onAskQuestion}
           className="opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded hover:bg-tesoro-100 text-tesoro-600"
-          title="Vraag stellen over deze regel"
+          title={translations.question.askAboutLine}
         >
           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />

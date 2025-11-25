@@ -34,7 +34,12 @@ export const POST: APIRoute = async ({ request }) => {
 export const GET: APIRoute = async ({ request }) => {
   const cookieHeader = request.headers.get('cookie');
   const match = cookieHeader?.match(/locale=(\w+)/);
-  const locale = match?.[1] || 'nl';
+  const cookieLocale = match?.[1];
+
+  // Validate the locale from cookie
+  const locale = cookieLocale && locales.includes(cookieLocale as Locale)
+    ? cookieLocale
+    : 'nl';
 
   return new Response(JSON.stringify({ locale }), {
     status: 200,

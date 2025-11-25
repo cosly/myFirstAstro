@@ -110,8 +110,8 @@ const customerData = quote.customer ? {
   contactName: quote.customer.contactName,
   email: quote.customer.email,
 } : {
-  companyName: locale === 'nl' ? 'Onbekend' : 'Unknown',
-  contactName: locale === 'nl' ? 'Onbekend' : 'Unknown',
+  companyName: t('customerPortal.unknown', locale),
+  contactName: t('customerPortal.unknown', locale),
   email: '',
 };
 
@@ -121,8 +121,8 @@ const isAccepted = quote.status === 'accepted';
 const isDeclined = quote.status === 'declined';
 
 // Format dates
-const signedDate = quote.signedAt ? formatDateLocale(quote.signedAt, locale, 'long') : (locale === 'nl' ? 'onbekende datum' : 'unknown date');
-const expiredDate = quote.validUntil ? formatDateLocale(quote.validUntil, locale, 'long') : (locale === 'nl' ? 'onbekende datum' : 'unknown date');
+const signedDate = quote.signedAt ? formatDateLocale(quote.signedAt, locale, 'long') : t('customerPortal.unknownDate', locale);
+const expiredDate = quote.validUntil ? formatDateLocale(quote.validUntil, locale, 'long') : t('customerPortal.unknownDate', locale);
 const signerFunction = quote.signedByFunction ? ` (${quote.signedByFunction})` : '';
 ---
 
@@ -152,7 +152,7 @@ const signerFunction = quote.signedByFunction ? ` (${quote.signedByFunction})` :
           <p class="mt-2 text-green-700">
             {t('customerPortal.status.accepted.message', locale, {
               date: signedDate,
-              name: quote.signedByName || (locale === 'nl' ? 'onbekend' : 'unknown'),
+              name: quote.signedByName || t('customerPortal.unknown', locale).toLowerCase(),
               function: signerFunction
             })}
           </p>

@@ -149,7 +149,9 @@
   "customerPortal": {
     "quoteFor": "Presupuesto para",
     "preparedBy": "Preparado por",
+    "preparedFor": "Preparado para",
     "quoteNumber": "Número de presupuesto",
+    "quoteNumberShort": "Presupuesto #",
     "validUntil": "Válido hasta",
     "expired": "Este presupuesto ha expirado",
     "total": "Total",
@@ -158,6 +160,9 @@
     "optional": "Opcional",
     "included": "Incluido",
     "perUnit": "por",
+    "unknown": "Desconocido",
+    "unknownDate": "fecha desconocida",
+    "open": "Abierto",
     "status": {
       "accepted": {
         "title": "Presupuesto Aceptado",
@@ -194,9 +199,49 @@
     },
     "question": {
       "title": "Hacer una pregunta",
+      "titleAboutLine": "Pregunta sobre la línea",
       "placeholder": "Escribe tu pregunta aquí...",
       "send": "Enviar pregunta",
-      "success": "¡Tu pregunta ha sido enviada!"
+      "success": "¡Tu pregunta ha sido enviada!",
+      "aboutLine": "Sobre",
+      "lineQuestion": "Haz tu pregunta sobre esta línea. Te contactaremos lo antes posible.",
+      "generalQuestion": "¿Tienes alguna pregunta sobre este presupuesto? Te contactaremos lo antes posible.",
+      "askAboutLine": "Hacer una pregunta sobre esta línea"
+    },
+    "decline": {
+      "title": "Rechazar presupuesto",
+      "confirm": "¿Estás seguro de que quieres rechazar este presupuesto? Opcionalmente puedes dar una razón.",
+      "reasonPlaceholder": "Razón del rechazo (opcional)",
+      "submitting": "Procesando...",
+      "cancel": "Cancelar"
+    },
+    "chat": {
+      "title": "Preguntas y Comentarios",
+      "loading": "Cargando...",
+      "noMessages": "Aún no hay mensajes",
+      "startConversation": "Haz una pregunta sobre el presupuesto",
+      "placeholder": "Haz una pregunta...",
+      "send": "Enviar",
+      "sending": "Enviando...",
+      "you": "Tú",
+      "team": "Tesoro",
+      "replyTo": "Re"
+    },
+    "table": {
+      "description": "Descripción",
+      "quantity": "Cantidad",
+      "price": "Precio",
+      "lineTotal": "Total"
+    },
+    "errors": {
+      "selectionFailed": "No se pudo guardar la selección. Por favor, inténtalo de nuevo.",
+      "acceptFailed": "No se pudo aceptar el presupuesto. Por favor, inténtalo de nuevo.",
+      "declineFailed": "No se pudo rechazar el presupuesto. Por favor, inténtalo de nuevo.",
+      "questionFailed": "No se pudo enviar la pregunta. Por favor, inténtalo de nuevo.",
+      "messageFailed": "No se pudo enviar el mensaje. Por favor, inténtalo de nuevo."
+    },
+    "success": {
+      "questionSent": "¡Tu pregunta ha sido enviada! Te contactaremos lo antes posible."
     }
   },
   "errors": {

@@ -149,7 +149,9 @@
   "customerPortal": {
     "quoteFor": "Quote for",
     "preparedBy": "Prepared by",
+    "preparedFor": "Prepared for",
     "quoteNumber": "Quote number",
+    "quoteNumberShort": "Quote #",
     "validUntil": "Valid until",
     "expired": "This quote has expired",
     "total": "Total",
@@ -158,6 +160,9 @@
     "optional": "Optional",
     "included": "Included",
     "perUnit": "per",
+    "unknown": "Unknown",
+    "unknownDate": "unknown date",
+    "open": "Open",
     "status": {
       "accepted": {
         "title": "Quote Accepted",
@@ -194,9 +199,49 @@
     },
     "question": {
       "title": "Ask a question",
+      "titleAboutLine": "Question about line",
       "placeholder": "Type your question here...",
       "send": "Send question",
-      "success": "Your question has been sent!"
+      "success": "Your question has been sent!",
+      "aboutLine": "About",
+      "lineQuestion": "Ask your question about this line. We will contact you as soon as possible.",
+      "generalQuestion": "Do you have a question about this quote? We will contact you as soon as possible.",
+      "askAboutLine": "Ask a question about this line"
+    },
+    "decline": {
+      "title": "Decline quote",
+      "confirm": "Are you sure you want to decline this quote? You can optionally provide a reason.",
+      "reasonPlaceholder": "Reason for declining (optional)",
+      "submitting": "Processing...",
+      "cancel": "Cancel"
+    },
+    "chat": {
+      "title": "Questions & Comments",
+      "loading": "Loading...",
+      "noMessages": "No messages yet",
+      "startConversation": "Ask a question about the quote",
+      "placeholder": "Ask a question...",
+      "send": "Send",
+      "sending": "Sending...",
+      "you": "You",
+      "team": "Tesoro",
+      "replyTo": "Re"
+    },
+    "table": {
+      "description": "Description",
+      "quantity": "Quantity",
+      "price": "Price",
+      "lineTotal": "Total"
+    },
+    "errors": {
+      "selectionFailed": "Could not save selection. Please try again.",
+      "acceptFailed": "Could not accept quote. Please try again.",
+      "declineFailed": "Could not decline quote. Please try again.",
+      "questionFailed": "Could not send question. Please try again.",
+      "messageFailed": "Could not send message. Please try again."
+    },
+    "success": {
+      "questionSent": "Your question has been sent! We will contact you as soon as possible."
     }
   },
   "errors": {
