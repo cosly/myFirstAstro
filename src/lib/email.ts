@@ -361,6 +361,176 @@ Met vriendelijke groet,
 Team Tesoro CRM
     `,
   },
+
+  payment_received: {
+    subject: 'Betaling ontvangen voor offerte {{quote_number}}',
+    bodyHtml: `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #333; }
+    .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+    .header { text-align: center; padding: 20px 0; border-bottom: 2px solid #22c55e; }
+    .logo { font-size: 24px; font-weight: bold; color: #f97316; }
+    .success { color: #22c55e; font-size: 48px; }
+    .content { padding: 30px 0; }
+    .footer { border-top: 1px solid #eee; padding-top: 20px; font-size: 14px; color: #666; }
+    .quote-box { background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 8px; padding: 20px; margin: 20px 0; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <div class="success">✓</div>
+      <h1>Betaling Ontvangen</h1>
+    </div>
+    <div class="content">
+      <p>Beste {{customer_name}},</p>
+      <p>Wij hebben uw betaling voor offerte <strong>{{quote_number}}</strong> in goede orde ontvangen.</p>
+
+      <div class="quote-box">
+        <p><strong>Offerte:</strong> {{quote_number}}</p>
+        <p><strong>Bedrag:</strong> {{quote_total}}</p>
+      </div>
+
+      <p>Hartelijk dank voor uw betaling. We gaan aan de slag!</p>
+
+      <p>Met vriendelijke groet,<br>Team Tesoro CRM</p>
+    </div>
+    <div class="footer">
+      <p>Tesoro CRM<br>{{company_email}}</p>
+    </div>
+  </div>
+</body>
+</html>
+    `,
+    bodyText: `
+Beste {{customer_name}},
+
+Wij hebben uw betaling voor offerte {{quote_number}} in goede orde ontvangen.
+
+Offerte: {{quote_number}}
+Bedrag: {{quote_total}}
+
+Hartelijk dank voor uw betaling. We gaan aan de slag!
+
+Met vriendelijke groet,
+Team Tesoro CRM
+    `,
+  },
+
+  question_received: {
+    subject: 'Nieuwe vraag over offerte {{quote_number}}',
+    bodyHtml: `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #333; }
+    .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+    .header { text-align: center; padding: 20px 0; border-bottom: 2px solid #3b82f6; }
+    .logo { font-size: 24px; font-weight: bold; color: #f97316; }
+    .question { color: #3b82f6; font-size: 48px; }
+    .content { padding: 30px 0; }
+    .footer { border-top: 1px solid #eee; padding-top: 20px; font-size: 14px; color: #666; }
+    .quote-box { background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 8px; padding: 20px; margin: 20px 0; }
+    .button { display: inline-block; background: #f97316; color: white; padding: 12px 24px; text-decoration: none; border-radius: 8px; font-weight: 500; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <div class="question">?</div>
+      <h1>Nieuwe Vraag Ontvangen</h1>
+    </div>
+    <div class="content">
+      <p>Er is een nieuwe vraag gesteld over offerte <strong>{{quote_number}}</strong>.</p>
+
+      <div class="quote-box">
+        <p><strong>Klant:</strong> {{customer_company}}</p>
+        <p><strong>Contact:</strong> {{customer_name}}</p>
+        <p><strong>Offerte:</strong> {{quote_number}}</p>
+      </div>
+
+      <p>Bekijk de vraag en reageer via het dashboard.</p>
+
+      <p style="text-align: center; margin: 30px 0;">
+        <a href="{{quote_url}}" class="button">Bekijk Offerte</a>
+      </p>
+    </div>
+    <div class="footer">
+      <p>Dit is een automatisch bericht van Tesoro CRM.</p>
+    </div>
+  </div>
+</body>
+</html>
+    `,
+    bodyText: `
+Nieuwe vraag over offerte {{quote_number}}
+
+Klant: {{customer_company}}
+Contact: {{customer_name}}
+Offerte: {{quote_number}}
+
+Bekijk de vraag en reageer via het dashboard.
+    `,
+  },
+
+  question_answered: {
+    subject: 'Uw vraag over offerte {{quote_number}} is beantwoord',
+    bodyHtml: `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #333; }
+    .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+    .header { text-align: center; padding: 20px 0; border-bottom: 2px solid #22c55e; }
+    .logo { font-size: 24px; font-weight: bold; color: #f97316; }
+    .content { padding: 30px 0; }
+    .footer { border-top: 1px solid #eee; padding-top: 20px; font-size: 14px; color: #666; }
+    .button { display: inline-block; background: #f97316; color: white; padding: 12px 24px; text-decoration: none; border-radius: 8px; font-weight: 500; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <div class="logo">Tesoro CRM</div>
+    </div>
+    <div class="content">
+      <p>Beste {{customer_name}},</p>
+      <p>Uw vraag over offerte <strong>{{quote_number}}</strong> is beantwoord.</p>
+
+      <p>Bekijk het antwoord via onderstaande link:</p>
+
+      <p style="text-align: center; margin: 30px 0;">
+        <a href="{{quote_url}}" class="button">Bekijk Offerte</a>
+      </p>
+
+      <p>Met vriendelijke groet,<br>Team Tesoro CRM</p>
+    </div>
+    <div class="footer">
+      <p>Tesoro CRM<br>{{company_email}}</p>
+    </div>
+  </div>
+</body>
+</html>
+    `,
+    bodyText: `
+Beste {{customer_name}},
+
+Uw vraag over offerte {{quote_number}} is beantwoord.
+
+Bekijk het antwoord: {{quote_url}}
+
+Met vriendelijke groet,
+Team Tesoro CRM
+    `,
+  },
 };
 
 // English default templates
@@ -601,6 +771,176 @@ Kind regards,
 Team Tesoro CRM
     `,
   },
+
+  payment_received: {
+    subject: 'Payment received for quote {{quote_number}}',
+    bodyHtml: `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #333; }
+    .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+    .header { text-align: center; padding: 20px 0; border-bottom: 2px solid #22c55e; }
+    .logo { font-size: 24px; font-weight: bold; color: #f97316; }
+    .success { color: #22c55e; font-size: 48px; }
+    .content { padding: 30px 0; }
+    .footer { border-top: 1px solid #eee; padding-top: 20px; font-size: 14px; color: #666; }
+    .quote-box { background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 8px; padding: 20px; margin: 20px 0; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <div class="success">✓</div>
+      <h1>Payment Received</h1>
+    </div>
+    <div class="content">
+      <p>Dear {{customer_name}},</p>
+      <p>We have received your payment for quote <strong>{{quote_number}}</strong>.</p>
+
+      <div class="quote-box">
+        <p><strong>Quote:</strong> {{quote_number}}</p>
+        <p><strong>Amount:</strong> {{quote_total}}</p>
+      </div>
+
+      <p>Thank you for your payment. We will get started right away!</p>
+
+      <p>Kind regards,<br>Team Tesoro CRM</p>
+    </div>
+    <div class="footer">
+      <p>Tesoro CRM<br>{{company_email}}</p>
+    </div>
+  </div>
+</body>
+</html>
+    `,
+    bodyText: `
+Dear {{customer_name}},
+
+We have received your payment for quote {{quote_number}}.
+
+Quote: {{quote_number}}
+Amount: {{quote_total}}
+
+Thank you for your payment. We will get started right away!
+
+Kind regards,
+Team Tesoro CRM
+    `,
+  },
+
+  question_received: {
+    subject: 'New question about quote {{quote_number}}',
+    bodyHtml: `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #333; }
+    .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+    .header { text-align: center; padding: 20px 0; border-bottom: 2px solid #3b82f6; }
+    .logo { font-size: 24px; font-weight: bold; color: #f97316; }
+    .question { color: #3b82f6; font-size: 48px; }
+    .content { padding: 30px 0; }
+    .footer { border-top: 1px solid #eee; padding-top: 20px; font-size: 14px; color: #666; }
+    .quote-box { background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 8px; padding: 20px; margin: 20px 0; }
+    .button { display: inline-block; background: #f97316; color: white; padding: 12px 24px; text-decoration: none; border-radius: 8px; font-weight: 500; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <div class="question">?</div>
+      <h1>New Question Received</h1>
+    </div>
+    <div class="content">
+      <p>A new question has been asked about quote <strong>{{quote_number}}</strong>.</p>
+
+      <div class="quote-box">
+        <p><strong>Customer:</strong> {{customer_company}}</p>
+        <p><strong>Contact:</strong> {{customer_name}}</p>
+        <p><strong>Quote:</strong> {{quote_number}}</p>
+      </div>
+
+      <p>View the question and respond via the dashboard.</p>
+
+      <p style="text-align: center; margin: 30px 0;">
+        <a href="{{quote_url}}" class="button">View Quote</a>
+      </p>
+    </div>
+    <div class="footer">
+      <p>This is an automated message from Tesoro CRM.</p>
+    </div>
+  </div>
+</body>
+</html>
+    `,
+    bodyText: `
+New question about quote {{quote_number}}
+
+Customer: {{customer_company}}
+Contact: {{customer_name}}
+Quote: {{quote_number}}
+
+View the question and respond via the dashboard.
+    `,
+  },
+
+  question_answered: {
+    subject: 'Your question about quote {{quote_number}} has been answered',
+    bodyHtml: `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #333; }
+    .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+    .header { text-align: center; padding: 20px 0; border-bottom: 2px solid #22c55e; }
+    .logo { font-size: 24px; font-weight: bold; color: #f97316; }
+    .content { padding: 30px 0; }
+    .footer { border-top: 1px solid #eee; padding-top: 20px; font-size: 14px; color: #666; }
+    .button { display: inline-block; background: #f97316; color: white; padding: 12px 24px; text-decoration: none; border-radius: 8px; font-weight: 500; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <div class="logo">Tesoro CRM</div>
+    </div>
+    <div class="content">
+      <p>Dear {{customer_name}},</p>
+      <p>Your question about quote <strong>{{quote_number}}</strong> has been answered.</p>
+
+      <p>View the answer via the link below:</p>
+
+      <p style="text-align: center; margin: 30px 0;">
+        <a href="{{quote_url}}" class="button">View Quote</a>
+      </p>
+
+      <p>Kind regards,<br>Team Tesoro CRM</p>
+    </div>
+    <div class="footer">
+      <p>Tesoro CRM<br>{{company_email}}</p>
+    </div>
+  </div>
+</body>
+</html>
+    `,
+    bodyText: `
+Dear {{customer_name}},
+
+Your question about quote {{quote_number}} has been answered.
+
+View the answer: {{quote_url}}
+
+Kind regards,
+Team Tesoro CRM
+    `,
+  },
 };
 
 // Spanish default templates
@@ -836,6 +1176,176 @@ Su presupuesto expira el {{quote_valid_until}}.
 Queríamos recordarle que el presupuesto "{{quote_title}}" expira pronto.
 
 Ver el presupuesto: {{quote_url}}
+
+Atentamente,
+Equipo Tesoro CRM
+    `,
+  },
+
+  payment_received: {
+    subject: 'Pago recibido para presupuesto {{quote_number}}',
+    bodyHtml: `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #333; }
+    .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+    .header { text-align: center; padding: 20px 0; border-bottom: 2px solid #22c55e; }
+    .logo { font-size: 24px; font-weight: bold; color: #f97316; }
+    .success { color: #22c55e; font-size: 48px; }
+    .content { padding: 30px 0; }
+    .footer { border-top: 1px solid #eee; padding-top: 20px; font-size: 14px; color: #666; }
+    .quote-box { background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 8px; padding: 20px; margin: 20px 0; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <div class="success">✓</div>
+      <h1>Pago Recibido</h1>
+    </div>
+    <div class="content">
+      <p>Estimado/a {{customer_name}},</p>
+      <p>Hemos recibido su pago para el presupuesto <strong>{{quote_number}}</strong>.</p>
+
+      <div class="quote-box">
+        <p><strong>Presupuesto:</strong> {{quote_number}}</p>
+        <p><strong>Importe:</strong> {{quote_total}}</p>
+      </div>
+
+      <p>¡Gracias por su pago! Comenzaremos de inmediato.</p>
+
+      <p>Atentamente,<br>Equipo Tesoro CRM</p>
+    </div>
+    <div class="footer">
+      <p>Tesoro CRM<br>{{company_email}}</p>
+    </div>
+  </div>
+</body>
+</html>
+    `,
+    bodyText: `
+Estimado/a {{customer_name}},
+
+Hemos recibido su pago para el presupuesto {{quote_number}}.
+
+Presupuesto: {{quote_number}}
+Importe: {{quote_total}}
+
+¡Gracias por su pago! Comenzaremos de inmediato.
+
+Atentamente,
+Equipo Tesoro CRM
+    `,
+  },
+
+  question_received: {
+    subject: 'Nueva pregunta sobre presupuesto {{quote_number}}',
+    bodyHtml: `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #333; }
+    .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+    .header { text-align: center; padding: 20px 0; border-bottom: 2px solid #3b82f6; }
+    .logo { font-size: 24px; font-weight: bold; color: #f97316; }
+    .question { color: #3b82f6; font-size: 48px; }
+    .content { padding: 30px 0; }
+    .footer { border-top: 1px solid #eee; padding-top: 20px; font-size: 14px; color: #666; }
+    .quote-box { background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 8px; padding: 20px; margin: 20px 0; }
+    .button { display: inline-block; background: #f97316; color: white; padding: 12px 24px; text-decoration: none; border-radius: 8px; font-weight: 500; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <div class="question">?</div>
+      <h1>Nueva Pregunta Recibida</h1>
+    </div>
+    <div class="content">
+      <p>Se ha recibido una nueva pregunta sobre el presupuesto <strong>{{quote_number}}</strong>.</p>
+
+      <div class="quote-box">
+        <p><strong>Cliente:</strong> {{customer_company}}</p>
+        <p><strong>Contacto:</strong> {{customer_name}}</p>
+        <p><strong>Presupuesto:</strong> {{quote_number}}</p>
+      </div>
+
+      <p>Vea la pregunta y responda a través del panel.</p>
+
+      <p style="text-align: center; margin: 30px 0;">
+        <a href="{{quote_url}}" class="button">Ver Presupuesto</a>
+      </p>
+    </div>
+    <div class="footer">
+      <p>Este es un mensaje automático de Tesoro CRM.</p>
+    </div>
+  </div>
+</body>
+</html>
+    `,
+    bodyText: `
+Nueva pregunta sobre presupuesto {{quote_number}}
+
+Cliente: {{customer_company}}
+Contacto: {{customer_name}}
+Presupuesto: {{quote_number}}
+
+Vea la pregunta y responda a través del panel.
+    `,
+  },
+
+  question_answered: {
+    subject: 'Su pregunta sobre el presupuesto {{quote_number}} ha sido respondida',
+    bodyHtml: `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #333; }
+    .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+    .header { text-align: center; padding: 20px 0; border-bottom: 2px solid #22c55e; }
+    .logo { font-size: 24px; font-weight: bold; color: #f97316; }
+    .content { padding: 30px 0; }
+    .footer { border-top: 1px solid #eee; padding-top: 20px; font-size: 14px; color: #666; }
+    .button { display: inline-block; background: #f97316; color: white; padding: 12px 24px; text-decoration: none; border-radius: 8px; font-weight: 500; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <div class="logo">Tesoro CRM</div>
+    </div>
+    <div class="content">
+      <p>Estimado/a {{customer_name}},</p>
+      <p>Su pregunta sobre el presupuesto <strong>{{quote_number}}</strong> ha sido respondida.</p>
+
+      <p>Vea la respuesta a través del siguiente enlace:</p>
+
+      <p style="text-align: center; margin: 30px 0;">
+        <a href="{{quote_url}}" class="button">Ver Presupuesto</a>
+      </p>
+
+      <p>Atentamente,<br>Equipo Tesoro CRM</p>
+    </div>
+    <div class="footer">
+      <p>Tesoro CRM<br>{{company_email}}</p>
+    </div>
+  </div>
+</body>
+</html>
+    `,
+    bodyText: `
+Estimado/a {{customer_name}},
+
+Su pregunta sobre el presupuesto {{quote_number}} ha sido respondida.
+
+Ver la respuesta: {{quote_url}}
 
 Atentamente,
 Equipo Tesoro CRM
