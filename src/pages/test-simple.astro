@@ -1,0 +1,22 @@
+---
+// Super simple test page - no database, no components
+const testMessage = "Page loaded successfully!";
+const timestamp = new Date().toISOString();
+---
+
+<html>
+<head>
+  <title>Test Page</title>
+</head>
+<body style="font-family: sans-serif; padding: 40px;">
+  <h1>Simple Test Page</h1>
+  <p>{testMessage}</p>
+  <p>Timestamp: {timestamp}</p>
+  <hr />
+  <h2>Next Steps:</h2>
+  <ul>
+    <li><a href="/test-db">Test Database Connection</a></li>
+    <li><a href="/api/debug">API Debug Endpoint</a></li>
+  </ul>
+</body>
+</html>

@@ -1,0 +1,47 @@
+---
+// Test page with database only - no React components
+import { createDb } from '../lib/db';
+import { customers } from '../lib/db/schema';
+
+let dbStatus = "Not tested";
+let customerCount = 0;
+let errorMessage = "";
+
+try {
+  const db = createDb(Astro.locals.runtime.env.DB);
+  const allCustomers = await db.select().from(customers);
+  customerCount = allCustomers.length;
+  dbStatus = "Connected";
+} catch (error) {
+  dbStatus = "Error";
+  errorMessage = String(error);
+}
+---
+
+<html>
+<head>
+  <title>Database Test</title>
+</head>
+<body style="font-family: sans-serif; padding: 40px;">
+  <h1>Database Test Page</h1>
+
+  <h2>Status: {dbStatus}</h2>
+
+  {dbStatus === "Connected" && (
+    <div style="background: #d4edda; padding: 20px; border-radius: 8px;">
+      <p>Database is working!</p>
+      <p>Customer count: {customerCount}</p>
+    </div>
+  )}
+
+  {dbStatus === "Error" && (
+    <div style="background: #f8d7da; padding: 20px; border-radius: 8px;">
+      <p>Database error:</p>
+      <pre>{errorMessage}</pre>
+    </div>
+  )}
+
+  <hr />
+  <p><a href="/test-simple">Back to simple test</a></p>
+</body>
+</html>
