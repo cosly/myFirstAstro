@@ -12,7 +12,7 @@ interface Env {
   STORAGE: R2Bucket;
   KV: KVNamespace;
   QUEUE: Queue;
-  QUOTE_PRESENCE: DurableObjectNamespace;
+  QUOTE_PRESENCE?: DurableObjectNamespace; // Optional: requires separate Worker deployment for Pages
   ENVIRONMENT: string;
   APP_NAME: string;
   APP_URL: string;

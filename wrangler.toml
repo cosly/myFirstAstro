@@ -8,7 +8,6 @@ pages_build_output_dir = "./dist"
 binding = "DB"
 database_name = "tesoro-quotes-db"
 database_id = "72959d9a-5a56-4f64-a96b-82edf076c2dc"
-migrations_dir = "drizzle/migrations"
 
 # R2 Storage (voor PDF's, handtekeningen, afbeeldingen)
 [[r2_buckets]]
@@ -20,14 +19,15 @@ bucket_name = "tesoro-quotes-storage"
 binding = "KV"
 id = "4a9874c88031497dbfea85f916cbb8ca"
 
-# Durable Objects (Real-time presence tracking)
-[[durable_objects.bindings]]
-name = "QUOTE_PRESENCE"
-class_name = "QuotePresence"
-
-[[migrations]]
-tag = "v1"
-new_classes = ["QuotePresence"]
+# Note: Durable Objects are not directly supported in Pages.
+# To use real-time presence tracking, deploy the QuotePresence Durable Object
+# as a separate Worker and reference it here with script_name.
+# For now, commenting out to allow Pages deployment.
+#
+# [[durable_objects.bindings]]
+# name = "QUOTE_PRESENCE"
+# class_name = "QuotePresence"
+# script_name = "tesoro-presence-worker"  # Requires separate Worker deployment
 
 # Environment variables
 [vars]
