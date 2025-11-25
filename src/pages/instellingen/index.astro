@@ -207,13 +207,12 @@ const autoRemindersEnabled = (settings.auto_reminders_enabled as boolean) ?? tru
                   >
                     Preview
                   </button>
-                  <button
-                    class="edit-template-btn rounded-lg border px-3 py-1.5 text-sm hover:bg-muted"
-                    data-template-id={template.id}
-                    data-template-name={template.name}
+                  <a
+                    href={`/instellingen/email-templates/${template.id}`}
+                    class="rounded-lg border px-3 py-1.5 text-sm hover:bg-muted"
                   >
                     Bewerken
-                  </button>
+                  </a>
                 </div>
               </div>
             ))}
@@ -1215,75 +1214,7 @@ const autoRemindersEnabled = (settings.auto_reminders_enabled as boolean) ?? tru
     }
   });
 
-  // Email Template Modal
-  const templateModal = document.getElementById('template-modal');
-  const templateModalTitle = document.getElementById('template-modal-title');
-  const templateModalDescription = document.getElementById('template-modal-description');
-  const templateForm = document.getElementById('template-form') as HTMLFormElement;
-  const templateTypeInput = document.getElementById('template-type') as HTMLInputElement;
-  const templateSubjectInput = document.getElementById('template-subject') as HTMLInputElement;
-  const templateBodyHtmlInput = document.getElementById('template-body-html') as HTMLTextAreaElement;
-  const templateBodyTextInput = document.getElementById('template-body-text') as HTMLTextAreaElement;
-
-  const templateNames: Record<string, string> = {
-    'quote_sent': 'Offerte verstuurd',
-    'quote_reminder': 'Herinnering',
-    'quote_accepted': 'Offerte geaccepteerd',
-    'quote_declined': 'Offerte afgewezen',
-    'payment_received': 'Betaling ontvangen',
-    'question_received': 'Vraag ontvangen',
-    'question_answered': 'Vraag beantwoord',
-  };
-
-  function showTemplateModal() {
-    templateModal?.classList.remove('hidden');
-  }
-
-  function hideTemplateModal() {
-    templateModal?.classList.add('hidden');
-    templateForm?.reset();
-  }
-
-  async function loadTemplate(type: string, name: string) {
-    try {
-      const response = await fetch(`/api/email-templates/${type}`);
-      if (response.ok) {
-        const template = await response.json();
-
-        if (templateTypeInput) templateTypeInput.value = type;
-        if (templateSubjectInput) templateSubjectInput.value = template.subject || '';
-        if (templateBodyHtmlInput) templateBodyHtmlInput.value = template.bodyHtml || '';
-        if (templateBodyTextInput) templateBodyTextInput.value = template.bodyText || '';
-        if (templateModalTitle) templateModalTitle.textContent = `${name} bewerken`;
-        if (templateModalDescription) {
-          templateModalDescription.textContent = template.isCustomized
-            ? 'Dit template is aangepast'
-            : 'Dit is het standaard template';
-        }
-
-        showTemplateModal();
-      } else {
-        alert('Kon template niet laden');
-      }
-    } catch {
-      alert('Kon template niet laden');
-    }
-  }
-
-  document.getElementById('close-template-modal')?.addEventListener('click', hideTemplateModal);
-  document.getElementById('cancel-template-btn')?.addEventListener('click', hideTemplateModal);
-  document.getElementById('template-modal-backdrop')?.addEventListener('click', hideTemplateModal);
-
-  // Edit template buttons
-  document.querySelectorAll('.edit-template-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
-      const type = btn.getAttribute('data-template-id');
-      const name = btn.getAttribute('data-template-name');
-      if (type && name) loadTemplate(type, name);
-    });
-  });
-
-  // Preview modal elements
+  // Email Template Preview modal elements
   const previewModal = document.getElementById('preview-modal');
   const previewModalTitle = document.getElementById('preview-modal-title');
   const previewModalSubject = document.getElementById('preview-modal-subject');
@@ -1324,70 +1255,6 @@ const autoRemindersEnabled = (settings.auto_reminders_enabled as boolean) ?? tru
         }
       } catch {
         alert('Kon preview niet laden');
-      }
-    });
-  });
-
-  // Template form submit
-  templateForm?.addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const type = templateTypeInput?.value;
-    if (!type) return;
-
-    try {
-      const response = await fetch(`/api/email-templates/${type}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          subject: templateSubjectInput?.value,
-          bodyHtml: templateBodyHtmlInput?.value,
-          bodyText: templateBodyTextInput?.value,
-        }),
-      });
-
-      if (response.ok) {
-        hideTemplateModal();
-        alert('Template opgeslagen!');
-      } else {
-        const error = await response.json();
-        alert(error.error || 'Er is iets misgegaan');
-      }
-    } catch {
-      alert('Er is iets misgegaan');
-    }
-  });
-
-  // Reset template to default
-  document.getElementById('reset-template-btn')?.addEventListener('click', async () => {
-    const type = templateTypeInput?.value;
-    if (!type) return;
-
-    if (!confirm('Weet je zeker dat je dit template wilt resetten naar de standaard?')) return;
-
-    try {
-      const response = await fetch(`/api/email-templates/${type}`, { method: 'DELETE' });
-
-      if (response.ok) {
-        // Reload the template
-        const name = templateNames[type] || type;
-        await loadTemplate(type, name);
-        alert('Template gereset naar standaard');
-      } else {
-        alert('Er is iets misgegaan');
-      }
-    } catch {
-      alert('Er is iets misgegaan');
-    }
-  });
-
-  // Click to copy variable
-  document.querySelectorAll('[data-var]').forEach(el => {
-    el.addEventListener('click', () => {
-      const varName = el.getAttribute('data-var');
-      if (varName) {
-        navigator.clipboard.writeText(`{{${varName}}}`);
-        el.classList.add('bg-green-100');
-        setTimeout(() => el.classList.remove('bg-green-100'), 500);
       }
     });
   });
