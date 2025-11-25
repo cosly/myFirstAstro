@@ -22,6 +22,7 @@ export const GET: APIRoute = async ({ params, locals }) => {
         name: teamMembers.name,
         role: teamMembers.role,
         avatarUrl: teamMembers.avatarUrl,
+        locale: teamMembers.locale,
         isActive: teamMembers.isActive,
         createdAt: teamMembers.createdAt,
       })
@@ -83,6 +84,7 @@ export const PUT: APIRoute = async ({ params, request, locals }) => {
     if (body.name) updateData.name = body.name;
     if (body.email) updateData.email = body.email;
     if (body.role) updateData.role = body.role;
+    if (body.locale) updateData.locale = body.locale;
     if (body.isActive !== undefined) updateData.isActive = body.isActive;
     if (body.password) updateData.passwordHash = await hashPassword(body.password);
 

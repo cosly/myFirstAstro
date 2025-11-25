@@ -1,0 +1,314 @@
+---
+import DashboardLayout from '../../layouts/DashboardLayout.astro';
+import { createDb, teamMembers } from '../../lib/db';
+import { eq } from 'drizzle-orm';
+
+// For now, use first active team member as "current user"
+// In a real app, this would come from session/authentication
+let currentUser: {
+  id: string;
+  name: string;
+  email: string;
+  role: string;
+  locale: string | null;
+} | null = null;
+
+try {
+  const db = createDb(Astro.locals.runtime.env.DB);
+
+  const users = await db
+    .select({
+      id: teamMembers.id,
+      name: teamMembers.name,
+      email: teamMembers.email,
+      role: teamMembers.role,
+      locale: teamMembers.locale,
+    })
+    .from(teamMembers)
+    .where(eq(teamMembers.isActive, true))
+    .limit(1);
+
+  if (users.length > 0) {
+    currentUser = users[0];
+  }
+} catch (error) {
+  console.error('Failed to fetch current user:', error);
+}
+
+const availableLocales = [
+  { code: 'nl', name: 'Nederlands', flag: '🇳🇱' },
+  { code: 'en', name: 'English', flag: '🇬🇧' },
+  { code: 'es', name: 'Español', flag: '🇪🇸' },
+];
+---
+
+<DashboardLayout title="Profiel">
+  <div class="max-w-2xl space-y-6">
+    <!-- Header -->
+    <div class="flex items-center gap-4">
+      <a href="/dashboard" class="rounded-lg p-2 hover:bg-muted">
+        <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+        </svg>
+      </a>
+      <div>
+        <h1 class="text-2xl font-bold">Mijn Profiel</h1>
+        <p class="text-muted-foreground">Beheer je accountinstellingen</p>
+      </div>
+    </div>
+
+    {currentUser ? (
+      <>
+        <!-- Profile Info -->
+        <div class="rounded-xl border bg-card p-6">
+          <div class="flex items-center gap-4 mb-6">
+            <div class="flex h-16 w-16 items-center justify-center rounded-full bg-tesoro-100 text-tesoro-600">
+              <span class="text-2xl font-semibold">
+                {currentUser.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)}
+              </span>
+            </div>
+            <div>
+              <h2 class="text-xl font-semibold">{currentUser.name}</h2>
+              <p class="text-muted-foreground">{currentUser.email}</p>
+              <span class="inline-flex mt-1 rounded-full bg-tesoro-100 px-2.5 py-0.5 text-xs font-medium text-tesoro-700">
+                {currentUser.role === 'admin' ? 'Beheerder' : 'Teamlid'}
+              </span>
+            </div>
+          </div>
+
+          <form id="profile-form" class="space-y-4">
+            <input type="hidden" name="id" value={currentUser.id} />
+
+            <div class="grid gap-4 sm:grid-cols-2">
+              <div class="space-y-2">
+                <label class="text-sm font-medium">Naam</label>
+                <input
+                  type="text"
+                  name="name"
+                  value={currentUser.name}
+                  class="flex h-10 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
+                />
+              </div>
+              <div class="space-y-2">
+                <label class="text-sm font-medium">Email</label>
+                <input
+                  type="email"
+                  name="email"
+                  value={currentUser.email}
+                  class="flex h-10 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
+                />
+              </div>
+            </div>
+
+            <div class="flex gap-3 pt-2">
+              <button type="submit" class="rounded-lg bg-tesoro-500 px-4 py-2 text-sm font-medium text-white hover:bg-tesoro-600">
+                Opslaan
+              </button>
+              <span id="profile-save-status" class="hidden flex items-center text-sm text-green-600">
+                Opgeslagen!
+              </span>
+            </div>
+          </form>
+        </div>
+
+        <!-- Language Preference -->
+        <div class="rounded-xl border bg-card p-6">
+          <h3 class="font-semibold mb-2">Taalvoorkeur</h3>
+          <p class="text-sm text-muted-foreground mb-4">
+            Kies de taal voor het dashboard. Dit wijzigt alleen de interface voor jouw account.
+          </p>
+
+          <form id="locale-form" class="space-y-4">
+            <input type="hidden" name="id" value={currentUser.id} />
+
+            <div class="grid gap-3 sm:grid-cols-3">
+              {availableLocales.map((loc) => (
+                <label
+                  class:list={[
+                    'flex items-center gap-3 rounded-lg border p-4 cursor-pointer transition-colors hover:bg-muted/50',
+                    (currentUser?.locale || 'nl') === loc.code ? 'border-tesoro-500 bg-tesoro-50' : 'border-input'
+                  ]}
+                >
+                  <input
+                    type="radio"
+                    name="locale"
+                    value={loc.code}
+                    checked={(currentUser?.locale || 'nl') === loc.code}
+                    class="sr-only"
+                  />
+                  <span class="text-2xl">{loc.flag}</span>
+                  <div>
+                    <p class="font-medium">{loc.name}</p>
+                  </div>
+                  {(currentUser?.locale || 'nl') === loc.code && (
+                    <svg class="ml-auto h-5 w-5 text-tesoro-500" fill="currentColor" viewBox="0 0 20 20">
+                      <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
+                    </svg>
+                  )}
+                </label>
+              ))}
+            </div>
+
+            <div class="flex gap-3 pt-2">
+              <button type="submit" class="rounded-lg bg-tesoro-500 px-4 py-2 text-sm font-medium text-white hover:bg-tesoro-600">
+                Taal opslaan
+              </button>
+              <span id="locale-save-status" class="hidden flex items-center text-sm text-green-600">
+                Opgeslagen!
+              </span>
+            </div>
+          </form>
+        </div>
+
+        <!-- Change Password -->
+        <div class="rounded-xl border bg-card p-6">
+          <h3 class="font-semibold mb-2">Wachtwoord wijzigen</h3>
+          <p class="text-sm text-muted-foreground mb-4">
+            Voer je nieuwe wachtwoord in om het te wijzigen.
+          </p>
+
+          <form id="password-form" class="space-y-4 max-w-sm">
+            <input type="hidden" name="id" value={currentUser.id} />
+
+            <div class="space-y-2">
+              <label class="text-sm font-medium">Nieuw wachtwoord</label>
+              <input
+                type="password"
+                name="password"
+                placeholder="Minimaal 8 karakters"
+                minlength="8"
+                class="flex h-10 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
+              />
+            </div>
+            <div class="space-y-2">
+              <label class="text-sm font-medium">Bevestig wachtwoord</label>
+              <input
+                type="password"
+                name="confirmPassword"
+                placeholder="Herhaal het wachtwoord"
+                class="flex h-10 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
+              />
+            </div>
+
+            <div class="flex gap-3 pt-2">
+              <button type="submit" class="rounded-lg bg-tesoro-500 px-4 py-2 text-sm font-medium text-white hover:bg-tesoro-600">
+                Wachtwoord wijzigen
+              </button>
+              <span id="password-save-status" class="hidden flex items-center text-sm text-green-600">
+                Wachtwoord gewijzigd!
+              </span>
+            </div>
+          </form>
+        </div>
+      </>
+    ) : (
+      <div class="rounded-xl border bg-card p-12 text-center">
+        <svg class="mx-auto h-12 w-12 text-muted-foreground/50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+        </svg>
+        <h3 class="mt-4 text-lg font-medium">Geen gebruiker gevonden</h3>
+        <p class="mt-2 text-sm text-muted-foreground">Er kon geen actieve gebruiker worden gevonden.</p>
+      </div>
+    )}
+  </div>
+</DashboardLayout>
+
+<script>
+  const profileForm = document.getElementById('profile-form') as HTMLFormElement;
+  const localeForm = document.getElementById('locale-form') as HTMLFormElement;
+  const passwordForm = document.getElementById('password-form') as HTMLFormElement;
+
+  async function saveProfile(form: HTMLFormElement, statusId: string) {
+    const formData = new FormData(form);
+    const id = formData.get('id') as string;
+    const data: Record<string, string> = {};
+
+    formData.forEach((value, key) => {
+      if (key !== 'id' && key !== 'confirmPassword' && value) {
+        data[key] = value as string;
+      }
+    });
+
+    try {
+      const response = await fetch(`/api/team-members/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+      });
+
+      const statusEl = document.getElementById(statusId);
+      if (response.ok && statusEl) {
+        statusEl.classList.remove('hidden');
+        setTimeout(() => statusEl.classList.add('hidden'), 3000);
+
+        // Reload page if locale changed to reflect the change
+        if (data.locale) {
+          setTimeout(() => window.location.reload(), 500);
+        }
+      } else {
+        alert('Er is iets misgegaan bij het opslaan');
+      }
+    } catch {
+      alert('Er is iets misgegaan bij het opslaan');
+    }
+  }
+
+  profileForm?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    await saveProfile(profileForm, 'profile-save-status');
+  });
+
+  localeForm?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    await saveProfile(localeForm, 'locale-save-status');
+  });
+
+  passwordForm?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const formData = new FormData(passwordForm);
+    const password = formData.get('password') as string;
+    const confirmPassword = formData.get('confirmPassword') as string;
+
+    if (password !== confirmPassword) {
+      alert('Wachtwoorden komen niet overeen');
+      return;
+    }
+
+    if (password.length < 8) {
+      alert('Wachtwoord moet minimaal 8 karakters bevatten');
+      return;
+    }
+
+    await saveProfile(passwordForm, 'password-save-status');
+    passwordForm.reset();
+  });
+
+  // Handle locale radio button visual update
+  const localeRadios = document.querySelectorAll('input[name="locale"]');
+  localeRadios.forEach(radio => {
+    radio.addEventListener('change', () => {
+      const labels = document.querySelectorAll('label:has(input[name="locale"])');
+      labels.forEach(label => {
+        const input = label.querySelector('input') as HTMLInputElement;
+        const checkmark = label.querySelector('svg');
+
+        if (input.checked) {
+          label.classList.add('border-tesoro-500', 'bg-tesoro-50');
+          label.classList.remove('border-input');
+          if (!checkmark) {
+            const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+            svg.setAttribute('class', 'ml-auto h-5 w-5 text-tesoro-500');
+            svg.setAttribute('fill', 'currentColor');
+            svg.setAttribute('viewBox', '0 0 20 20');
+            svg.innerHTML = '<path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />';
+            label.appendChild(svg);
+          }
+        } else {
+          label.classList.remove('border-tesoro-500', 'bg-tesoro-50');
+          label.classList.add('border-input');
+          checkmark?.remove();
+        }
+      });
+    });
+  });
+</script>
