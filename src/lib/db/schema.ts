@@ -241,6 +241,9 @@ export const quoteComments = sqliteTable('quote_comments', {
   id: text('id').primaryKey(),
   quoteId: text('quote_id').references(() => quotes.id, { onDelete: 'cascade' }).notNull(),
 
+  // Optional: link to specific line for per-line questions
+  lineId: text('line_id').references(() => quoteLines.id, { onDelete: 'cascade' }),
+
   // Who commented
   authorType: text('author_type', { enum: ['team', 'customer'] }).notNull(),
   authorId: text('author_id'), // team_member_id or null for customer

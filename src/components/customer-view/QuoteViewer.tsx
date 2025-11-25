@@ -27,6 +27,8 @@ export function QuoteViewer({
   const [showDeclineModal, setShowDeclineModal] = useState(false);
   const [showQuestionModal, setShowQuestionModal] = useState(false);
   const [questionMessage, setQuestionMessage] = useState('');
+  const [questionLineId, setQuestionLineId] = useState<string | null>(null);
+  const [questionLineDescription, setQuestionLineDescription] = useState<string>('');
   const [declineReason, setDeclineReason] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [successMessage, setSuccessMessage] = useState('');
@@ -136,7 +138,10 @@ export function QuoteViewer({
       const response = await fetch(`/api/public/quote/${publicToken}/question`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message: questionMessage }),
+        body: JSON.stringify({
+          message: questionMessage,
+          lineId: questionLineId, // Include line ID if asking about specific line
+        }),
       });
 
       if (!response.ok) {
@@ -146,6 +151,8 @@ export function QuoteViewer({
 
       setSuccessMessage('Uw vraag is verzonden! We nemen zo snel mogelijk contact met u op.');
       setQuestionMessage('');
+      setQuestionLineId(null);
+      setQuestionLineDescription('');
       setShowQuestionModal(false);
       setTimeout(() => setSuccessMessage(''), 5000);
     } catch (error) {
@@ -154,7 +161,23 @@ export function QuoteViewer({
     } finally {
       setIsSubmitting(false);
     }
-  }, [publicToken, questionMessage]);
+  }, [publicToken, questionMessage, questionLineId]);
+
+  // Open question modal for a specific line
+  const openLineQuestion = useCallback((lineId: string, lineDescription: string) => {
+    setQuestionLineId(lineId);
+    setQuestionLineDescription(lineDescription);
+    setQuestionMessage('');
+    setShowQuestionModal(true);
+  }, []);
+
+  // Open general question modal
+  const openGeneralQuestion = useCallback(() => {
+    setQuestionLineId(null);
+    setQuestionLineDescription('');
+    setQuestionMessage('');
+    setShowQuestionModal(true);
+  }, []);
 
   // Calculate current totals based on selections
   const calculateCurrentTotals = () => {
@@ -259,6 +282,7 @@ export function QuoteViewer({
             block={block}
             onToggleBlock={(selected) => handleUpdateSelection(block.id, null, selected)}
             onToggleLine={(lineId, selected) => handleUpdateSelection(block.id, lineId, selected)}
+            onAskLineQuestion={openLineQuestion}
           />
         ))}
       </div>
@@ -288,7 +312,7 @@ export function QuoteViewer({
           <div className="flex gap-3 w-full sm:w-auto">
             <Button
               variant="outline"
-              onClick={() => setShowQuestionModal(true)}
+              onClick={openGeneralQuestion}
             >
               Vraag stellen
             </Button>
@@ -343,9 +367,19 @@ export function QuoteViewer({
       {showQuestionModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-xl p-6 max-w-md w-full">
-            <h3 className="text-lg font-semibold mb-4">Vraag stellen</h3>
+            <h3 className="text-lg font-semibold mb-4">
+              {questionLineId ? 'Vraag over regel' : 'Vraag stellen'}
+            </h3>
+            {questionLineId && questionLineDescription && (
+              <div className="mb-4 p-3 bg-tesoro-50 rounded-lg border border-tesoro-200">
+                <p className="text-sm text-muted-foreground">Over:</p>
+                <p className="font-medium text-tesoro-900">{questionLineDescription}</p>
+              </div>
+            )}
             <p className="text-muted-foreground mb-4">
-              Heeft u een vraag over deze offerte? Wij nemen zo snel mogelijk contact met u op.
+              {questionLineId
+                ? 'Stel uw vraag over deze regel. Wij nemen zo snel mogelijk contact met u op.'
+                : 'Heeft u een vraag over deze offerte? Wij nemen zo snel mogelijk contact met u op.'}
             </p>
             <Textarea
               placeholder="Uw vraag..."
@@ -355,7 +389,11 @@ export function QuoteViewer({
               rows={4}
             />
             <div className="flex gap-3 justify-end">
-              <Button variant="outline" onClick={() => setShowQuestionModal(false)}>
+              <Button variant="outline" onClick={() => {
+                setShowQuestionModal(false);
+                setQuestionLineId(null);
+                setQuestionLineDescription('');
+              }}>
                 Annuleren
               </Button>
               <Button
@@ -378,10 +416,12 @@ function QuoteBlockView({
   block,
   onToggleBlock,
   onToggleLine,
+  onAskLineQuestion,
 }: {
   block: QuoteBlock;
   onToggleBlock: (selected: boolean) => void;
   onToggleLine: (lineId: string, selected: boolean) => void;
+  onAskLineQuestion: (lineId: string, lineDescription: string) => void;
 }) {
   const isEnabled = !block.isOptional || block.isSelectedByCustomer;
 
@@ -421,7 +461,8 @@ function QuoteBlockView({
             {/* Table Header */}
             <div className="grid grid-cols-12 gap-2 text-xs font-medium text-muted-foreground px-2 pb-2 border-b">
               <div className="col-span-1"></div>
-              <div className="col-span-5">Omschrijving</div>
+              <div className="col-span-4">Omschrijving</div>
+              <div className="col-span-1"></div>
               <div className="col-span-2 text-right">Aantal</div>
               <div className="col-span-2 text-right">Prijs</div>
               <div className="col-span-2 text-right">Totaal</div>
@@ -434,6 +475,7 @@ function QuoteBlockView({
                 line={line}
                 blockEnabled={isEnabled}
                 onToggle={(selected) => onToggleLine(line.id, selected)}
+                onAskQuestion={() => onAskLineQuestion(line.id, line.description)}
               />
             ))}
           </div>
@@ -448,10 +490,12 @@ function QuoteLineView({
   line,
   blockEnabled,
   onToggle,
+  onAskQuestion,
 }: {
   line: QuoteLine;
   blockEnabled: boolean;
   onToggle: (selected: boolean) => void;
+  onAskQuestion: () => void;
 }) {
   const lineTotal = calculateLineTotal(
     line.quantity,
@@ -465,7 +509,7 @@ function QuoteLineView({
   return (
     <div
       className={cn(
-        'grid grid-cols-12 gap-2 items-center py-2 px-2 rounded-lg',
+        'grid grid-cols-12 gap-2 items-center py-2 px-2 rounded-lg group hover:bg-muted/50',
         line.isOptional && 'bg-tesoro-50/50',
         !isEnabled && 'opacity-50'
       )}
@@ -483,11 +527,24 @@ function QuoteLineView({
       </div>
 
       {/* Description */}
-      <div className="col-span-5">
+      <div className="col-span-4">
         <p className={cn(!isEnabled && 'line-through')}>{line.description}</p>
         {line.isOptional && (
           <span className="text-xs text-tesoro-600">Optioneel</span>
         )}
+      </div>
+
+      {/* Question button */}
+      <div className="col-span-1 flex justify-center">
+        <button
+          onClick={onAskQuestion}
+          className="opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded hover:bg-tesoro-100 text-tesoro-600"
+          title="Vraag stellen over deze regel"
+        >
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+        </button>
       </div>
 
       {/* Quantity */}
