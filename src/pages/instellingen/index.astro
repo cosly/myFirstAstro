@@ -1,5 +1,7 @@
 ---
 import DashboardLayout from '../../layouts/DashboardLayout.astro';
+import { createDb, appSettings, teamMembers as teamMembersTable } from '../../lib/db';
+import { desc } from 'drizzle-orm';
 
 const tabs = [
   { id: 'algemeen', label: 'Algemeen', icon: '⚙️' },
@@ -8,7 +10,7 @@ const tabs = [
   { id: 'integraties', label: 'Integraties', icon: '🔗' },
 ];
 
-const emailTemplates = [
+const emailTemplateTypes = [
   { id: 'quote_sent', name: 'Offerte verstuurd', description: 'Wanneer een offerte naar de klant wordt verstuurd' },
   { id: 'quote_reminder', name: 'Herinnering', description: 'Automatische herinnering voor verlopen offerte' },
   { id: 'quote_accepted', name: 'Offerte geaccepteerd', description: 'Bevestiging wanneer klant accepteert' },
@@ -17,11 +19,56 @@ const emailTemplates = [
   { id: 'question_received', name: 'Vraag ontvangen', description: 'Wanneer klant een vraag stelt' },
 ];
 
-const teamMembers = [
-  { id: '1', name: 'Jan de Vries', email: 'jan@tesorocrm.nl', role: 'admin', active: true },
-  { id: '2', name: 'Sophie Bakker', email: 'sophie@tesorocrm.nl', role: 'member', active: true },
-  { id: '3', name: 'Piet Jansen', email: 'piet@tesorocrm.nl', role: 'member', active: false },
-];
+// Fetch data from database
+let settings: Record<string, unknown> = {};
+let teamMembers: Array<{
+  id: string;
+  name: string;
+  email: string;
+  role: string;
+  isActive: boolean;
+}> = [];
+
+try {
+  const db = createDb(Astro.locals.runtime.env.DB);
+
+  // Fetch settings
+  const settingsRows = await db.select().from(appSettings);
+  settingsRows.forEach(row => {
+    try {
+      settings[row.key] = typeof row.value === 'string' ? JSON.parse(row.value) : row.value;
+    } catch {
+      settings[row.key] = row.value;
+    }
+  });
+
+  // Fetch team members
+  const members = await db
+    .select({
+      id: teamMembersTable.id,
+      name: teamMembersTable.name,
+      email: teamMembersTable.email,
+      role: teamMembersTable.role,
+      isActive: teamMembersTable.isActive,
+    })
+    .from(teamMembersTable)
+    .orderBy(desc(teamMembersTable.createdAt));
+
+  teamMembers = members;
+} catch (error) {
+  console.error('Failed to fetch settings:', error);
+}
+
+// Default values
+const companyName = (settings.company_name as string) || '';
+const companyEmail = (settings.company_email as string) || '';
+const companyPhone = (settings.company_phone as string) || '';
+const companyAddress = (settings.company_address as string) || '';
+const companyKvk = (settings.company_kvk as string) || '';
+const companyBtw = (settings.company_btw as string) || '';
+const quoteValidityDays = (settings.quote_validity_days as number) || 30;
+const quoteNumberPrefix = (settings.quote_number_prefix as string) || '2024-';
+const autoRemindersEnabled = (settings.auto_reminders_enabled as boolean) ?? true;
 ---
 
 <DashboardLayout title="Instellingen">
@@ -54,59 +101,61 @@ const teamMembers = [
       <div id="tab-algemeen" class="space-y-6">
         <div class="rounded-xl border bg-card p-6">
           <h3 class="font-semibold mb-4">Bedrijfsgegevens</h3>
-          <form class="space-y-4 max-w-lg">
+          <form id="company-form" class="space-y-4 max-w-lg">
             <div class="space-y-2">
               <label class="text-sm font-medium">Bedrijfsnaam</label>
-              <input type="text" value="Tesoro CRM" class="flex h-10 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm" />
+              <input type="text" name="company_name" value={companyName} class="flex h-10 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm" />
             </div>
             <div class="grid gap-4 sm:grid-cols-2">
               <div class="space-y-2">
                 <label class="text-sm font-medium">Email</label>
-                <input type="email" value="info@tesorocrm.nl" class="flex h-10 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm" />
+                <input type="email" name="company_email" value={companyEmail} class="flex h-10 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm" />
               </div>
               <div class="space-y-2">
                 <label class="text-sm font-medium">Telefoon</label>
-                <input type="tel" value="020-1234567" class="flex h-10 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm" />
+                <input type="tel" name="company_phone" value={companyPhone} class="flex h-10 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm" />
               </div>
             </div>
             <div class="space-y-2">
               <label class="text-sm font-medium">Adres</label>
-              <input type="text" value="Voorbeeldstraat 123, 1234 AB Amsterdam" class="flex h-10 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm" />
+              <input type="text" name="company_address" value={companyAddress} class="flex h-10 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm" />
             </div>
             <div class="grid gap-4 sm:grid-cols-2">
               <div class="space-y-2">
                 <label class="text-sm font-medium">KVK nummer</label>
-                <input type="text" value="12345678" class="flex h-10 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm" />
+                <input type="text" name="company_kvk" value={companyKvk} class="flex h-10 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm" />
               </div>
               <div class="space-y-2">
                 <label class="text-sm font-medium">BTW nummer</label>
-                <input type="text" value="NL123456789B01" class="flex h-10 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm" />
+                <input type="text" name="company_btw" value={companyBtw} class="flex h-10 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm" />
               </div>
             </div>
             <button type="submit" class="rounded-lg bg-tesoro-500 px-4 py-2 text-sm font-medium text-white hover:bg-tesoro-600">
               Opslaan
             </button>
+            <span id="company-save-status" class="ml-2 text-sm text-green-600 hidden">Opgeslagen!</span>
           </form>
         </div>
 
         <div class="rounded-xl border bg-card p-6">
           <h3 class="font-semibold mb-4">Offerte instellingen</h3>
-          <form class="space-y-4 max-w-lg">
+          <form id="quote-settings-form" class="space-y-4 max-w-lg">
             <div class="space-y-2">
               <label class="text-sm font-medium">Standaard geldigheid (dagen)</label>
-              <input type="number" value="30" class="flex h-10 w-32 rounded-lg border border-input bg-background px-3 py-2 text-sm" />
+              <input type="number" name="quote_validity_days" value={quoteValidityDays} class="flex h-10 w-32 rounded-lg border border-input bg-background px-3 py-2 text-sm" />
             </div>
             <div class="space-y-2">
               <label class="text-sm font-medium">Offerte nummerprefix</label>
-              <input type="text" value="2024-" class="flex h-10 w-32 rounded-lg border border-input bg-background px-3 py-2 text-sm" />
+              <input type="text" name="quote_number_prefix" value={quoteNumberPrefix} class="flex h-10 w-32 rounded-lg border border-input bg-background px-3 py-2 text-sm" />
             </div>
             <label class="flex items-center gap-2">
-              <input type="checkbox" checked class="h-4 w-4 rounded border-gray-300 text-tesoro-500" />
+              <input type="checkbox" name="auto_reminders_enabled" checked={autoRemindersEnabled} class="h-4 w-4 rounded border-gray-300 text-tesoro-500" />
               <span class="text-sm">Stuur automatische herinneringen</span>
             </label>
             <button type="submit" class="rounded-lg bg-tesoro-500 px-4 py-2 text-sm font-medium text-white hover:bg-tesoro-600">
               Opslaan
             </button>
+            <span id="quote-save-status" class="ml-2 text-sm text-green-600 hidden">Opgeslagen!</span>
           </form>
         </div>
       </div>
@@ -119,13 +168,17 @@ const teamMembers = [
             <p class="text-sm text-muted-foreground">Pas de automatische emails aan</p>
           </div>
           <div class="divide-y">
-            {emailTemplates.map((template) => (
+            {emailTemplateTypes.map((template) => (
               <div class="flex items-center justify-between px-6 py-4 hover:bg-muted/30">
                 <div>
                   <p class="font-medium">{template.name}</p>
                   <p class="text-sm text-muted-foreground">{template.description}</p>
                 </div>
-                <button class="rounded-lg border px-3 py-1.5 text-sm hover:bg-muted">
+                <button
+                  class="edit-template-btn rounded-lg border px-3 py-1.5 text-sm hover:bg-muted"
+                  data-template-id={template.id}
+                  data-template-name={template.name}
+                >
                   Bewerken
                 </button>
               </div>
@@ -137,7 +190,7 @@ const teamMembers = [
       <!-- Team -->
       <div id="tab-team" class="hidden space-y-6">
         <div class="flex justify-end">
-          <button class="inline-flex items-center gap-2 rounded-lg bg-tesoro-500 px-4 py-2 text-sm font-medium text-white hover:bg-tesoro-600">
+          <button id="add-member-btn" class="inline-flex items-center gap-2 rounded-lg bg-tesoro-500 px-4 py-2 text-sm font-medium text-white hover:bg-tesoro-600">
             <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
             </svg>
@@ -145,49 +198,77 @@ const teamMembers = [
           </button>
         </div>
         <div class="rounded-xl border bg-card overflow-hidden">
-          <table class="w-full">
-            <thead class="border-b bg-muted/50">
-              <tr>
-                <th class="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase">Naam</th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase">Email</th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase">Rol</th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase">Status</th>
-                <th class="px-6 py-3 text-right text-xs font-medium text-muted-foreground uppercase">Acties</th>
-              </tr>
-            </thead>
-            <tbody class="divide-y">
-              {teamMembers.map((member) => (
-                <tr class="hover:bg-muted/30">
-                  <td class="px-6 py-4 font-medium">{member.name}</td>
-                  <td class="px-6 py-4 text-sm">{member.email}</td>
-                  <td class="px-6 py-4">
-                    <span class:list={[
-                      'inline-flex rounded-full px-2.5 py-0.5 text-xs font-medium',
-                      member.role === 'admin' ? 'bg-purple-100 text-purple-800' : 'bg-gray-100 text-gray-800'
-                    ]}>
-                      {member.role === 'admin' ? 'Beheerder' : 'Lid'}
-                    </span>
-                  </td>
-                  <td class="px-6 py-4">
-                    <span class:list={[
-                      'inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-medium',
-                      member.active ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
-                    ]}>
-                      <span class:list={['h-1.5 w-1.5 rounded-full', member.active ? 'bg-green-500' : 'bg-gray-400']}></span>
-                      {member.active ? 'Actief' : 'Inactief'}
-                    </span>
-                  </td>
-                  <td class="px-6 py-4 text-right">
-                    <button class="p-1.5 text-muted-foreground hover:text-foreground rounded-lg hover:bg-muted">
-                      <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
-                      </svg>
-                    </button>
-                  </td>
+          {teamMembers.length === 0 ? (
+            <div class="p-12 text-center">
+              <svg class="mx-auto h-12 w-12 text-muted-foreground/50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+              </svg>
+              <h3 class="mt-4 text-lg font-medium">Geen teamleden</h3>
+              <p class="mt-2 text-sm text-muted-foreground">Voeg je eerste teamlid toe om te beginnen.</p>
+            </div>
+          ) : (
+            <table class="w-full">
+              <thead class="border-b bg-muted/50">
+                <tr>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase">Naam</th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase">Email</th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase">Rol</th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase">Status</th>
+                  <th class="px-6 py-3 text-right text-xs font-medium text-muted-foreground uppercase">Acties</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody class="divide-y">
+                {teamMembers.map((member) => (
+                  <tr class="hover:bg-muted/30">
+                    <td class="px-6 py-4 font-medium">{member.name}</td>
+                    <td class="px-6 py-4 text-sm">{member.email}</td>
+                    <td class="px-6 py-4">
+                      <span class:list={[
+                        'inline-flex rounded-full px-2.5 py-0.5 text-xs font-medium',
+                        member.role === 'admin' ? 'bg-purple-100 text-purple-800' : 'bg-gray-100 text-gray-800'
+                      ]}>
+                        {member.role === 'admin' ? 'Beheerder' : 'Lid'}
+                      </span>
+                    </td>
+                    <td class="px-6 py-4">
+                      <span class:list={[
+                        'inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-medium',
+                        member.isActive ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
+                      ]}>
+                        <span class:list={['h-1.5 w-1.5 rounded-full', member.isActive ? 'bg-green-500' : 'bg-gray-400']}></span>
+                        {member.isActive ? 'Actief' : 'Inactief'}
+                      </span>
+                    </td>
+                    <td class="px-6 py-4 text-right">
+                      <div class="flex items-center justify-end gap-1">
+                        <button
+                          class="edit-member-btn p-1.5 text-muted-foreground hover:text-foreground rounded-lg hover:bg-muted"
+                          data-member-id={member.id}
+                          data-member-name={member.name}
+                          data-member-email={member.email}
+                          data-member-role={member.role}
+                          data-member-active={member.isActive ? 'true' : 'false'}
+                        >
+                          <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                          </svg>
+                        </button>
+                        <button
+                          class="delete-member-btn p-1.5 text-muted-foreground hover:text-red-500 rounded-lg hover:bg-muted"
+                          data-member-id={member.id}
+                          data-member-name={member.name}
+                        >
+                          <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                          </svg>
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
         </div>
       </div>
 
@@ -260,9 +341,90 @@ const teamMembers = [
       </div>
     </div>
   </div>
+
+  <!-- Add/Edit Team Member Modal -->
+  <div id="member-modal" class="fixed inset-0 z-50 hidden">
+    <div class="fixed inset-0 bg-black/50" id="member-modal-backdrop"></div>
+    <div class="fixed inset-0 flex items-center justify-center p-4">
+      <div class="relative w-full max-w-md rounded-2xl bg-card p-6 shadow-xl">
+        <button id="close-member-modal" class="absolute right-4 top-4 p-1 text-muted-foreground hover:text-foreground">
+          <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+
+        <h2 id="member-modal-title" class="text-xl font-semibold mb-6">Nieuw Teamlid</h2>
+
+        <form id="member-form" class="space-y-4">
+          <input type="hidden" id="member-id" name="id" />
+
+          <div class="space-y-2">
+            <label class="text-sm font-medium">Naam *</label>
+            <input type="text" id="member-name" name="name" required class="flex h-10 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm" />
+          </div>
+
+          <div class="space-y-2">
+            <label class="text-sm font-medium">Email *</label>
+            <input type="email" id="member-email" name="email" required class="flex h-10 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm" />
+          </div>
+
+          <div class="space-y-2">
+            <label class="text-sm font-medium">Wachtwoord <span id="password-required">*</span></label>
+            <input type="password" id="member-password" name="password" class="flex h-10 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm" />
+            <p id="password-hint" class="text-xs text-muted-foreground hidden">Laat leeg om wachtwoord niet te wijzigen</p>
+          </div>
+
+          <div class="space-y-2">
+            <label class="text-sm font-medium">Rol</label>
+            <select id="member-role" name="role" class="flex h-10 w-full rounded-lg border border-input bg-background px-3 text-sm">
+              <option value="member">Lid</option>
+              <option value="admin">Beheerder</option>
+            </select>
+          </div>
+
+          <div id="member-active-container" class="hidden">
+            <label class="flex items-center gap-2">
+              <input type="checkbox" id="member-active" name="isActive" checked class="h-4 w-4 rounded border-gray-300 text-tesoro-500" />
+              <span class="text-sm">Actief</span>
+            </label>
+          </div>
+
+          <div class="flex justify-end gap-3 pt-4">
+            <button type="button" id="cancel-member-btn" class="rounded-lg border px-4 py-2 text-sm font-medium hover:bg-muted">
+              Annuleren
+            </button>
+            <button type="submit" class="rounded-lg bg-tesoro-500 px-4 py-2 text-sm font-medium text-white hover:bg-tesoro-600">
+              Opslaan
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Delete Confirmation Modal -->
+  <div id="delete-modal" class="fixed inset-0 z-50 hidden">
+    <div class="fixed inset-0 bg-black/50" id="delete-modal-backdrop"></div>
+    <div class="fixed inset-0 flex items-center justify-center p-4">
+      <div class="relative w-full max-w-sm rounded-2xl bg-card p-6 shadow-xl">
+        <h2 class="text-lg font-semibold mb-2">Teamlid verwijderen</h2>
+        <p id="delete-message" class="text-sm text-muted-foreground mb-6"></p>
+        <input type="hidden" id="delete-member-id" />
+        <div class="flex justify-end gap-3">
+          <button id="cancel-delete-btn" class="rounded-lg border px-4 py-2 text-sm font-medium hover:bg-muted">
+            Annuleren
+          </button>
+          <button id="confirm-delete-btn" class="rounded-lg bg-red-500 px-4 py-2 text-sm font-medium text-white hover:bg-red-600">
+            Verwijderen
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
 </DashboardLayout>
 
 <script>
+  // Tab switching
   const tabs = document.querySelectorAll('[data-tab]');
   const tabContents = document.querySelectorAll('[id^="tab-"]');
 
@@ -270,7 +432,6 @@ const teamMembers = [
     tab.addEventListener('click', () => {
       const tabId = tab.getAttribute('data-tab');
 
-      // Update tab styles
       tabs.forEach((t) => {
         t.classList.remove('border-tesoro-500', 'text-tesoro-600');
         t.classList.add('border-transparent', 'text-muted-foreground');
@@ -278,7 +439,6 @@ const teamMembers = [
       tab.classList.add('border-tesoro-500', 'text-tesoro-600');
       tab.classList.remove('border-transparent', 'text-muted-foreground');
 
-      // Show/hide content
       tabContents.forEach((content) => {
         if (content.id === `tab-${tabId}`) {
           content.classList.remove('hidden');
@@ -287,5 +447,198 @@ const teamMembers = [
         }
       });
     });
+  });
+
+  // Settings forms
+  const companyForm = document.getElementById('company-form') as HTMLFormElement;
+  const quoteSettingsForm = document.getElementById('quote-settings-form') as HTMLFormElement;
+  const companySaveStatus = document.getElementById('company-save-status');
+  const quoteSaveStatus = document.getElementById('quote-save-status');
+
+  async function saveSettings(formData: FormData, statusEl: HTMLElement | null) {
+    const data: Record<string, unknown> = {};
+    formData.forEach((value, key) => {
+      if (key.includes('checkbox') || value === 'on') return;
+      data[key] = value;
+    });
+
+    // Handle checkboxes
+    const checkboxes = document.querySelectorAll('input[type="checkbox"]');
+    checkboxes.forEach((cb) => {
+      const input = cb as HTMLInputElement;
+      if (input.name && !input.name.includes('member') && !input.name.includes('Active')) {
+        data[input.name] = input.checked;
+      }
+    });
+
+    try {
+      const response = await fetch('/api/settings', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+      });
+
+      if (response.ok && statusEl) {
+        statusEl.classList.remove('hidden');
+        setTimeout(() => statusEl.classList.add('hidden'), 2000);
+      } else {
+        alert('Er is iets misgegaan bij het opslaan');
+      }
+    } catch {
+      alert('Er is iets misgegaan bij het opslaan');
+    }
+  }
+
+  companyForm?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    await saveSettings(new FormData(companyForm), companySaveStatus);
+  });
+
+  quoteSettingsForm?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    await saveSettings(new FormData(quoteSettingsForm), quoteSaveStatus);
+  });
+
+  // Team Member Modal
+  const memberModal = document.getElementById('member-modal');
+  const memberModalTitle = document.getElementById('member-modal-title');
+  const memberForm = document.getElementById('member-form') as HTMLFormElement;
+  const memberIdInput = document.getElementById('member-id') as HTMLInputElement;
+  const memberNameInput = document.getElementById('member-name') as HTMLInputElement;
+  const memberEmailInput = document.getElementById('member-email') as HTMLInputElement;
+  const memberPasswordInput = document.getElementById('member-password') as HTMLInputElement;
+  const memberRoleInput = document.getElementById('member-role') as HTMLSelectElement;
+  const memberActiveInput = document.getElementById('member-active') as HTMLInputElement;
+  const memberActiveContainer = document.getElementById('member-active-container');
+  const passwordRequired = document.getElementById('password-required');
+  const passwordHint = document.getElementById('password-hint');
+
+  function showMemberModal(editMode = false) {
+    memberModal?.classList.remove('hidden');
+    if (memberModalTitle) {
+      memberModalTitle.textContent = editMode ? 'Teamlid Bewerken' : 'Nieuw Teamlid';
+    }
+    if (editMode) {
+      memberActiveContainer?.classList.remove('hidden');
+      passwordRequired?.classList.add('hidden');
+      passwordHint?.classList.remove('hidden');
+      memberPasswordInput.required = false;
+    } else {
+      memberActiveContainer?.classList.add('hidden');
+      passwordRequired?.classList.remove('hidden');
+      passwordHint?.classList.add('hidden');
+      memberPasswordInput.required = true;
+    }
+  }
+
+  function hideMemberModal() {
+    memberModal?.classList.add('hidden');
+    memberForm?.reset();
+    if (memberIdInput) memberIdInput.value = '';
+  }
+
+  document.getElementById('add-member-btn')?.addEventListener('click', () => showMemberModal(false));
+  document.getElementById('close-member-modal')?.addEventListener('click', hideMemberModal);
+  document.getElementById('cancel-member-btn')?.addEventListener('click', hideMemberModal);
+  document.getElementById('member-modal-backdrop')?.addEventListener('click', hideMemberModal);
+
+  // Edit member buttons
+  document.querySelectorAll('.edit-member-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const id = btn.getAttribute('data-member-id');
+      const name = btn.getAttribute('data-member-name');
+      const email = btn.getAttribute('data-member-email');
+      const role = btn.getAttribute('data-member-role');
+      const active = btn.getAttribute('data-member-active') === 'true';
+
+      if (memberIdInput) memberIdInput.value = id || '';
+      if (memberNameInput) memberNameInput.value = name || '';
+      if (memberEmailInput) memberEmailInput.value = email || '';
+      if (memberRoleInput) memberRoleInput.value = role || 'member';
+      if (memberActiveInput) memberActiveInput.checked = active;
+
+      showMemberModal(true);
+    });
+  });
+
+  // Member form submit
+  memberForm?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const formData = new FormData(memberForm);
+    const data: Record<string, unknown> = {};
+    formData.forEach((value, key) => {
+      if (key === 'isActive') return;
+      if (value) data[key] = value;
+    });
+    data.isActive = memberActiveInput?.checked ?? true;
+
+    const isEdit = Boolean(data.id);
+
+    try {
+      const url = isEdit ? `/api/team-members/${data.id}` : '/api/team-members';
+      const method = isEdit ? 'PUT' : 'POST';
+
+      const response = await fetch(url, {
+        method,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+      });
+
+      if (response.ok) {
+        window.location.reload();
+      } else {
+        const error = await response.json();
+        alert(error.error || 'Er is iets misgegaan');
+      }
+    } catch {
+      alert('Er is iets misgegaan');
+    }
+  });
+
+  // Delete Modal
+  const deleteModal = document.getElementById('delete-modal');
+  const deleteMessage = document.getElementById('delete-message');
+  const deleteMemberIdInput = document.getElementById('delete-member-id') as HTMLInputElement;
+
+  function showDeleteModal(id: string, name: string) {
+    deleteModal?.classList.remove('hidden');
+    if (deleteMessage) {
+      deleteMessage.textContent = `Weet je zeker dat je "${name}" wilt verwijderen?`;
+    }
+    if (deleteMemberIdInput) deleteMemberIdInput.value = id;
+  }
+
+  function hideDeleteModal() {
+    deleteModal?.classList.add('hidden');
+    if (deleteMemberIdInput) deleteMemberIdInput.value = '';
+  }
+
+  document.getElementById('cancel-delete-btn')?.addEventListener('click', hideDeleteModal);
+  document.getElementById('delete-modal-backdrop')?.addEventListener('click', hideDeleteModal);
+
+  document.querySelectorAll('.delete-member-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const id = btn.getAttribute('data-member-id');
+      const name = btn.getAttribute('data-member-name');
+      if (id && name) showDeleteModal(id, name);
+    });
+  });
+
+  document.getElementById('confirm-delete-btn')?.addEventListener('click', async () => {
+    const id = deleteMemberIdInput?.value;
+    if (!id) return;
+
+    try {
+      const response = await fetch(`/api/team-members/${id}`, { method: 'DELETE' });
+
+      if (response.ok) {
+        window.location.reload();
+      } else {
+        const error = await response.json();
+        alert(error.error || 'Er is iets misgegaan');
+      }
+    } catch {
+      alert('Er is iets misgegaan');
+    }
   });
 </script>

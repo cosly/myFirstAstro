@@ -1,6 +1,43 @@
 ---
 import DashboardLayout from '../../layouts/DashboardLayout.astro';
 import { QuoteBuilder } from '../../components/quote-builder/QuoteBuilder';
+import { createDb } from '../../lib/db';
+import { customers as customersTable } from '../../lib/db/schema';
+import { desc } from 'drizzle-orm';
+
+// Get customer ID from query string if coming from customer page
+const customerId = Astro.url.searchParams.get('customer');
+const requestId = Astro.url.searchParams.get('request');
+
+// Fetch all customers for dropdown
+const db = createDb(Astro.locals.runtime.env.DB);
+const customers = await db
+  .select({
+    id: customersTable.id,
+    companyName: customersTable.companyName,
+    contactName: customersTable.contactName,
+    email: customersTable.email,
+  })
+  .from(customersTable)
+  .orderBy(desc(customersTable.createdAt));
+
+// If requestId is provided, fetch the request data
+let requestData = null;
+if (requestId) {
+  const request = await db.query.quoteRequests.findFirst({
+    where: (requests, { eq }) => eq(requests.id, requestId),
+  });
+  if (request) {
+    requestData = {
+      id: request.id,
+      description: request.description,
+      serviceType: request.serviceType,
+      companyName: request.companyName,
+      contactName: request.contactName,
+      contactEmail: request.contactEmail,
+    };
+  }
+}
 ---
 
 <DashboardLayout title="Nieuwe Offerte">
@@ -11,9 +48,27 @@ import { QuoteBuilder } from '../../components/quote-builder/QuoteBuilder';
         <h1 class="text-2xl font-bold">Nieuwe Offerte</h1>
         <p class="text-muted-foreground">Maak een nieuwe offerte voor een klant</p>
       </div>
+      <a href="/offertes" class="text-sm text-muted-foreground hover:text-foreground">
+        ← Terug naar overzicht
+      </a>
     </div>
 
-    <!-- Quote Builder -->
-    <QuoteBuilder client:load />
+    {requestData && (
+      <div class="rounded-xl border border-blue-200 bg-blue-50 p-4">
+        <h3 class="font-medium text-blue-900">Gebaseerd op aanvraag</h3>
+        <p class="text-sm text-blue-700 mt-1">
+          {requestData.companyName} - {requestData.serviceType}
+        </p>
+        <p class="text-sm text-blue-600 mt-1">{requestData.description}</p>
+      </div>
+    )}
+
+    <!-- Quote Builder with customer data -->
+    <QuoteBuilder
+      client:load
+      customers={customers}
+      initialCustomerId={customerId}
+      requestId={requestId}
+    />
   </div>
 </DashboardLayout>

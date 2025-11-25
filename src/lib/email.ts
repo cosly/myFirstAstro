@@ -170,6 +170,59 @@ De klant ontvangt een bevestigingsmail.
     `,
   },
 
+  quote_declined: {
+    subject: 'Offerte {{quote_number}} afgewezen',
+    bodyHtml: `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #333; }
+    .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+    .header { text-align: center; padding: 20px 0; border-bottom: 2px solid #ef4444; }
+    .logo { font-size: 24px; font-weight: bold; color: #f97316; }
+    .declined { color: #ef4444; font-size: 48px; }
+    .content { padding: 30px 0; }
+    .footer { border-top: 1px solid #eee; padding-top: 20px; font-size: 14px; color: #666; }
+    .quote-box { background: #fef2f2; border: 1px solid #fecaca; border-radius: 8px; padding: 20px; margin: 20px 0; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <div class="declined">✕</div>
+      <h1>Offerte Afgewezen</h1>
+    </div>
+    <div class="content">
+      <p>De offerte <strong>{{quote_number}}</strong> is afgewezen door {{customer_company}}.</p>
+
+      <div class="quote-box">
+        <p><strong>Offerte:</strong> {{quote_number}}</p>
+        <p><strong>Klant:</strong> {{customer_company}}</p>
+        <p><strong>Totaal:</strong> {{quote_total}}</p>
+      </div>
+
+      <p>De klant heeft de offerte afgewezen. Neem eventueel contact op om de redenen te bespreken.</p>
+    </div>
+    <div class="footer">
+      <p>Dit is een automatisch bericht van Tesoro CRM.</p>
+    </div>
+  </div>
+</body>
+</html>
+    `,
+    bodyText: `
+De offerte {{quote_number}} is afgewezen door {{customer_company}}.
+
+Offerte: {{quote_number}}
+Klant: {{customer_company}}
+Totaal: {{quote_total}}
+
+Dit is een automatisch bericht van Tesoro CRM.
+    `,
+  },
+
   quote_reminder: {
     subject: 'Herinnering: Uw offerte {{quote_number}} verloopt binnenkort',
     bodyHtml: `

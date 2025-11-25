@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
+import { Textarea } from '@/components/ui/textarea';
 import { SignaturePad } from '@/components/signature/SignaturePad';
 import type { Quote, QuoteBlock, QuoteLine } from '@/components/quote-builder/types';
 import { cn, formatCurrency, formatDate, calculateLineTotal } from '@/lib/utils';
@@ -13,23 +14,147 @@ interface QuoteViewerProps {
     contactName: string;
     email: string;
   };
-  onUpdateSelection: (blockId: string, lineId: string | null, selected: boolean) => void;
-  onAccept: (signatureData: { signatureDataUrl: string; name: string; function: string }) => void;
-  onDecline: (reason?: string) => void;
-  onAskQuestion: (message: string) => void;
+  publicToken: string;
 }
 
 export function QuoteViewer({
-  quote,
+  quote: initialQuote,
   customer,
-  onUpdateSelection,
-  onAccept,
-  onDecline,
-  onAskQuestion,
+  publicToken,
 }: QuoteViewerProps) {
+  const [quote, setQuote] = useState(initialQuote);
   const [showSignature, setShowSignature] = useState(false);
   const [showDeclineModal, setShowDeclineModal] = useState(false);
   const [showQuestionModal, setShowQuestionModal] = useState(false);
+  const [questionMessage, setQuestionMessage] = useState('');
+  const [declineReason, setDeclineReason] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [successMessage, setSuccessMessage] = useState('');
+  const [errorMessage, setErrorMessage] = useState('');
+
+  // Update selection via API
+  const handleUpdateSelection = useCallback(async (blockId: string, lineId: string | null, selected: boolean) => {
+    try {
+      const response = await fetch(`/api/public/quote/${publicToken}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ blockId, lineId, selected }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to update selection');
+      }
+
+      // Update local state
+      setQuote(prev => ({
+        ...prev,
+        blocks: prev.blocks.map(block => {
+          if (block.id === blockId) {
+            if (lineId === null) {
+              return { ...block, isSelectedByCustomer: selected };
+            }
+            return {
+              ...block,
+              lines: block.lines.map(line =>
+                line.id === lineId ? { ...line, isSelectedByCustomer: selected } : line
+              ),
+            };
+          }
+          return block;
+        }),
+      }));
+    } catch (error) {
+      console.error('Failed to update selection:', error);
+      setErrorMessage('Kon selectie niet opslaan. Probeer het opnieuw.');
+      setTimeout(() => setErrorMessage(''), 3000);
+    }
+  }, [publicToken]);
+
+  // Accept quote via API
+  const handleAccept = useCallback(async (signatureData: { signatureDataUrl: string; name: string; function: string }) => {
+    setIsSubmitting(true);
+    setErrorMessage('');
+
+    try {
+      const response = await fetch(`/api/public/quote/${publicToken}/accept`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(signatureData),
+      });
+
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.error || 'Failed to accept quote');
+      }
+
+      // Redirect to success state
+      window.location.reload();
+    } catch (error) {
+      console.error('Failed to accept quote:', error);
+      setErrorMessage(error instanceof Error ? error.message : 'Kon offerte niet accepteren. Probeer het opnieuw.');
+      setShowSignature(false);
+    } finally {
+      setIsSubmitting(false);
+    }
+  }, [publicToken]);
+
+  // Decline quote via API
+  const handleDecline = useCallback(async () => {
+    setIsSubmitting(true);
+    setErrorMessage('');
+
+    try {
+      const response = await fetch(`/api/public/quote/${publicToken}/decline`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ reason: declineReason }),
+      });
+
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.error || 'Failed to decline quote');
+      }
+
+      window.location.reload();
+    } catch (error) {
+      console.error('Failed to decline quote:', error);
+      setErrorMessage(error instanceof Error ? error.message : 'Kon offerte niet afwijzen. Probeer het opnieuw.');
+    } finally {
+      setIsSubmitting(false);
+      setShowDeclineModal(false);
+    }
+  }, [publicToken, declineReason]);
+
+  // Ask question via API
+  const handleAskQuestion = useCallback(async () => {
+    if (!questionMessage.trim()) return;
+
+    setIsSubmitting(true);
+    setErrorMessage('');
+
+    try {
+      const response = await fetch(`/api/public/quote/${publicToken}/question`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: questionMessage }),
+      });
+
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.error || 'Failed to send question');
+      }
+
+      setSuccessMessage('Uw vraag is verzonden! We nemen zo snel mogelijk contact met u op.');
+      setQuestionMessage('');
+      setShowQuestionModal(false);
+      setTimeout(() => setSuccessMessage(''), 5000);
+    } catch (error) {
+      console.error('Failed to send question:', error);
+      setErrorMessage(error instanceof Error ? error.message : 'Kon vraag niet versturen. Probeer het opnieuw.');
+    } finally {
+      setIsSubmitting(false);
+    }
+  }, [publicToken, questionMessage]);
 
   // Calculate current totals based on selections
   const calculateCurrentTotals = () => {
@@ -62,7 +187,7 @@ export function QuoteViewer({
     return (
       <div className="max-w-lg mx-auto p-6">
         <SignaturePad
-          onSign={onAccept}
+          onSign={handleAccept}
           onCancel={() => setShowSignature(false)}
         />
       </div>
@@ -71,6 +196,20 @@ export function QuoteViewer({
 
   return (
     <div className="max-w-4xl mx-auto">
+      {/* Success Message */}
+      {successMessage && (
+        <div className="mb-6 rounded-lg bg-green-50 border border-green-200 p-4 text-green-800">
+          {successMessage}
+        </div>
+      )}
+
+      {/* Error Message */}
+      {errorMessage && (
+        <div className="mb-6 rounded-lg bg-red-50 border border-red-200 p-4 text-red-800">
+          {errorMessage}
+        </div>
+      )}
+
       {/* Header */}
       <div className="bg-card rounded-xl border p-6 mb-6">
         <div className="flex items-start justify-between">
@@ -85,8 +224,8 @@ export function QuoteViewer({
             <p className="text-muted-foreground">Offerte #{quote.quoteNumber}</p>
           </div>
           <div className="text-right">
-            <Badge variant={quote.status === 'sent' ? 'info' : 'secondary'}>
-              {quote.status === 'sent' ? 'Nieuw' : quote.status}
+            <Badge variant={quote.status === 'sent' || quote.status === 'viewed' ? 'info' : 'secondary'}>
+              {quote.status === 'sent' || quote.status === 'viewed' ? 'Open' : quote.status}
             </Badge>
             {quote.validUntil && (
               <p className="text-sm text-muted-foreground mt-2">
@@ -118,8 +257,8 @@ export function QuoteViewer({
           <QuoteBlockView
             key={block.id}
             block={block}
-            onToggleBlock={(selected) => onUpdateSelection(block.id, null, selected)}
-            onToggleLine={(lineId, selected) => onUpdateSelection(block.id, lineId, selected)}
+            onToggleBlock={(selected) => handleUpdateSelection(block.id, null, selected)}
+            onToggleLine={(lineId, selected) => handleUpdateSelection(block.id, lineId, selected)}
           />
         ))}
       </div>
@@ -169,6 +308,67 @@ export function QuoteViewer({
           </div>
         </div>
       </div>
+
+      {/* Decline Modal */}
+      {showDeclineModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl p-6 max-w-md w-full">
+            <h3 className="text-lg font-semibold mb-4">Offerte afwijzen</h3>
+            <p className="text-muted-foreground mb-4">
+              Weet u zeker dat u deze offerte wilt afwijzen? U kunt optioneel een reden opgeven.
+            </p>
+            <Textarea
+              placeholder="Reden voor afwijzing (optioneel)"
+              value={declineReason}
+              onChange={(e) => setDeclineReason(e.target.value)}
+              className="mb-4"
+            />
+            <div className="flex gap-3 justify-end">
+              <Button variant="outline" onClick={() => setShowDeclineModal(false)}>
+                Annuleren
+              </Button>
+              <Button
+                variant="destructive"
+                onClick={handleDecline}
+                disabled={isSubmitting}
+              >
+                {isSubmitting ? 'Bezig...' : 'Afwijzen'}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Question Modal */}
+      {showQuestionModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl p-6 max-w-md w-full">
+            <h3 className="text-lg font-semibold mb-4">Vraag stellen</h3>
+            <p className="text-muted-foreground mb-4">
+              Heeft u een vraag over deze offerte? Wij nemen zo snel mogelijk contact met u op.
+            </p>
+            <Textarea
+              placeholder="Uw vraag..."
+              value={questionMessage}
+              onChange={(e) => setQuestionMessage(e.target.value)}
+              className="mb-4"
+              rows={4}
+            />
+            <div className="flex gap-3 justify-end">
+              <Button variant="outline" onClick={() => setShowQuestionModal(false)}>
+                Annuleren
+              </Button>
+              <Button
+                variant="tesoro"
+                onClick={handleAskQuestion}
+                disabled={isSubmitting || !questionMessage.trim()}
+              >
+                {isSubmitting ? 'Versturen...' : 'Versturen'}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
