@@ -255,6 +255,8 @@
       "function": "Cargo",
       "signedOn": "Firmado el",
       "quoteNumber": "Número de presupuesto",
+      "signature": "Firma",
+      "signatureAlt": "Firma del cliente",
       "contactUs": "Contacto",
       "contactDescription": "¿Tienes preguntas sobre tu presupuesto o proyecto? No dudes en contactarnos."
     }
