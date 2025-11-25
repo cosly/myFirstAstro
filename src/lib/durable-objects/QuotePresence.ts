@@ -5,6 +5,25 @@
  * Each quote gets its own Durable Object instance identified by quoteId.
  */
 
+// Cloudflare Workers Durable Object types
+declare const WebSocketPair: {
+  new(): { 0: WebSocket; 1: WebSocket };
+};
+
+interface DurableObjectState {
+  getWebSockets(): WebSocket[];
+  acceptWebSocket(ws: WebSocket): void;
+}
+
+interface CloudflareWebSocket extends WebSocket {
+  serializeAttachment(value: unknown): void;
+  deserializeAttachment(): unknown;
+}
+
+interface WebSocketResponse extends ResponseInit {
+  webSocket: WebSocket;
+}
+
 interface Session {
   webSocket: WebSocket;
   sessionId: string;
@@ -36,7 +55,8 @@ export class QuotePresence {
 
     // Restore sessions from hibernation
     this.state.getWebSockets().forEach((ws) => {
-      const meta = ws.deserializeAttachment() as Session | null;
+      const cfWs = ws as CloudflareWebSocket;
+      const meta = cfWs.deserializeAttachment() as Session | null;
       if (meta) {
         this.sessions.set(ws, meta);
       }
@@ -95,7 +115,7 @@ export class QuotePresence {
     };
 
     // Store session metadata for hibernation
-    server.serializeAttachment(session);
+    (server as CloudflareWebSocket).serializeAttachment(session);
     this.sessions.set(server, session);
 
     // Broadcast new viewer to all connected clients
@@ -119,7 +139,7 @@ export class QuotePresence {
     return new Response(null, {
       status: 101,
       webSocket: client,
-    });
+    } as WebSocketResponse);
   }
 
   async webSocketMessage(ws: WebSocket, message: string | ArrayBuffer): Promise<void> {
@@ -128,7 +148,7 @@ export class QuotePresence {
 
     // Update last active time
     session.lastActiveAt = Date.now();
-    ws.serializeAttachment(session);
+    (ws as CloudflareWebSocket).serializeAttachment(session);
 
     try {
       const data = JSON.parse(message as string);
@@ -151,6 +171,7 @@ export class QuotePresence {
           this.broadcastToTeam({
             type: 'customer_scroll',
             sessionId: session.sessionId,
+            userType: session.userType,
             data: { scrollDepth: data.scrollDepth },
             timestamp: Date.now(),
           });
@@ -160,6 +181,7 @@ export class QuotePresence {
           this.broadcastToTeam({
             type: 'customer_section_view',
             sessionId: session.sessionId,
+            userType: session.userType,
             data: { sectionId: data.sectionId, sectionTitle: data.sectionTitle },
             timestamp: Date.now(),
           });
@@ -183,6 +205,7 @@ export class QuotePresence {
           this.broadcastToTeam({
             type: data.isIdle ? 'customer_idle' : 'customer_active',
             sessionId: session.sessionId,
+            userType: session.userType,
             timestamp: Date.now(),
           });
           break;
@@ -191,6 +214,7 @@ export class QuotePresence {
           this.broadcastToTeam({
             type: data.visible ? 'customer_tab_focus' : 'customer_tab_blur',
             sessionId: session.sessionId,
+            userType: session.userType,
             timestamp: Date.now(),
           });
           break;
@@ -204,6 +228,7 @@ export class QuotePresence {
           this.broadcastToTeam({
             type: 'customer_activity',
             sessionId: session.sessionId,
+            userType: session.userType,
             data: data,
             timestamp: Date.now(),
           });

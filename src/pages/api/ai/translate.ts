@@ -14,14 +14,9 @@ export const POST: APIRoute = async ({ request, locals }) => {
     const config = await getAIConfig(kv);
 
     // Check if the selected provider has an API key
-    if (config.provider === 'anthropic' && !config.anthropicKey) {
-      return new Response(JSON.stringify({ error: 'Anthropic API key not configured' }), {
-        status: 500,
-        headers: { 'Content-Type': 'application/json' },
-      });
-    }
-    if (config.provider === 'openai' && !config.openaiKey) {
-      return new Response(JSON.stringify({ error: 'OpenAI API key not configured' }), {
+    if (!config.apiKey) {
+      const providerName = config.provider === 'openai' ? 'OpenAI' : 'Anthropic';
+      return new Response(JSON.stringify({ error: `${providerName} API key not configured` }), {
         status: 500,
         headers: { 'Content-Type': 'application/json' },
       });
