@@ -181,13 +181,22 @@ const autoRemindersEnabled = (settings.auto_reminders_enabled as boolean) ?? tru
                   <p class="font-medium">{template.name}</p>
                   <p class="text-sm text-muted-foreground">{template.description}</p>
                 </div>
-                <button
-                  class="edit-template-btn rounded-lg border px-3 py-1.5 text-sm hover:bg-muted"
-                  data-template-id={template.id}
-                  data-template-name={template.name}
-                >
-                  Bewerken
-                </button>
+                <div class="flex gap-2">
+                  <button
+                    class="preview-template-btn rounded-lg border px-3 py-1.5 text-sm hover:bg-muted"
+                    data-template-id={template.id}
+                    data-template-name={template.name}
+                  >
+                    Preview
+                  </button>
+                  <button
+                    class="edit-template-btn rounded-lg border px-3 py-1.5 text-sm hover:bg-muted"
+                    data-template-id={template.id}
+                    data-template-name={template.name}
+                  >
+                    Bewerken
+                  </button>
+                </div>
               </div>
             ))}
           </div>
@@ -571,6 +580,46 @@ const autoRemindersEnabled = (settings.auto_reminders_enabled as boolean) ?? tru
     </div>
   </div>
 
+  <!-- Email Template Preview Modal -->
+  <div id="preview-modal" class="fixed inset-0 z-50 hidden">
+    <div class="fixed inset-0 bg-black/50" id="preview-modal-backdrop"></div>
+    <div class="fixed inset-0 flex items-center justify-center p-4 overflow-y-auto">
+      <div class="relative w-full max-w-4xl rounded-2xl bg-card shadow-xl my-8">
+        <div class="flex items-center justify-between border-b px-6 py-4">
+          <div>
+            <h2 id="preview-modal-title" class="text-xl font-semibold">Email Preview</h2>
+            <p id="preview-modal-subject" class="text-sm text-muted-foreground mt-1"></p>
+          </div>
+          <button id="close-preview-modal" class="p-1 text-muted-foreground hover:text-foreground">
+            <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+
+        <!-- Mock data info -->
+        <div class="border-b bg-blue-50 px-6 py-3">
+          <p class="text-sm text-blue-800">
+            <strong>Preview met voorbeelddata:</strong> Klant: Jan de Vries (Voorbeeld BV) | Offerte: OFF-2024-0042
+          </p>
+        </div>
+
+        <!-- Email preview iframe -->
+        <div class="p-6">
+          <div class="border rounded-lg overflow-hidden bg-white">
+            <iframe id="preview-iframe" class="w-full" style="height: 500px; border: none;"></iframe>
+          </div>
+        </div>
+
+        <div class="flex justify-end border-t px-6 py-4">
+          <button id="close-preview-btn" class="rounded-lg border px-4 py-2 text-sm font-medium hover:bg-muted">
+            Sluiten
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- Text Template Editor Modal -->
   <div id="text-template-modal" class="fixed inset-0 z-50 hidden">
     <div class="fixed inset-0 bg-black/50" id="text-template-modal-backdrop"></div>
@@ -928,6 +977,51 @@ const autoRemindersEnabled = (settings.auto_reminders_enabled as boolean) ?? tru
       const type = btn.getAttribute('data-template-id');
       const name = btn.getAttribute('data-template-name');
       if (type && name) loadTemplate(type, name);
+    });
+  });
+
+  // Preview modal elements
+  const previewModal = document.getElementById('preview-modal');
+  const previewModalTitle = document.getElementById('preview-modal-title');
+  const previewModalSubject = document.getElementById('preview-modal-subject');
+  const previewIframe = document.getElementById('preview-iframe') as HTMLIFrameElement;
+
+  function showPreviewModal() {
+    previewModal?.classList.remove('hidden');
+  }
+
+  function hidePreviewModal() {
+    previewModal?.classList.add('hidden');
+    if (previewIframe) previewIframe.srcdoc = '';
+  }
+
+  document.getElementById('close-preview-modal')?.addEventListener('click', hidePreviewModal);
+  document.getElementById('close-preview-btn')?.addEventListener('click', hidePreviewModal);
+  document.getElementById('preview-modal-backdrop')?.addEventListener('click', hidePreviewModal);
+
+  // Preview template buttons
+  document.querySelectorAll('.preview-template-btn').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const type = btn.getAttribute('data-template-id');
+      const name = btn.getAttribute('data-template-name');
+      if (!type) return;
+
+      try {
+        const response = await fetch(`/api/email-templates/preview?type=${type}`);
+        if (response.ok) {
+          const data = await response.json();
+
+          if (previewModalTitle) previewModalTitle.textContent = `Preview: ${name}`;
+          if (previewModalSubject) previewModalSubject.textContent = `Onderwerp: ${data.subject}`;
+          if (previewIframe) previewIframe.srcdoc = data.html;
+
+          showPreviewModal();
+        } else {
+          alert('Kon preview niet laden');
+        }
+      } catch {
+        alert('Kon preview niet laden');
+      }
     });
   });
 
