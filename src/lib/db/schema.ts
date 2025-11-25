@@ -379,6 +379,17 @@ export const serviceCategoriesRelations = relations(serviceCategories, ({ many }
   services: many(services),
 }));
 
+export const quoteRequestsRelations = relations(quoteRequests, ({ one }) => ({
+  customer: one(customers, {
+    fields: [quoteRequests.customerId],
+    references: [customers.id],
+  }),
+  assignedMember: one(teamMembers, {
+    fields: [quoteRequests.assignedTo],
+    references: [teamMembers.id],
+  }),
+}));
+
 // ============================================
 // TYPE EXPORTS
 // ============================================
