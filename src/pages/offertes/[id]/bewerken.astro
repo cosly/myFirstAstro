@@ -1,0 +1,116 @@
+---
+import DashboardLayout from '../../../layouts/DashboardLayout.astro';
+import { SimpleQuoteBuilder } from '../../../components/SimpleQuoteBuilder';
+import { createDb, quotes, customers as customersTable, quoteBlocks, quoteLines } from '../../../lib/db';
+import { eq, asc, desc } from 'drizzle-orm';
+
+const { id } = Astro.params;
+
+if (!id) {
+  return Astro.redirect('/offertes');
+}
+
+type Customer = { id: string; companyName: string; contactName: string; email: string };
+let customers: Customer[] = [];
+let existingQuote: any = null;
+let dbError: string | null = null;
+
+try {
+  const db = createDb(Astro.locals.runtime.env.DB);
+
+  // Fetch all customers for dropdown
+  customers = await db
+    .select({
+      id: customersTable.id,
+      companyName: customersTable.companyName,
+      contactName: customersTable.contactName,
+      email: customersTable.email,
+    })
+    .from(customersTable)
+    .orderBy(desc(customersTable.createdAt));
+
+  // Fetch existing quote
+  const quoteResult = await db
+    .select()
+    .from(quotes)
+    .where(eq(quotes.id, id))
+    .limit(1);
+
+  if (quoteResult.length > 0) {
+    const q = quoteResult[0];
+
+    // Get blocks with lines
+    const blocksResult = await db
+      .select()
+      .from(quoteBlocks)
+      .where(eq(quoteBlocks.quoteId, id))
+      .orderBy(asc(quoteBlocks.position));
+
+    const blocks: any[] = [];
+    for (const block of blocksResult) {
+      const linesResult = await db
+        .select()
+        .from(quoteLines)
+        .where(eq(quoteLines.blockId, block.id))
+        .orderBy(asc(quoteLines.position));
+
+      blocks.push({
+        ...block,
+        lines: linesResult,
+      });
+    }
+
+    existingQuote = {
+      id: q.id,
+      quoteNumber: q.quoteNumber,
+      customerId: q.customerId,
+      title: q.title,
+      introText: q.introText,
+      footerText: q.footerText,
+      subtotal: q.subtotal,
+      btwAmount: q.btwAmount,
+      total: q.total,
+      status: q.status,
+      validUntil: q.validUntil,
+      blocks,
+    };
+  }
+} catch (error) {
+  console.error('Failed to fetch quote for editing:', error);
+  dbError = String(error);
+}
+
+if (!existingQuote) {
+  return Astro.redirect('/offertes');
+}
+---
+
+<DashboardLayout title={`Bewerk Offerte ${existingQuote.quoteNumber}`}>
+  <div class="space-y-6">
+    <!-- Header -->
+    <div class="flex items-center justify-between">
+      <div>
+        <h1 class="text-2xl font-bold">Bewerk Offerte #{existingQuote.quoteNumber}</h1>
+        <p class="text-muted-foreground">Wijzig de offerte gegevens</p>
+      </div>
+      <a href={`/offertes/${id}`} class="text-sm text-muted-foreground hover:text-foreground">
+        ← Terug naar offerte
+      </a>
+    </div>
+
+    {dbError && (
+      <div class="rounded-xl border border-red-200 bg-red-50 p-4">
+        <h3 class="font-medium text-red-900">Database Error</h3>
+        <p class="text-sm text-red-700 mt-1">{dbError}</p>
+      </div>
+    )}
+
+    <!-- Quote Builder with existing data -->
+    <SimpleQuoteBuilder
+      client:load
+      customers={customers}
+      initialCustomerId={existingQuote.customerId}
+      existingQuote={existingQuote}
+    />
+  </div>
+</DashboardLayout>
