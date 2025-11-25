@@ -322,9 +322,9 @@ export const emailTemplates = sqliteTable('email_templates', {
   availableVariables: text('available_variables', { mode: 'json' }),
 
   updatedAt: integer('updated_at', { mode: 'timestamp' }).notNull().$defaultFn(() => new Date()),
-}, (table) => [
-  uniqueIndex('email_templates_type_locale_idx').on(table.type, table.locale),
-]);
+}, (table) => ({
+  typeLocaleIdx: uniqueIndex('email_templates_type_locale_idx').on(table.type, table.locale),
+}));
 
 // ============================================
 // APP SETTINGS
