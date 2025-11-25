@@ -1,6 +1,7 @@
-import { createDb, emailTemplates, type Quote, type Customer } from './db';
+import { createDb, emailTemplates, appSettings, type Quote, type Customer } from './db';
 import { formatCurrency, formatDate } from './utils';
 import { eq } from 'drizzle-orm';
+import type { Database } from './db';
 
 export interface EmailData {
   to: string;
@@ -41,6 +42,53 @@ function replaceVariables(template: string, variables: TemplateVariables): strin
   return template.replace(/\{\{(\w+)\}\}/g, (_, key) => {
     return variables[key] || `{{${key}}}`;
   });
+}
+
+// Get company settings from database
+async function getCompanySettings(db: Database): Promise<Record<string, string>> {
+  const settings: Record<string, string> = {};
+
+  try {
+    const rows = await db.select().from(appSettings);
+    rows.forEach(row => {
+      try {
+        const value = typeof row.value === 'string' ? JSON.parse(row.value) : row.value;
+        settings[row.key] = String(value);
+      } catch {
+        settings[row.key] = String(row.value);
+      }
+    });
+  } catch (error) {
+    console.error('Failed to fetch company settings:', error);
+  }
+
+  return settings;
+}
+
+// Get email template from database or use default
+async function getEmailTemplate(
+  db: Database,
+  type: string
+): Promise<{ subject: string; bodyHtml: string; bodyText: string } | null> {
+  try {
+    const template = await db.query.emailTemplates.findFirst({
+      where: eq(emailTemplates.type, type as typeof emailTemplates.type.enumValues[number]),
+    });
+
+    if (template) {
+      return {
+        subject: template.subject,
+        bodyHtml: template.bodyHtml,
+        bodyText: template.bodyText,
+      };
+    }
+  } catch (error) {
+    console.error('Failed to fetch email template:', error);
+  }
+
+  // Fall back to default template
+  const defaultTemplate = defaultTemplates[type as keyof typeof defaultTemplates];
+  return defaultTemplate || null;
 }
 
 // Default email templates
@@ -317,17 +365,31 @@ export async function sendEmail(
   }
 }
 
-// Send quote email
+// Send quote email with database templates and company settings
 export async function sendQuoteEmail(
   type: 'quote_sent' | 'quote_accepted' | 'quote_reminder' | 'quote_declined',
   quote: Quote,
   customer: Customer,
   apiKey: string,
-  appUrl: string
+  appUrl: string,
+  db?: Database
 ): Promise<{ success: boolean; error?: string }> {
-  const template = defaultTemplates[type as keyof typeof defaultTemplates];
+  // Get template from database or use default
+  let template;
+  if (db) {
+    template = await getEmailTemplate(db, type);
+  } else {
+    template = defaultTemplates[type as keyof typeof defaultTemplates];
+  }
+
   if (!template) {
     return { success: false, error: 'Template not found' };
+  }
+
+  // Get company settings from database
+  let companySettings: Record<string, string> = {};
+  if (db) {
+    companySettings = await getCompanySettings(db);
   }
 
   const variables: TemplateVariables = {
@@ -339,9 +401,9 @@ export async function sendQuoteEmail(
     customer_name: customer.contactName,
     customer_company: customer.companyName,
     customer_email: customer.email,
-    company_name: 'Tesoro CRM',
-    company_email: 'info@tesorocrm.nl',
-    company_phone: '020-1234567',
+    company_name: companySettings.company_name || 'Tesoro CRM',
+    company_email: companySettings.company_email || 'info@tesorocrm.nl',
+    company_phone: companySettings.company_phone || '',
     signed_by: quote.signedByName || '',
     signed_at: quote.signedAt ? formatDate(quote.signedAt) : '',
   };

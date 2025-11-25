@@ -1,5 +1,5 @@
 import type { APIRoute } from 'astro';
-import { createDb, quotes, customers, appSettings } from '@/lib/db';
+import { createDb, quotes } from '@/lib/db';
 import { sendQuoteEmail } from '@/lib/email';
 import { eq } from 'drizzle-orm';
 
@@ -53,7 +53,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
       console.warn('RESEND_API_KEY not configured, email not sent');
       return new Response(JSON.stringify({
         success: false,
-        error: 'Email service not configured',
+        error: 'Email service not configured. Configureer RESEND_API_KEY in de instellingen.',
         skipped: true
       }), {
         status: 200,
@@ -64,13 +64,14 @@ export const POST: APIRoute = async ({ request, locals }) => {
     // Get app URL
     const appUrl = locals.runtime.env.APP_URL || 'https://quote.tesorohq.io';
 
-    // Send email
+    // Send email with database templates and company settings
     const result = await sendQuoteEmail(
       type as 'quote_sent' | 'quote_accepted' | 'quote_reminder' | 'quote_declined',
       quote,
       quote.customer,
       resendApiKey,
-      appUrl
+      appUrl,
+      db
     );
 
     if (!result.success) {
@@ -82,6 +83,18 @@ export const POST: APIRoute = async ({ request, locals }) => {
         status: 500,
         headers: { 'Content-Type': 'application/json' },
       });
+    }
+
+    // Update quote status and sentAt if this is a quote_sent email
+    if (type === 'quote_sent') {
+      await db
+        .update(quotes)
+        .set({
+          status: 'sent',
+          sentAt: new Date(),
+          updatedAt: new Date(),
+        })
+        .where(eq(quotes.id, quoteId));
     }
 
     return new Response(JSON.stringify({ success: true }), {
