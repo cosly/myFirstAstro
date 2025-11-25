@@ -1232,6 +1232,7 @@ const autoRemindersEnabled = (settings.auto_reminders_enabled as boolean) ?? tru
 
         const statusEl = container.querySelector('.api-key-status');
         const deleteBtn = container.querySelector('.api-key-delete');
+        const input = container.querySelector('.api-key-input') as HTMLInputElement;
 
         if (data.configured) {
           if (statusEl) {
@@ -1239,12 +1240,26 @@ const autoRemindersEnabled = (settings.auto_reminders_enabled as boolean) ?? tru
             statusEl.className = 'api-key-status rounded-full bg-green-100 px-2.5 py-0.5 text-xs font-medium text-green-800';
           }
           if (deleteBtn) deleteBtn.classList.remove('hidden');
+          // Show masked key in input
+          if (input && data.maskedKey) {
+            input.value = data.maskedKey;
+            input.type = 'text';
+            input.disabled = true;
+            input.classList.add('bg-muted', 'text-muted-foreground');
+          }
         } else {
           if (statusEl) {
             statusEl.textContent = 'Niet geconfigureerd';
             statusEl.className = 'api-key-status rounded-full bg-yellow-100 px-2.5 py-0.5 text-xs font-medium text-yellow-800';
           }
           if (deleteBtn) deleteBtn.classList.add('hidden');
+          // Reset input for new key entry
+          if (input) {
+            input.value = '';
+            input.type = 'password';
+            input.disabled = false;
+            input.classList.remove('bg-muted', 'text-muted-foreground');
+          }
         }
       });
     } catch (error) {

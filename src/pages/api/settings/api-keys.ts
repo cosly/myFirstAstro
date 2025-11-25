@@ -38,7 +38,7 @@ export const GET: APIRoute = async ({ locals }) => {
       });
     }
 
-    const status: Record<string, { configured: boolean; name: string; description: string }> = {};
+    const status: Record<string, { configured: boolean; name: string; description: string; maskedKey?: string }> = {};
 
     for (const [key, config] of Object.entries(API_KEY_CONFIG)) {
       const value = await kv.get(`api_key_${key}`);
@@ -46,6 +46,8 @@ export const GET: APIRoute = async ({ locals }) => {
         configured: !!value,
         name: config.name,
         description: config.description,
+        // Show last 4 characters for confirmation
+        maskedKey: value ? '••••••••' + value.slice(-4) : undefined,
       };
     }
 
