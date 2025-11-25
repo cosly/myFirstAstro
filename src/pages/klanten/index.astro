@@ -1,7 +1,7 @@
 ---
 import DashboardLayout from '../../layouts/DashboardLayout.astro';
 import { createDb, customers as customersTable, quotes } from '../../lib/db';
-import { desc, eq, sql } from 'drizzle-orm';
+import { desc, sql } from 'drizzle-orm';
 
 // Fetch from database
 let customers: Array<{

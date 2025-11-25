@@ -20,7 +20,7 @@ const { title, description = 'Tesoro CRM Offerte Applicatie' } = Astro.props;
     <slot />
     <script>
       // Global error handler - sends errors to debug API
-      window.onerror = function(msg, url, line, col, error) {
+      window.onerror = function(msg, url, line, col, _error) {
         fetch('/api/debug/errors', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },

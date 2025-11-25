@@ -152,7 +152,7 @@ export class QuoteTracker {
     }
 
     // Generate new session ID
-    return crypto.randomUUID?.() || `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+    return crypto.randomUUID?.() || `${Date.now()}-${Math.random().toString(36).substring(2, 11)}`;
   }
 
   private getDeviceInfo(): DeviceInfo {
@@ -252,14 +252,6 @@ export class QuoteTracker {
   }
 
   private trackEvent(eventType: EventType, eventData: Record<string, unknown>): void {
-    const event = {
-      type: eventType,
-      sessionId: this.config.sessionId,
-      eventData,
-      pageLoadTime: Date.now() - this.pageLoadTime,
-      ...this.deviceInfo,
-    };
-
     // Send via WebSocket for real-time updates
     if (this.config.enableWebSocket && this.ws && this.isConnected) {
       try {

@@ -1,7 +1,7 @@
 import type { APIRoute } from 'astro';
 import { createDb, quotes, quoteComments, quoteLines, auditLog } from '@/lib/db';
 import { generateId } from '@/lib/utils';
-import { eq, desc } from 'drizzle-orm';
+import { eq } from 'drizzle-orm';
 import { notifyQuestionReceived } from '@/lib/discord';
 
 // GET: Fetch all comments for this quote

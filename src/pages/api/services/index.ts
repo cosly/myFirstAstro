@@ -1,5 +1,5 @@
 import type { APIRoute } from 'astro';
-import { createDb, services, serviceCategories } from '@/lib/db';
+import { createDb, services } from '@/lib/db';
 import { generateId } from '@/lib/utils';
 import { asc } from 'drizzle-orm';
 

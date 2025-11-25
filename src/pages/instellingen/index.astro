@@ -1723,15 +1723,12 @@ const autoRemindersEnabled = (settings.auto_reminders_enabled as boolean) ?? tru
     events: Record<string, boolean>;
   }
 
-  let currentDiscordSettings: DiscordSettings | null = null;
-
   async function loadDiscordSettings() {
     try {
       const response = await fetch('/api/settings/discord');
       if (!response.ok) throw new Error('Failed to load Discord settings');
 
       const settings: DiscordSettings = await response.json();
-      currentDiscordSettings = settings;
 
       // Update UI
       if (discordEnabled) discordEnabled.checked = settings.enabled;
