@@ -1,6 +1,6 @@
 ---
 import DashboardLayout from '../../layouts/DashboardLayout.astro';
-import { QuoteBuilder } from '../../components/quote-builder/QuoteBuilder';
+import { SimpleQuoteBuilder } from '../../components/SimpleQuoteBuilder';
 import { createDb } from '../../lib/db';
 import { customers as customersTable } from '../../lib/db/schema';
 import { desc } from 'drizzle-orm';
@@ -84,11 +84,10 @@ try {
     )}
 
     <!-- Quote Builder with customer data -->
-    <QuoteBuilder
+    <SimpleQuoteBuilder
       client:load
       customers={customers}
       initialCustomerId={customerId}
-      requestId={requestId}
     />
   </div>
 </DashboardLayout>
