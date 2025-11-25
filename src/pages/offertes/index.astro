@@ -95,12 +95,13 @@ const formatCurrency = (amount: number) => {
     </div>
 
     <!-- Filters -->
-    <div class="flex flex-wrap gap-2">
-      <button class="rounded-full bg-tesoro-500 px-4 py-1.5 text-sm font-medium text-white">Alle</button>
-      <button class="rounded-full border px-4 py-1.5 text-sm font-medium text-muted-foreground hover:bg-muted">Concept</button>
-      <button class="rounded-full border px-4 py-1.5 text-sm font-medium text-muted-foreground hover:bg-muted">Verstuurd</button>
-      <button class="rounded-full border px-4 py-1.5 text-sm font-medium text-muted-foreground hover:bg-muted">Geaccepteerd</button>
-      <button class="rounded-full border px-4 py-1.5 text-sm font-medium text-muted-foreground hover:bg-muted">Betaald</button>
+    <div class="flex flex-wrap gap-2" id="status-filters">
+      <button data-status="" class="filter-btn rounded-full bg-tesoro-500 px-4 py-1.5 text-sm font-medium text-white">Alle</button>
+      <button data-status="draft" class="filter-btn rounded-full border px-4 py-1.5 text-sm font-medium text-muted-foreground hover:bg-muted">Concept</button>
+      <button data-status="sent,viewed" class="filter-btn rounded-full border px-4 py-1.5 text-sm font-medium text-muted-foreground hover:bg-muted">Verstuurd</button>
+      <button data-status="accepted" class="filter-btn rounded-full border px-4 py-1.5 text-sm font-medium text-muted-foreground hover:bg-muted">Geaccepteerd</button>
+      <button data-status="declined" class="filter-btn rounded-full border px-4 py-1.5 text-sm font-medium text-muted-foreground hover:bg-muted">Afgewezen</button>
+      <button data-status="paid" class="filter-btn rounded-full border px-4 py-1.5 text-sm font-medium text-muted-foreground hover:bg-muted">Betaald</button>
     </div>
 
     <!-- Empty State -->
@@ -139,7 +140,7 @@ const formatCurrency = (amount: number) => {
           </thead>
           <tbody class="divide-y">
             {quoteList.map((quote) => (
-              <tr class="hover:bg-muted/30 transition-colors">
+              <tr class="hover:bg-muted/30 transition-colors" data-status={quote.status}>
                 <td class="px-6 py-4">
                   <span class="font-mono text-sm">#{quote.quoteNumber}</span>
                 </td>
@@ -180,3 +181,30 @@ const formatCurrency = (amount: number) => {
     )}
   </div>
 </DashboardLayout>
+
+<script>
+  const filterButtons = document.querySelectorAll('.filter-btn');
+  const tableRows = document.querySelectorAll('tbody tr[data-status]');
+
+  filterButtons.forEach(btn => {
+    btn.addEventListener('click', () => {
+      // Update button styles
+      filterButtons.forEach(b => {
+        b.classList.remove('bg-tesoro-500', 'text-white');
+        b.classList.add('border', 'text-muted-foreground');
+      });
+      btn.classList.add('bg-tesoro-500', 'text-white');
+      btn.classList.remove('border', 'text-muted-foreground');
+
+      // Filter rows
+      const statusFilter = btn.getAttribute('data-status') || '';
+      const statuses = statusFilter ? statusFilter.split(',') : [];
+
+      tableRows.forEach(row => {
+        const rowStatus = row.getAttribute('data-status') || '';
+        const shouldShow = statuses.length === 0 || statuses.includes(rowStatus);
+        (row as HTMLElement).style.display = shouldShow ? '' : 'none';
+      });
+    });
+  });
+</script>
