@@ -39,10 +39,11 @@ export const POST: APIRoute = async ({ params, request, locals }) => {
       });
     }
 
-    // Add comment
+    // Add comment (optionally linked to a specific line)
     await db.insert(quoteComments).values({
       id: generateId(),
       quoteId: quote.id,
+      lineId: body.lineId || null, // Optional: link to specific line
       authorType: 'customer',
       authorEmail: quote.customer?.email,
       authorName: quote.customer?.contactName,
