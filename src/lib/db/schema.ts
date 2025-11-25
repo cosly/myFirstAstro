@@ -327,6 +327,31 @@ export const appSettings = sqliteTable('app_settings', {
 });
 
 // ============================================
+// TEXT TEMPLATES (Intro/Footer/Voorwaarden)
+// ============================================
+export const textTemplates = sqliteTable('text_templates', {
+  id: text('id').primaryKey(),
+
+  // Template type
+  type: text('type', {
+    enum: ['intro', 'footer', 'terms', 'custom']
+  }).notNull(),
+
+  // Template info
+  name: text('name').notNull(),
+  description: text('description'),
+
+  // Content
+  content: text('content').notNull(),
+
+  // Is this the default template for its type?
+  isDefault: integer('is_default', { mode: 'boolean' }).default(false),
+
+  createdAt: integer('created_at', { mode: 'timestamp' }).notNull().$defaultFn(() => new Date()),
+  updatedAt: integer('updated_at', { mode: 'timestamp' }).notNull().$defaultFn(() => new Date()),
+});
+
+// ============================================
 // RELATIONS
 // ============================================
 export const customersRelations = relations(customers, ({ many }) => ({
@@ -427,3 +452,5 @@ export type QuoteComment = typeof quoteComments.$inferSelect;
 
 export type AuditLogEntry = typeof auditLog.$inferSelect;
 export type EmailTemplate = typeof emailTemplates.$inferSelect;
+export type TextTemplate = typeof textTemplates.$inferSelect;
+export type NewTextTemplate = typeof textTemplates.$inferInsert;

@@ -58,7 +58,6 @@ export function QuoteBuilder({
   initialCustomerId,
   requestId,
   onSave,
-  onSend
 }: QuoteBuilderProps) {
   const [quote, setQuote] = useState<Quote>({ ...defaultQuote, ...initialQuote });
   const [customerId, setCustomerId] = useState<string>(initialCustomerId || '');
