@@ -229,12 +229,25 @@ const availableLocales = [
       }
     });
 
+    // For locale form, get the selected radio button value directly
+    if (form.id === 'locale-form') {
+      const selectedLocale = form.querySelector('input[name="locale"]:checked') as HTMLInputElement;
+      if (selectedLocale) {
+        data.locale = selectedLocale.value;
+      }
+    }
+
+    console.log('Sending data:', data);
+
     try {
       const response = await fetch(`/api/team-members/${id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data),
       });
+
+      const result = await response.json();
+      console.log('Response:', result);
 
       const statusEl = document.getElementById(statusId);
       if (response.ok && statusEl) {
@@ -246,9 +259,11 @@ const availableLocales = [
           setTimeout(() => window.location.reload(), 500);
         }
       } else {
-        alert('Er is iets misgegaan bij het opslaan');
+        const errorMsg = result.details || result.error || 'Onbekende fout';
+        alert(`Er is iets misgegaan: ${errorMsg}`);
       }
-    } catch {
+    } catch (err) {
+      console.error('Fetch error:', err);
       alert('Er is iets misgegaan bij het opslaan');
     }
   }
