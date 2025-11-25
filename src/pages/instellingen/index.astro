@@ -6,8 +6,15 @@ import { desc } from 'drizzle-orm';
 const tabs = [
   { id: 'algemeen', label: 'Algemeen', icon: '⚙️' },
   { id: 'emails', label: 'Email Templates', icon: '✉️' },
+  { id: 'teksten', label: 'Tekst Templates', icon: '📝' },
   { id: 'team', label: 'Team', icon: '👥' },
   { id: 'integraties', label: 'Integraties', icon: '🔗' },
+];
+
+const textTemplateTypes = [
+  { id: 'intro', name: 'Introductie', description: 'Standaard introductietekst voor offertes' },
+  { id: 'footer', name: 'Afsluiting', description: 'Standaard afsluittekst voor offertes' },
+  { id: 'terms', name: 'Voorwaarden', description: 'Algemene voorwaarden en condities' },
 ];
 
 const emailTemplateTypes = [
@@ -185,6 +192,46 @@ const autoRemindersEnabled = (settings.auto_reminders_enabled as boolean) ?? tru
             ))}
           </div>
         </div>
+      </div>
+
+      <!-- Tekst Templates -->
+      <div id="tab-teksten" class="hidden space-y-6">
+        <div class="flex justify-between items-center">
+          <div>
+            <h3 class="font-semibold">Tekst Templates</h3>
+            <p class="text-sm text-muted-foreground">Beheer standaard teksten voor offertes</p>
+          </div>
+          <button id="add-text-template-btn" class="inline-flex items-center gap-2 rounded-lg bg-tesoro-500 px-4 py-2 text-sm font-medium text-white hover:bg-tesoro-600">
+            <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+            </svg>
+            Nieuwe template
+          </button>
+        </div>
+
+        <!-- Template Categories -->
+        {textTemplateTypes.map((type) => (
+          <div class="rounded-xl border bg-card overflow-hidden" data-template-category={type.id}>
+            <div class="border-b bg-muted/30 px-6 py-4 flex items-center justify-between">
+              <div>
+                <h4 class="font-semibold">{type.name}</h4>
+                <p class="text-sm text-muted-foreground">{type.description}</p>
+              </div>
+              <button
+                class="add-category-template-btn rounded-lg border px-3 py-1.5 text-sm hover:bg-muted"
+                data-category={type.id}
+                data-category-name={type.name}
+              >
+                + Toevoegen
+              </button>
+            </div>
+            <div class="divide-y template-list" data-type={type.id}>
+              <div class="p-6 text-center text-muted-foreground text-sm">
+                <p>Laden...</p>
+              </div>
+            </div>
+          </div>
+        ))}
       </div>
 
       <!-- Team -->
@@ -492,6 +539,78 @@ const autoRemindersEnabled = (settings.auto_reminders_enabled as boolean) ?? tru
                 Opslaan
               </button>
             </div>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Text Template Editor Modal -->
+  <div id="text-template-modal" class="fixed inset-0 z-50 hidden">
+    <div class="fixed inset-0 bg-black/50" id="text-template-modal-backdrop"></div>
+    <div class="fixed inset-0 flex items-center justify-center p-4 overflow-y-auto">
+      <div class="relative w-full max-w-2xl rounded-2xl bg-card p-6 shadow-xl my-8">
+        <button id="close-text-template-modal" class="absolute right-4 top-4 p-1 text-muted-foreground hover:text-foreground">
+          <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+
+        <h2 id="text-template-modal-title" class="text-xl font-semibold mb-2">Tekst Template</h2>
+        <p id="text-template-modal-description" class="text-sm text-muted-foreground mb-6"></p>
+
+        <form id="text-template-form" class="space-y-4">
+          <input type="hidden" id="text-template-id" name="id" />
+          <input type="hidden" id="text-template-type" name="type" />
+
+          <div class="space-y-2">
+            <label class="text-sm font-medium">Naam *</label>
+            <input type="text" id="text-template-name" name="name" required
+              class="flex h-10 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
+              placeholder="Bijv: Standaard introductie" />
+          </div>
+
+          <div class="space-y-2">
+            <label class="text-sm font-medium">Beschrijving</label>
+            <input type="text" id="text-template-description" name="description"
+              class="flex h-10 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
+              placeholder="Korte beschrijving van dit template" />
+          </div>
+
+          <div class="space-y-2">
+            <label class="text-sm font-medium">Inhoud *</label>
+            <textarea id="text-template-content" name="content" rows="10" required
+              class="flex w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
+              placeholder="De template tekst..."></textarea>
+          </div>
+
+          <!-- Available Variables -->
+          <div class="rounded-lg border bg-muted/30 p-4">
+            <p class="text-sm font-medium mb-2">Beschikbare variabelen:</p>
+            <div class="flex flex-wrap gap-2">
+              <code class="rounded bg-muted px-2 py-1 text-xs cursor-pointer hover:bg-tesoro-100 text-var-copy" data-var="customer_name">{`{{customer_name}}`}</code>
+              <code class="rounded bg-muted px-2 py-1 text-xs cursor-pointer hover:bg-tesoro-100 text-var-copy" data-var="customer_company">{`{{customer_company}}`}</code>
+              <code class="rounded bg-muted px-2 py-1 text-xs cursor-pointer hover:bg-tesoro-100 text-var-copy" data-var="quote_title">{`{{quote_title}}`}</code>
+              <code class="rounded bg-muted px-2 py-1 text-xs cursor-pointer hover:bg-tesoro-100 text-var-copy" data-var="company_name">{`{{company_name}}`}</code>
+            </div>
+            <p class="text-xs text-muted-foreground mt-2">Klik op een variabele om te kopieren</p>
+          </div>
+
+          <label class="flex items-center gap-2">
+            <input type="checkbox" id="text-template-default" name="isDefault" class="h-4 w-4 rounded border-gray-300 text-tesoro-500" />
+            <span class="text-sm">Instellen als standaard voor dit type</span>
+          </label>
+
+          <div class="flex justify-end gap-3 pt-4 border-t">
+            <button type="button" id="delete-text-template-btn" class="text-sm text-destructive hover:text-destructive/80 mr-auto hidden">
+              Verwijderen
+            </button>
+            <button type="button" id="cancel-text-template-btn" class="rounded-lg border px-4 py-2 text-sm font-medium hover:bg-muted">
+              Annuleren
+            </button>
+            <button type="submit" class="rounded-lg bg-tesoro-500 px-4 py-2 text-sm font-medium text-white hover:bg-tesoro-600">
+              Opslaan
+            </button>
           </div>
         </form>
       </div>
@@ -849,4 +968,225 @@ const autoRemindersEnabled = (settings.auto_reminders_enabled as boolean) ?? tru
       }
     });
   });
+
+  // =====================
+  // TEXT TEMPLATES
+  // =====================
+  const textTemplateModal = document.getElementById('text-template-modal');
+  const textTemplateModalTitle = document.getElementById('text-template-modal-title');
+  const textTemplateModalDescription = document.getElementById('text-template-modal-description');
+  const textTemplateForm = document.getElementById('text-template-form') as HTMLFormElement;
+  const textTemplateIdInput = document.getElementById('text-template-id') as HTMLInputElement;
+  const textTemplateTypeInput = document.getElementById('text-template-type') as HTMLInputElement;
+  const textTemplateNameInput = document.getElementById('text-template-name') as HTMLInputElement;
+  const textTemplateDescriptionInput = document.getElementById('text-template-description') as HTMLInputElement;
+  const textTemplateContentInput = document.getElementById('text-template-content') as HTMLTextAreaElement;
+  const textTemplateDefaultInput = document.getElementById('text-template-default') as HTMLInputElement;
+  const deleteTextTemplateBtn = document.getElementById('delete-text-template-btn');
+
+  interface TextTemplate {
+    id: string;
+    type: string;
+    name: string;
+    description: string | null;
+    content: string;
+    isDefault: boolean;
+  }
+
+  const typeNames: Record<string, string> = {
+    'intro': 'Introductie',
+    'footer': 'Afsluiting',
+    'terms': 'Voorwaarden',
+    'custom': 'Aangepast',
+  };
+
+  // Load text templates on page load
+  async function loadTextTemplates() {
+    try {
+      const response = await fetch('/api/text-templates');
+      if (!response.ok) return;
+
+      const templates: TextTemplate[] = await response.json();
+
+      // Group by type
+      const byType: Record<string, TextTemplate[]> = {};
+      templates.forEach(t => {
+        if (!byType[t.type]) byType[t.type] = [];
+        byType[t.type].push(t);
+      });
+
+      // Render each category
+      document.querySelectorAll('.template-list').forEach(list => {
+        const type = list.getAttribute('data-type');
+        if (!type) return;
+
+        const typeTemplates = byType[type] || [];
+
+        if (typeTemplates.length === 0) {
+          list.innerHTML = `
+            <div class="p-6 text-center text-muted-foreground text-sm">
+              <p>Geen templates voor dit type</p>
+            </div>
+          `;
+        } else {
+          list.innerHTML = typeTemplates.map(t => `
+            <div class="flex items-center justify-between px-6 py-4 hover:bg-muted/30">
+              <div class="flex-1">
+                <div class="flex items-center gap-2">
+                  <p class="font-medium">${t.name}</p>
+                  ${t.isDefault ? '<span class="text-xs bg-tesoro-100 text-tesoro-700 px-2 py-0.5 rounded-full">Standaard</span>' : ''}
+                </div>
+                ${t.description ? `<p class="text-sm text-muted-foreground">${t.description}</p>` : ''}
+              </div>
+              <button
+                class="edit-text-template-btn rounded-lg border px-3 py-1.5 text-sm hover:bg-muted"
+                data-template-id="${t.id}"
+              >
+                Bewerken
+              </button>
+            </div>
+          `).join('');
+
+          // Add click handlers
+          list.querySelectorAll('.edit-text-template-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+              const id = btn.getAttribute('data-template-id');
+              if (id) openTextTemplateForEdit(id);
+            });
+          });
+        }
+      });
+    } catch (error) {
+      console.error('Failed to load text templates:', error);
+    }
+  }
+
+  function showTextTemplateModal() {
+    textTemplateModal?.classList.remove('hidden');
+  }
+
+  function hideTextTemplateModal() {
+    textTemplateModal?.classList.add('hidden');
+    textTemplateForm?.reset();
+    if (textTemplateIdInput) textTemplateIdInput.value = '';
+    if (deleteTextTemplateBtn) deleteTextTemplateBtn.classList.add('hidden');
+  }
+
+  function openTextTemplateForNew(type: string, typeName: string) {
+    if (textTemplateIdInput) textTemplateIdInput.value = '';
+    if (textTemplateTypeInput) textTemplateTypeInput.value = type;
+    if (textTemplateNameInput) textTemplateNameInput.value = '';
+    if (textTemplateDescriptionInput) textTemplateDescriptionInput.value = '';
+    if (textTemplateContentInput) textTemplateContentInput.value = '';
+    if (textTemplateDefaultInput) textTemplateDefaultInput.checked = false;
+    if (textTemplateModalTitle) textTemplateModalTitle.textContent = `Nieuwe ${typeName} template`;
+    if (textTemplateModalDescription) textTemplateModalDescription.textContent = `Maak een nieuwe ${typeName.toLowerCase()} template`;
+    if (deleteTextTemplateBtn) deleteTextTemplateBtn.classList.add('hidden');
+    showTextTemplateModal();
+  }
+
+  async function openTextTemplateForEdit(id: string) {
+    try {
+      const response = await fetch(`/api/text-templates/${id}`);
+      if (!response.ok) {
+        alert('Kon template niet laden');
+        return;
+      }
+
+      const template: TextTemplate = await response.json();
+
+      if (textTemplateIdInput) textTemplateIdInput.value = template.id;
+      if (textTemplateTypeInput) textTemplateTypeInput.value = template.type;
+      if (textTemplateNameInput) textTemplateNameInput.value = template.name;
+      if (textTemplateDescriptionInput) textTemplateDescriptionInput.value = template.description || '';
+      if (textTemplateContentInput) textTemplateContentInput.value = template.content;
+      if (textTemplateDefaultInput) textTemplateDefaultInput.checked = template.isDefault;
+      if (textTemplateModalTitle) textTemplateModalTitle.textContent = `${template.name} bewerken`;
+      if (textTemplateModalDescription) textTemplateModalDescription.textContent = `${typeNames[template.type] || template.type} template`;
+      if (deleteTextTemplateBtn) deleteTextTemplateBtn.classList.remove('hidden');
+
+      showTextTemplateModal();
+    } catch {
+      alert('Kon template niet laden');
+    }
+  }
+
+  // Modal close handlers
+  document.getElementById('close-text-template-modal')?.addEventListener('click', hideTextTemplateModal);
+  document.getElementById('cancel-text-template-btn')?.addEventListener('click', hideTextTemplateModal);
+  document.getElementById('text-template-modal-backdrop')?.addEventListener('click', hideTextTemplateModal);
+
+  // Add template buttons
+  document.querySelectorAll('.add-category-template-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const type = btn.getAttribute('data-category');
+      const typeName = btn.getAttribute('data-category-name');
+      if (type && typeName) openTextTemplateForNew(type, typeName);
+    });
+  });
+
+  document.getElementById('add-text-template-btn')?.addEventListener('click', () => {
+    openTextTemplateForNew('custom', 'Aangepaste');
+  });
+
+  // Form submit
+  textTemplateForm?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+
+    const id = textTemplateIdInput?.value;
+    const isEdit = Boolean(id);
+
+    const data = {
+      type: textTemplateTypeInput?.value,
+      name: textTemplateNameInput?.value,
+      description: textTemplateDescriptionInput?.value || null,
+      content: textTemplateContentInput?.value,
+      isDefault: textTemplateDefaultInput?.checked,
+    };
+
+    try {
+      const url = isEdit ? `/api/text-templates/${id}` : '/api/text-templates';
+      const method = isEdit ? 'PUT' : 'POST';
+
+      const response = await fetch(url, {
+        method,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+      });
+
+      if (response.ok) {
+        hideTextTemplateModal();
+        loadTextTemplates();
+      } else {
+        const error = await response.json();
+        alert(error.error || 'Er is iets misgegaan');
+      }
+    } catch {
+      alert('Er is iets misgegaan');
+    }
+  });
+
+  // Delete template
+  deleteTextTemplateBtn?.addEventListener('click', async () => {
+    const id = textTemplateIdInput?.value;
+    if (!id) return;
+
+    if (!confirm('Weet je zeker dat je dit template wilt verwijderen?')) return;
+
+    try {
+      const response = await fetch(`/api/text-templates/${id}`, { method: 'DELETE' });
+
+      if (response.ok) {
+        hideTextTemplateModal();
+        loadTextTemplates();
+      } else {
+        alert('Kon template niet verwijderen');
+      }
+    } catch {
+      alert('Er is iets misgegaan');
+    }
+  });
+
+  // Load on page load
+  loadTextTemplates();
 </script>

@@ -55,6 +55,14 @@ interface ExistingQuote {
   }>;
 }
 
+interface TextTemplate {
+  id: string;
+  type: string;
+  name: string;
+  content: string;
+  isDefault: boolean;
+}
+
 interface SimpleQuoteBuilderProps {
   customers?: Customer[];
   initialCustomerId?: string | null;
@@ -67,6 +75,7 @@ export function SimpleQuoteBuilder({ customers = [], initialCustomerId, existing
   const [title, setTitle] = useState(existingQuote?.title || 'Offerte');
   const [introText, setIntroText] = useState(existingQuote?.introText || '');
   const [footerText, setFooterText] = useState(existingQuote?.footerText || '');
+  const [textTemplates, setTextTemplates] = useState<TextTemplate[]>([]);
   const [lines, setLines] = useState<QuoteLine[]>(() => {
     if (existingQuote?.blocks?.[0]?.lines) {
       return existingQuote.blocks[0].lines.map(l => ({
@@ -90,14 +99,32 @@ export function SimpleQuoteBuilder({ customers = [], initialCustomerId, existing
   const [isSaving, setIsSaving] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
-  // Fetch catalog data
+  // Fetch catalog data and text templates
   useEffect(() => {
-    async function fetchCatalog() {
+    async function fetchData() {
       try {
-        const [servicesRes, categoriesRes] = await Promise.all([
+        const [servicesRes, categoriesRes, templatesRes] = await Promise.all([
           fetch('/api/services'),
           fetch('/api/categories'),
+          fetch('/api/text-templates'),
         ]);
+
+        if (templatesRes.ok) {
+          const templatesData = await templatesRes.json();
+          setTextTemplates(templatesData);
+
+          // Set default intro if not editing existing quote
+          if (!existingQuote?.introText) {
+            const defaultIntro = templatesData.find((t: TextTemplate) => t.type === 'intro' && t.isDefault);
+            if (defaultIntro) setIntroText(defaultIntro.content);
+          }
+
+          // Set default footer if not editing existing quote
+          if (!existingQuote?.footerText) {
+            const defaultFooter = templatesData.find((t: TextTemplate) => t.type === 'footer' && t.isDefault);
+            if (defaultFooter) setFooterText(defaultFooter.content);
+          }
+        }
 
         if (servicesRes.ok) {
           const data = await servicesRes.json();
@@ -108,11 +135,11 @@ export function SimpleQuoteBuilder({ customers = [], initialCustomerId, existing
           setCategories(data);
         }
       } catch (error) {
-        console.error('Failed to fetch catalog:', error);
+        console.error('Failed to fetch data:', error);
       }
     }
-    fetchCatalog();
-  }, []);
+    fetchData();
+  }, [existingQuote]);
 
   const selectedCustomer = customers.find(c => c.id === customerId);
 
@@ -300,7 +327,24 @@ export function SimpleQuoteBuilder({ customers = [], initialCustomerId, existing
             />
           </div>
           <div className="space-y-2">
-            <label className="text-sm font-medium">Introductie tekst</label>
+            <div className="flex items-center justify-between">
+              <label className="text-sm font-medium">Introductie tekst</label>
+              {textTemplates.filter(t => t.type === 'intro').length > 0 && (
+                <select
+                  className="text-sm border rounded px-2 py-1 bg-background"
+                  value=""
+                  onChange={(e) => {
+                    const template = textTemplates.find(t => t.id === e.target.value);
+                    if (template) setIntroText(template.content);
+                  }}
+                >
+                  <option value="">Template kiezen...</option>
+                  {textTemplates.filter(t => t.type === 'intro').map(t => (
+                    <option key={t.id} value={t.id}>{t.name}</option>
+                  ))}
+                </select>
+              )}
+            </div>
             <Textarea
               value={introText}
               onChange={(e) => setIntroText(e.target.value)}
@@ -452,7 +496,35 @@ export function SimpleQuoteBuilder({ customers = [], initialCustomerId, existing
         {/* Footer Text */}
         <div className="rounded-xl border bg-card p-6 space-y-4">
           <div className="space-y-2">
-            <label className="text-sm font-medium">Afsluiting / Voorwaarden</label>
+            <div className="flex items-center justify-between">
+              <label className="text-sm font-medium">Afsluiting / Voorwaarden</label>
+              {textTemplates.filter(t => t.type === 'footer' || t.type === 'terms').length > 0 && (
+                <select
+                  className="text-sm border rounded px-2 py-1 bg-background"
+                  value=""
+                  onChange={(e) => {
+                    const template = textTemplates.find(t => t.id === e.target.value);
+                    if (template) setFooterText(template.content);
+                  }}
+                >
+                  <option value="">Template kiezen...</option>
+                  {textTemplates.filter(t => t.type === 'footer').length > 0 && (
+                    <optgroup label="Afsluiting">
+                      {textTemplates.filter(t => t.type === 'footer').map(t => (
+                        <option key={t.id} value={t.id}>{t.name}</option>
+                      ))}
+                    </optgroup>
+                  )}
+                  {textTemplates.filter(t => t.type === 'terms').length > 0 && (
+                    <optgroup label="Voorwaarden">
+                      {textTemplates.filter(t => t.type === 'terms').map(t => (
+                        <option key={t.id} value={t.id}>{t.name}</option>
+                      ))}
+                    </optgroup>
+                  )}
+                </select>
+              )}
+            </div>
             <Textarea
               value={footerText}
               onChange={(e) => setFooterText(e.target.value)}
