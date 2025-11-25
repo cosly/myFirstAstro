@@ -420,13 +420,13 @@ export function LiveActivities({ quotes = [], selectedQuoteId, onQuoteSelect }: 
                     </div>
                     {activity.eventData && (
                       <div className="text-xs text-muted-foreground mt-0.5">
-                        {activity.eventType === 'scroll' && activity.eventData.scrollDepth && (
+                        {activity.eventType === 'scroll' && !!activity.eventData.scrollDepth && (
                           <span>{activity.eventData.scrollDepth as number}% gescrolld</span>
                         )}
-                        {activity.eventType === 'section_view' && activity.eventData.sectionTitle && (
+                        {activity.eventType === 'section_view' && !!activity.eventData.sectionTitle && (
                           <span>Sectie: {activity.eventData.sectionTitle as string}</span>
                         )}
-                        {activity.eventType === 'option_toggle' && activity.eventData.optionName && (
+                        {activity.eventType === 'option_toggle' && !!activity.eventData.optionName && (
                           <span>
                             {activity.eventData.optionName as string}:{' '}
                             {activity.eventData.selected ? 'geselecteerd' : 'gedeselecteerd'}

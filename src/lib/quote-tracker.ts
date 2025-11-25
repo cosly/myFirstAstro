@@ -54,8 +54,8 @@ export class QuoteTracker {
     this.config = {
       sessionId: config.sessionId || this.generateSessionId(),
       userType: config.userType || 'customer',
-      userName: config.userName || undefined,
-      userId: config.userId || undefined,
+      userName: config.userName || '',
+      userId: config.userId || '',
       enableWebSocket: config.enableWebSocket ?? true,
       enablePersistence: config.enablePersistence ?? true,
       scrollThrottleMs: config.scrollThrottleMs || 500,

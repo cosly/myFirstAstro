@@ -53,9 +53,10 @@ export const GET: APIRoute = async ({ params, request, locals }) => {
     const url = new URL(request.url);
     url.pathname = `/quote/${quoteId}`;
 
-    return durableObject.fetch(new Request(url.toString(), {
-      headers: request.headers,
-    }));
+    const response = await durableObject.fetch(url.toString(), {
+      headers: Object.fromEntries(request.headers.entries()),
+    });
+    return response as unknown as Response;
   } catch (error) {
     console.error('WebSocket connection error:', error);
     return new Response(JSON.stringify({ error: 'Failed to establish connection' }), {

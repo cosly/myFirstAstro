@@ -5,12 +5,14 @@ type D1Database = import('@cloudflare/workers-types').D1Database;
 type R2Bucket = import('@cloudflare/workers-types').R2Bucket;
 type KVNamespace = import('@cloudflare/workers-types').KVNamespace;
 type Queue = import('@cloudflare/workers-types').Queue;
+type DurableObjectNamespace = import('@cloudflare/workers-types').DurableObjectNamespace;
 
 interface Env {
   DB: D1Database;
   STORAGE: R2Bucket;
   KV: KVNamespace;
   QUEUE: Queue;
+  QUOTE_PRESENCE: DurableObjectNamespace;
   ENVIRONMENT: string;
   APP_NAME: string;
   APP_URL: string;

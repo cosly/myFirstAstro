@@ -1265,6 +1265,9 @@ const autoRemindersEnabled = (settings.auto_reminders_enabled as boolean) ?? tru
   const translateBtn = document.getElementById('translate-template-btn');
   const translateDropdown = document.getElementById('translate-dropdown');
   const translateOptions = document.querySelectorAll('.translate-option');
+  const templateSubjectInput = document.getElementById('template-subject') as HTMLInputElement | null;
+  const templateBodyHtmlInput = document.getElementById('template-body-html') as HTMLTextAreaElement | null;
+  const templateBodyTextInput = document.getElementById('template-body-text') as HTMLTextAreaElement | null;
 
   // Toggle translate dropdown
   translateBtn?.addEventListener('click', (e) => {
