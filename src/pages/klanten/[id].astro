@@ -128,15 +128,15 @@ const formatCurrency = (amount: number) => {
         )}
       </div>
       <div class="flex gap-2">
-        <button
-          id="edit-customer-btn"
+        <a
+          href={`/klanten/${customer.id}/bewerken`}
           class="inline-flex items-center gap-2 rounded-lg border px-4 py-2 text-sm font-medium transition-colors hover:bg-muted"
         >
           <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
           </svg>
           Bewerken
-        </button>
+        </a>
         <a
           href={`/offertes/nieuw?customer=${customer.id}`}
           class="inline-flex items-center gap-2 rounded-lg bg-tesoro-500 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-tesoro-600"
@@ -289,154 +289,4 @@ const formatCurrency = (amount: number) => {
       )}
     </div>
   </div>
-
-  <!-- Edit Customer Modal -->
-  <div id="customer-modal" class="fixed inset-0 z-50 hidden">
-    <div class="fixed inset-0 bg-black/50" id="modal-backdrop"></div>
-    <div class="fixed inset-0 flex items-center justify-center p-4 overflow-y-auto">
-      <div class="relative w-full max-w-lg rounded-2xl bg-card p-6 shadow-xl my-8">
-        <button id="close-modal" class="absolute right-4 top-4 p-1 text-muted-foreground hover:text-foreground">
-          <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-          </svg>
-        </button>
-
-        <h2 class="text-xl font-semibold mb-6">Klant Bewerken</h2>
-
-        <form id="customer-form" class="space-y-4">
-          <input type="hidden" name="id" value={customer.id} />
-
-          <div class="grid gap-4 sm:grid-cols-2">
-            <div class="space-y-2">
-              <label class="text-sm font-medium">Bedrijfsnaam *</label>
-              <input type="text" name="companyName" required value={customer.companyName} class="flex h-10 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm" />
-            </div>
-            <div class="space-y-2">
-              <label class="text-sm font-medium">Contactpersoon *</label>
-              <input type="text" name="contactName" required value={customer.contactName} class="flex h-10 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm" />
-            </div>
-          </div>
-
-          <div class="grid gap-4 sm:grid-cols-2">
-            <div class="space-y-2">
-              <label class="text-sm font-medium">Email *</label>
-              <input type="email" name="email" required value={customer.email} class="flex h-10 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm" />
-            </div>
-            <div class="space-y-2">
-              <label class="text-sm font-medium">Telefoon</label>
-              <input type="tel" name="phone" value={customer.phone || ''} class="flex h-10 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm" />
-            </div>
-          </div>
-
-          <div class="space-y-2">
-            <label class="text-sm font-medium">Adres</label>
-            <input type="text" name="address" value={customer.address || ''} class="flex h-10 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm" />
-          </div>
-
-          <div class="grid gap-4 sm:grid-cols-3">
-            <div class="space-y-2">
-              <label class="text-sm font-medium">Postcode</label>
-              <input type="text" name="postalCode" value={customer.postalCode || ''} class="flex h-10 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm" />
-            </div>
-            <div class="space-y-2 sm:col-span-2">
-              <label class="text-sm font-medium">Plaats</label>
-              <input type="text" name="city" value={customer.city || ''} class="flex h-10 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm" />
-            </div>
-          </div>
-
-          <div class="grid gap-4 sm:grid-cols-2">
-            <div class="space-y-2">
-              <label class="text-sm font-medium">KVK nummer</label>
-              <input type="text" name="kvkNumber" value={customer.kvkNumber || ''} class="flex h-10 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm" />
-            </div>
-            <div class="space-y-2">
-              <label class="text-sm font-medium">BTW nummer</label>
-              <input type="text" name="btwNumber" value={customer.btwNumber || ''} class="flex h-10 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm" />
-            </div>
-          </div>
-
-          <div class="grid gap-4 sm:grid-cols-2">
-            <label class="flex items-center gap-2 cursor-pointer">
-              <input type="checkbox" name="isTesororClient" checked={customer.isTesororClient || false} class="h-4 w-4 rounded border-gray-300 text-tesoro-500" />
-              <span class="text-sm">Tesoro CRM klant</span>
-            </label>
-            <div class="space-y-2">
-              <label class="text-sm font-medium">Taal emails</label>
-              <select name="locale" class="flex h-10 w-full rounded-lg border border-input bg-background px-3 text-sm">
-                <option value="nl" selected={customer.locale === 'nl' || !customer.locale}>Nederlands</option>
-                <option value="en" selected={customer.locale === 'en'}>English</option>
-                <option value="es" selected={customer.locale === 'es'}>Español</option>
-              </select>
-            </div>
-          </div>
-
-          <div class="space-y-2">
-            <label class="text-sm font-medium">Notities</label>
-            <textarea name="notes" rows="3" class="flex w-full rounded-lg border border-input bg-background px-3 py-2 text-sm">{customer.notes || ''}</textarea>
-          </div>
-
-          <div class="flex justify-end gap-3 pt-4">
-            <button type="button" id="cancel-btn" class="rounded-lg border px-4 py-2 text-sm font-medium hover:bg-muted">
-              Annuleren
-            </button>
-            <button type="submit" class="rounded-lg bg-tesoro-500 px-4 py-2 text-sm font-medium text-white hover:bg-tesoro-600">
-              Opslaan
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
-  </div>
 </DashboardLayout>
-
-<script define:vars={{ customerId: customer.id }}>
-  const modal = document.getElementById('customer-modal');
-  const editBtn = document.getElementById('edit-customer-btn');
-  const closeBtn = document.getElementById('close-modal');
-  const cancelBtn = document.getElementById('cancel-btn');
-  const backdrop = document.getElementById('modal-backdrop');
-  const form = document.getElementById('customer-form');
-
-  function showModal() {
-    modal?.classList.remove('hidden');
-  }
-
-  function hideModal() {
-    modal?.classList.add('hidden');
-  }
-
-  editBtn?.addEventListener('click', showModal);
-  closeBtn?.addEventListener('click', hideModal);
-  cancelBtn?.addEventListener('click', hideModal);
-  backdrop?.addEventListener('click', hideModal);
-
-  form?.addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const formData = new FormData(form);
-    const data = {};
-
-    formData.forEach((value, key) => {
-      if (key !== 'id') {
-        data[key] = value;
-      }
-    });
-
-    data.isTesororClient = formData.has('isTesororClient') && formData.get('isTesororClient') === 'on';
-
-    try {
-      const response = await fetch(`/api/customers/${customerId}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data),
-      });
-
-      if (response.ok) {
-        window.location.reload();
-      } else {
-        alert('Er is iets misgegaan bij het opslaan');
-      }
-    } catch {
-      alert('Er is iets misgegaan bij het opslaan');
-    }
-  });
-</script>
