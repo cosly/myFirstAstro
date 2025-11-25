@@ -1,7 +1,82 @@
 import type { APIRoute } from 'astro';
-import { createDb, quotes, quoteComments, auditLog } from '@/lib/db';
+import { createDb, quotes, quoteComments, quoteLines, auditLog } from '@/lib/db';
 import { generateId } from '@/lib/utils';
-import { eq } from 'drizzle-orm';
+import { eq, desc } from 'drizzle-orm';
+
+// GET: Fetch all comments for this quote
+export const GET: APIRoute = async ({ params, locals }) => {
+  try {
+    const { token } = params;
+    if (!token) {
+      return new Response(JSON.stringify({ error: 'Token required' }), {
+        status: 400,
+        headers: { 'Content-Type': 'application/json' },
+      });
+    }
+
+    const db = createDb(locals.runtime.env.DB);
+
+    // Get quote
+    const quote = await db.query.quotes.findFirst({
+      where: eq(quotes.publicToken, token),
+    });
+
+    if (!quote) {
+      return new Response(JSON.stringify({ error: 'Quote not found' }), {
+        status: 404,
+        headers: { 'Content-Type': 'application/json' },
+      });
+    }
+
+    // Fetch all comments for this quote
+    const comments = await db
+      .select({
+        id: quoteComments.id,
+        lineId: quoteComments.lineId,
+        authorType: quoteComments.authorType,
+        authorName: quoteComments.authorName,
+        authorEmail: quoteComments.authorEmail,
+        message: quoteComments.message,
+        createdAt: quoteComments.createdAt,
+      })
+      .from(quoteComments)
+      .where(eq(quoteComments.quoteId, quote.id))
+      .orderBy(quoteComments.createdAt);
+
+    // Get line descriptions for comments linked to lines
+    const lineIds = comments.filter(c => c.lineId).map(c => c.lineId as string);
+    let lineMap = new Map<string, string | null>();
+
+    if (lineIds.length > 0) {
+      // Fetch all lines that have comments
+      const lines = await db
+        .select({ id: quoteLines.id, description: quoteLines.description })
+        .from(quoteLines);
+
+      lineMap = new Map(
+        lines
+          .filter(l => lineIds.includes(l.id))
+          .map(l => [l.id, l.description])
+      );
+    }
+
+    const commentsWithLineInfo = comments.map(c => ({
+      ...c,
+      lineDescription: c.lineId ? lineMap.get(c.lineId) : null,
+    }));
+
+    return new Response(JSON.stringify(commentsWithLineInfo), {
+      status: 200,
+      headers: { 'Content-Type': 'application/json' },
+    });
+  } catch (error) {
+    console.error('Failed to fetch comments:', error);
+    return new Response(JSON.stringify({ error: 'Failed to fetch comments' }), {
+      status: 500,
+      headers: { 'Content-Type': 'application/json' },
+    });
+  }
+};
 
 export const POST: APIRoute = async ({ params, request, locals }) => {
   try {
