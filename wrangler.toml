@@ -8,6 +8,7 @@ pages_build_output_dir = "./dist"
 binding = "DB"
 database_name = "tesoro-quotes-db"
 database_id = "72959d9a-5a56-4f64-a96b-82edf076c2dc"
+migrations_dir = "drizzle/migrations"
 
 # R2 Storage (voor PDF's, handtekeningen, afbeeldingen)
 [[r2_buckets]]
