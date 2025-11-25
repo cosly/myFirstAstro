@@ -72,7 +72,6 @@ export const PUT: APIRoute = async ({ params, request, locals }) => {
         description: body.description !== undefined ? body.description : existing.description,
         isActive: body.isActive !== undefined ? body.isActive : existing.isActive,
         sortOrder: body.sortOrder !== undefined ? body.sortOrder : existing.sortOrder,
-        updatedAt: new Date(),
       })
       .where(eq(serviceCategories.id, id));
 
@@ -104,7 +103,7 @@ export const DELETE: APIRoute = async ({ params, locals }) => {
     // Soft delete - set isActive to false
     await db
       .update(serviceCategories)
-      .set({ isActive: false, updatedAt: new Date() })
+      .set({ isActive: false })
       .where(eq(serviceCategories.id, id));
 
     return new Response(JSON.stringify({ success: true }), {
