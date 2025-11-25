@@ -208,6 +208,17 @@ const publicUrl = quote.publicToken ? `${Astro.url.origin}/offerte/${quote.publi
             Versturen
           </button>
         )}
+        {['sent', 'viewed'].includes(quote.status) && (
+          <button
+            id="resend-quote-btn"
+            class="inline-flex items-center gap-2 rounded-lg border px-4 py-2 text-sm font-medium transition-colors hover:bg-muted"
+          >
+            <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+            </svg>
+            Opnieuw versturen
+          </button>
+        )}
         {publicUrl && (
           <button
             id="copy-link-btn"
@@ -563,23 +574,28 @@ const publicUrl = quote.publicToken ? `${Astro.url.origin}/offerte/${quote.publi
 
   // Send quote email functionality
   const sendQuoteBtn = document.getElementById('send-quote-btn');
+  const resendQuoteBtn = document.getElementById('resend-quote-btn');
 
-  sendQuoteBtn?.addEventListener('click', async () => {
+  async function sendQuoteEmail(button: HTMLElement, isResend: boolean = false) {
     if (!quoteId) return;
 
-    const confirmed = confirm('Weet je zeker dat je deze offerte naar de klant wilt versturen?');
+    const confirmMessage = isResend
+      ? 'Weet je zeker dat je deze offerte opnieuw naar de klant wilt versturen?'
+      : 'Weet je zeker dat je deze offerte naar de klant wilt versturen?';
+
+    const confirmed = confirm(confirmMessage);
     if (!confirmed) return;
 
     // Update button state
-    const originalContent = sendQuoteBtn.innerHTML;
-    sendQuoteBtn.innerHTML = `
+    const originalContent = button.innerHTML;
+    button.innerHTML = `
       <svg class="h-4 w-4 animate-spin" fill="none" viewBox="0 0 24 24">
         <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
         <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
       </svg>
-      Versturen...
+      ${isResend ? 'Opnieuw versturen...' : 'Versturen...'}
     `;
-    sendQuoteBtn.setAttribute('disabled', 'true');
+    button.setAttribute('disabled', 'true');
 
     try {
       const response = await fetch('/api/email/send', {
@@ -594,21 +610,24 @@ const publicUrl = quote.publicToken ? `${Astro.url.origin}/offerte/${quote.publi
       const result = await response.json();
 
       if (result.success) {
-        alert('Offerte succesvol verstuurd naar de klant!');
+        alert(isResend ? 'Offerte opnieuw verstuurd naar de klant!' : 'Offerte succesvol verstuurd naar de klant!');
         // Reload page to update status
         window.location.reload();
       } else if (result.skipped) {
         alert('Email service is niet geconfigureerd. De offerte status is niet bijgewerkt.\n\nConfigureer RESEND_API_KEY in de environment variabelen.');
-        sendQuoteBtn.innerHTML = originalContent;
-        sendQuoteBtn.removeAttribute('disabled');
+        button.innerHTML = originalContent;
+        button.removeAttribute('disabled');
       } else {
         throw new Error(result.error || 'Versturen mislukt');
       }
     } catch (error) {
       console.error('Failed to send quote:', error);
       alert('Kon offerte niet versturen: ' + (error instanceof Error ? error.message : 'Onbekende fout'));
-      sendQuoteBtn.innerHTML = originalContent;
-      sendQuoteBtn.removeAttribute('disabled');
+      button.innerHTML = originalContent;
+      button.removeAttribute('disabled');
     }
-  });
+  }
+
+  sendQuoteBtn?.addEventListener('click', () => sendQuoteEmail(sendQuoteBtn, false));
+  resendQuoteBtn?.addEventListener('click', () => sendQuoteEmail(resendQuoteBtn, true));
 </script>
