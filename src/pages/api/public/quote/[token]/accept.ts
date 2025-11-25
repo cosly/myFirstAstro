@@ -3,6 +3,7 @@ import { createDb, quotes, quoteVersions, auditLog } from '@/lib/db';
 import { generateId } from '@/lib/utils';
 import { sendQuoteEmail } from '@/lib/email';
 import { eq } from 'drizzle-orm';
+import { notifyQuoteAccepted } from '@/lib/discord';
 
 export const POST: APIRoute = async ({ params, request, locals }) => {
   try {
@@ -128,6 +129,18 @@ export const POST: APIRoute = async ({ params, request, locals }) => {
           console.error('Failed to send acceptance email:', emailError);
           // Don't fail the request if email fails
         }
+      }
+    }
+
+    // Send Discord notification
+    if (quote.customer) {
+      const updatedQuoteForDiscord = await db.query.quotes.findFirst({
+        where: eq(quotes.id, quote.id),
+      });
+      if (updatedQuoteForDiscord) {
+        notifyQuoteAccepted(db, updatedQuoteForDiscord, quote.customer, appUrl).catch(err => {
+          console.error('Failed to send Discord notification:', err);
+        });
       }
     }
 

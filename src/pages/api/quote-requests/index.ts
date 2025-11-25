@@ -2,6 +2,7 @@ import type { APIRoute } from 'astro';
 import { createDb, quoteRequests, customers } from '@/lib/db';
 import { generateId } from '@/lib/utils';
 import { eq } from 'drizzle-orm';
+import { notifyQuoteRequestReceived } from '@/lib/discord';
 
 export const GET: APIRoute = async ({ locals }) => {
   try {
@@ -72,11 +73,19 @@ export const POST: APIRoute = async ({ request, locals }) => {
       status: 'new',
     });
 
+    // Send Discord notification
+    const appUrl = new URL(request.url).origin;
+    const createdRequest = await db.query.quoteRequests.findFirst({
+      where: eq(quoteRequests.id, requestId),
+    });
+    if (createdRequest) {
+      notifyQuoteRequestReceived(db, createdRequest, appUrl).catch(err => {
+        console.error('Failed to send Discord notification:', err);
+      });
+    }
+
     // TODO: Send notification email to team
     // await sendNotificationEmail(...)
-
-    // TODO: Add to queue for processing
-    // await locals.runtime.env.QUEUE.send({ type: 'new_request', requestId });
 
     return new Response(
       JSON.stringify({

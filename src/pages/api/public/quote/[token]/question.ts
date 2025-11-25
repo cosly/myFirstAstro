@@ -2,6 +2,7 @@ import type { APIRoute } from 'astro';
 import { createDb, quotes, quoteComments, quoteLines, auditLog } from '@/lib/db';
 import { generateId } from '@/lib/utils';
 import { eq, desc } from 'drizzle-orm';
+import { notifyQuestionReceived } from '@/lib/discord';
 
 // GET: Fetch all comments for this quote
 export const GET: APIRoute = async ({ params, locals }) => {
@@ -138,6 +139,21 @@ export const POST: APIRoute = async ({ params, request, locals }) => {
       ipAddress: request.headers.get('CF-Connecting-IP') || request.headers.get('X-Forwarded-For'),
       userAgent: request.headers.get('User-Agent'),
     });
+
+    // Send Discord notification
+    if (quote.customer) {
+      const appUrl = new URL(request.url).origin;
+      notifyQuestionReceived(
+        db,
+        quote,
+        quote.customer,
+        body.message.trim(),
+        quote.customer.contactName || 'Klant',
+        appUrl
+      ).catch(err => {
+        console.error('Failed to send Discord notification:', err);
+      });
+    }
 
     // TODO: Send notification email to team with the question
 
