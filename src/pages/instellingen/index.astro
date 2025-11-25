@@ -421,6 +421,82 @@ const autoRemindersEnabled = (settings.auto_reminders_enabled as boolean) ?? tru
       </div>
     </div>
   </div>
+
+  <!-- Email Template Editor Modal -->
+  <div id="template-modal" class="fixed inset-0 z-50 hidden">
+    <div class="fixed inset-0 bg-black/50" id="template-modal-backdrop"></div>
+    <div class="fixed inset-0 flex items-center justify-center p-4 overflow-y-auto">
+      <div class="relative w-full max-w-4xl rounded-2xl bg-card p-6 shadow-xl my-8">
+        <button id="close-template-modal" class="absolute right-4 top-4 p-1 text-muted-foreground hover:text-foreground">
+          <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+
+        <h2 id="template-modal-title" class="text-xl font-semibold mb-2">Email Template Bewerken</h2>
+        <p id="template-modal-description" class="text-sm text-muted-foreground mb-6"></p>
+
+        <form id="template-form" class="space-y-4">
+          <input type="hidden" id="template-type" name="type" />
+
+          <div class="space-y-2">
+            <label class="text-sm font-medium">Onderwerp</label>
+            <input type="text" id="template-subject" name="subject" required
+              class="flex h-10 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
+              placeholder="Bijv: Uw offerte van Tesoro CRM - {{quote_number}}" />
+          </div>
+
+          <div class="space-y-2">
+            <label class="text-sm font-medium">HTML Inhoud</label>
+            <textarea id="template-body-html" name="bodyHtml" rows="15" required
+              class="flex w-full rounded-lg border border-input bg-background px-3 py-2 text-sm font-mono"
+              placeholder="HTML template..."></textarea>
+          </div>
+
+          <div class="space-y-2">
+            <label class="text-sm font-medium">Platte tekst (fallback)</label>
+            <textarea id="template-body-text" name="bodyText" rows="6"
+              class="flex w-full rounded-lg border border-input bg-background px-3 py-2 text-sm font-mono"
+              placeholder="Platte tekst versie..."></textarea>
+          </div>
+
+          <!-- Available Variables -->
+          <div class="rounded-lg border bg-muted/30 p-4">
+            <p class="text-sm font-medium mb-2">Beschikbare variabelen:</p>
+            <div class="flex flex-wrap gap-2">
+              <code class="rounded bg-muted px-2 py-1 text-xs cursor-pointer hover:bg-tesoro-100" data-var="quote_number">{{quote_number}}</code>
+              <code class="rounded bg-muted px-2 py-1 text-xs cursor-pointer hover:bg-tesoro-100" data-var="quote_title">{{quote_title}}</code>
+              <code class="rounded bg-muted px-2 py-1 text-xs cursor-pointer hover:bg-tesoro-100" data-var="quote_total">{{quote_total}}</code>
+              <code class="rounded bg-muted px-2 py-1 text-xs cursor-pointer hover:bg-tesoro-100" data-var="quote_valid_until">{{quote_valid_until}}</code>
+              <code class="rounded bg-muted px-2 py-1 text-xs cursor-pointer hover:bg-tesoro-100" data-var="quote_url">{{quote_url}}</code>
+              <code class="rounded bg-muted px-2 py-1 text-xs cursor-pointer hover:bg-tesoro-100" data-var="customer_name">{{customer_name}}</code>
+              <code class="rounded bg-muted px-2 py-1 text-xs cursor-pointer hover:bg-tesoro-100" data-var="customer_company">{{customer_company}}</code>
+              <code class="rounded bg-muted px-2 py-1 text-xs cursor-pointer hover:bg-tesoro-100" data-var="company_name">{{company_name}}</code>
+              <code class="rounded bg-muted px-2 py-1 text-xs cursor-pointer hover:bg-tesoro-100" data-var="company_email">{{company_email}}</code>
+              <code class="rounded bg-muted px-2 py-1 text-xs cursor-pointer hover:bg-tesoro-100" data-var="signed_by">{{signed_by}}</code>
+              <code class="rounded bg-muted px-2 py-1 text-xs cursor-pointer hover:bg-tesoro-100" data-var="signed_at">{{signed_at}}</code>
+            </div>
+            <p class="text-xs text-muted-foreground mt-2">Klik op een variabele om te kopieren</p>
+          </div>
+
+          <div class="flex items-center justify-between pt-4 border-t">
+            <button type="button" id="reset-template-btn"
+              class="text-sm text-muted-foreground hover:text-destructive">
+              Reset naar standaard
+            </button>
+            <div class="flex gap-3">
+              <button type="button" id="cancel-template-btn" class="rounded-lg border px-4 py-2 text-sm font-medium hover:bg-muted">
+                Annuleren
+              </button>
+              <button type="submit" class="rounded-lg bg-tesoro-500 px-4 py-2 text-sm font-medium text-white hover:bg-tesoro-600">
+                Opslaan
+              </button>
+            </div>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
 </DashboardLayout>
 
 <script>
@@ -640,5 +716,137 @@ const autoRemindersEnabled = (settings.auto_reminders_enabled as boolean) ?? tru
     } catch {
       alert('Er is iets misgegaan');
     }
+  });
+
+  // Email Template Modal
+  const templateModal = document.getElementById('template-modal');
+  const templateModalTitle = document.getElementById('template-modal-title');
+  const templateModalDescription = document.getElementById('template-modal-description');
+  const templateForm = document.getElementById('template-form') as HTMLFormElement;
+  const templateTypeInput = document.getElementById('template-type') as HTMLInputElement;
+  const templateSubjectInput = document.getElementById('template-subject') as HTMLInputElement;
+  const templateBodyHtmlInput = document.getElementById('template-body-html') as HTMLTextAreaElement;
+  const templateBodyTextInput = document.getElementById('template-body-text') as HTMLTextAreaElement;
+
+  const templateNames: Record<string, string> = {
+    'quote_sent': 'Offerte verstuurd',
+    'quote_reminder': 'Herinnering',
+    'quote_accepted': 'Offerte geaccepteerd',
+    'quote_declined': 'Offerte afgewezen',
+    'payment_received': 'Betaling ontvangen',
+    'question_received': 'Vraag ontvangen',
+    'question_answered': 'Vraag beantwoord',
+  };
+
+  function showTemplateModal() {
+    templateModal?.classList.remove('hidden');
+  }
+
+  function hideTemplateModal() {
+    templateModal?.classList.add('hidden');
+    templateForm?.reset();
+  }
+
+  async function loadTemplate(type: string, name: string) {
+    try {
+      const response = await fetch(`/api/email-templates/${type}`);
+      if (response.ok) {
+        const template = await response.json();
+
+        if (templateTypeInput) templateTypeInput.value = type;
+        if (templateSubjectInput) templateSubjectInput.value = template.subject || '';
+        if (templateBodyHtmlInput) templateBodyHtmlInput.value = template.bodyHtml || '';
+        if (templateBodyTextInput) templateBodyTextInput.value = template.bodyText || '';
+        if (templateModalTitle) templateModalTitle.textContent = `${name} bewerken`;
+        if (templateModalDescription) {
+          templateModalDescription.textContent = template.isCustomized
+            ? 'Dit template is aangepast'
+            : 'Dit is het standaard template';
+        }
+
+        showTemplateModal();
+      } else {
+        alert('Kon template niet laden');
+      }
+    } catch {
+      alert('Kon template niet laden');
+    }
+  }
+
+  document.getElementById('close-template-modal')?.addEventListener('click', hideTemplateModal);
+  document.getElementById('cancel-template-btn')?.addEventListener('click', hideTemplateModal);
+  document.getElementById('template-modal-backdrop')?.addEventListener('click', hideTemplateModal);
+
+  // Edit template buttons
+  document.querySelectorAll('.edit-template-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const type = btn.getAttribute('data-template-id');
+      const name = btn.getAttribute('data-template-name');
+      if (type && name) loadTemplate(type, name);
+    });
+  });
+
+  // Template form submit
+  templateForm?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const type = templateTypeInput?.value;
+    if (!type) return;
+
+    try {
+      const response = await fetch(`/api/email-templates/${type}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          subject: templateSubjectInput?.value,
+          bodyHtml: templateBodyHtmlInput?.value,
+          bodyText: templateBodyTextInput?.value,
+        }),
+      });
+
+      if (response.ok) {
+        hideTemplateModal();
+        alert('Template opgeslagen!');
+      } else {
+        const error = await response.json();
+        alert(error.error || 'Er is iets misgegaan');
+      }
+    } catch {
+      alert('Er is iets misgegaan');
+    }
+  });
+
+  // Reset template to default
+  document.getElementById('reset-template-btn')?.addEventListener('click', async () => {
+    const type = templateTypeInput?.value;
+    if (!type) return;
+
+    if (!confirm('Weet je zeker dat je dit template wilt resetten naar de standaard?')) return;
+
+    try {
+      const response = await fetch(`/api/email-templates/${type}`, { method: 'DELETE' });
+
+      if (response.ok) {
+        // Reload the template
+        const name = templateNames[type] || type;
+        await loadTemplate(type, name);
+        alert('Template gereset naar standaard');
+      } else {
+        alert('Er is iets misgegaan');
+      }
+    } catch {
+      alert('Er is iets misgegaan');
+    }
+  });
+
+  // Click to copy variable
+  document.querySelectorAll('[data-var]').forEach(el => {
+    el.addEventListener('click', () => {
+      const varName = el.getAttribute('data-var');
+      if (varName) {
+        navigator.clipboard.writeText(`{{${varName}}}`);
+        el.classList.add('bg-green-100');
+        setTimeout(() => el.classList.remove('bg-green-100'), 500);
+      }
+    });
   });
 </script>
