@@ -11,6 +11,7 @@ const publicRoutes = [
   '/offertes',
   '/test-simple',
   '/test-db',
+  '/test-layout',
   '/api/auth/login',
   '/api/quote-requests',
   '/api/public/',

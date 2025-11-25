@@ -1,0 +1,12 @@
+---
+// Test with DashboardLayout only - no QuoteBuilder
+import DashboardLayout from '../layouts/DashboardLayout.astro';
+---
+
+<DashboardLayout title="Layout Test">
+  <div class="space-y-6">
+    <h1 class="text-2xl font-bold">Layout Test</h1>
+    <p>If you see this, DashboardLayout works!</p>
+    <p>Timestamp: {new Date().toISOString()}</p>
+  </div>
+</DashboardLayout>
