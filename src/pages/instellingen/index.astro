@@ -794,6 +794,35 @@ const autoRemindersEnabled = (settings.auto_reminders_enabled as boolean) ?? tru
               Reset naar standaard
             </button>
             <div class="flex gap-3">
+              <!-- Translate Dropdown -->
+              <div class="relative">
+                <button type="button" id="translate-template-btn"
+                  class="flex items-center gap-2 rounded-lg border px-4 py-2 text-sm font-medium hover:bg-muted">
+                  <span>🌐</span>
+                  <span>Vertalen</span>
+                  <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                  </svg>
+                </button>
+                <div id="translate-dropdown" class="absolute right-0 bottom-full mb-2 hidden w-48 rounded-lg border bg-card shadow-lg z-10">
+                  <div class="p-2 text-xs text-muted-foreground border-b">Vertaal naar:</div>
+                  <button type="button" class="translate-option w-full px-4 py-2 text-left text-sm hover:bg-muted" data-lang="en">
+                    🇬🇧 Engels
+                  </button>
+                  <button type="button" class="translate-option w-full px-4 py-2 text-left text-sm hover:bg-muted" data-lang="de">
+                    🇩🇪 Duits
+                  </button>
+                  <button type="button" class="translate-option w-full px-4 py-2 text-left text-sm hover:bg-muted" data-lang="fr">
+                    🇫🇷 Frans
+                  </button>
+                  <button type="button" class="translate-option w-full px-4 py-2 text-left text-sm hover:bg-muted" data-lang="es">
+                    🇪🇸 Spaans
+                  </button>
+                  <button type="button" class="translate-option w-full px-4 py-2 text-left text-sm hover:bg-muted" data-lang="nl">
+                    🇳🇱 Nederlands
+                  </button>
+                </div>
+              </div>
               <button type="button" id="cancel-template-btn" class="rounded-lg border px-4 py-2 text-sm font-medium hover:bg-muted">
                 Annuleren
               </button>
@@ -1312,6 +1341,103 @@ const autoRemindersEnabled = (settings.auto_reminders_enabled as boolean) ?? tru
         navigator.clipboard.writeText(`{{${varName}}}`);
         el.classList.add('bg-green-100');
         setTimeout(() => el.classList.remove('bg-green-100'), 500);
+      }
+    });
+  });
+
+  // =====================
+  // TEMPLATE TRANSLATION
+  // =====================
+  const translateBtn = document.getElementById('translate-template-btn');
+  const translateDropdown = document.getElementById('translate-dropdown');
+  const translateOptions = document.querySelectorAll('.translate-option');
+
+  // Toggle translate dropdown
+  translateBtn?.addEventListener('click', (e) => {
+    e.stopPropagation();
+    translateDropdown?.classList.toggle('hidden');
+  });
+
+  // Close dropdown when clicking outside
+  document.addEventListener('click', () => {
+    translateDropdown?.classList.add('hidden');
+  });
+
+  // Handle translation
+  translateOptions.forEach(option => {
+    option.addEventListener('click', async (e) => {
+      e.stopPropagation();
+      const targetLang = option.getAttribute('data-lang');
+      if (!targetLang) return;
+
+      const langNames: Record<string, string> = {
+        en: 'Engels',
+        de: 'Duits',
+        fr: 'Frans',
+        es: 'Spaans',
+        nl: 'Nederlands',
+      };
+
+      translateDropdown?.classList.add('hidden');
+
+      // Get current template values
+      const subject = templateSubjectInput?.value || '';
+      const bodyHtml = templateBodyHtmlInput?.value || '';
+      const bodyText = templateBodyTextInput?.value || '';
+
+      if (!subject && !bodyHtml) {
+        alert('Vul eerst de template in voordat je vertaalt');
+        return;
+      }
+
+      // Show loading state
+      const originalBtnText = translateBtn?.innerHTML || '';
+      if (translateBtn) {
+        translateBtn.innerHTML = `<span class="animate-spin">⏳</span> Vertalen naar ${langNames[targetLang]}...`;
+        translateBtn.setAttribute('disabled', 'true');
+      }
+
+      try {
+        const response = await fetch('/api/ai/translate-template', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            subject,
+            bodyHtml,
+            bodyText,
+            targetLanguage: targetLang,
+          }),
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+          throw new Error(data.error || 'Vertaling mislukt');
+        }
+
+        // Update the form fields with translated content
+        if (templateSubjectInput && data.translated?.subject) {
+          templateSubjectInput.value = data.translated.subject;
+        }
+        if (templateBodyHtmlInput && data.translated?.bodyHtml) {
+          templateBodyHtmlInput.value = data.translated.bodyHtml;
+        }
+        if (templateBodyTextInput && data.translated?.bodyText) {
+          templateBodyTextInput.value = data.translated.bodyText;
+        }
+
+        // Show success message
+        const providerName = data.provider === 'openai' ? 'OpenAI' : 'Anthropic';
+        alert(`✅ Template vertaald naar ${langNames[targetLang]} via ${providerName}!\n\nControleer de vertaling en klik op Opslaan om te bewaren.`);
+      } catch (error: any) {
+        console.error('Translation error:', error);
+        alert(`❌ ${error.message || 'Er is iets misgegaan bij het vertalen'}`);
+      } finally {
+        // Restore button state
+        if (translateBtn) {
+          translateBtn.innerHTML = originalBtnText;
+          translateBtn.removeAttribute('disabled');
+        }
       }
     });
   });
