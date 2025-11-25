@@ -20,7 +20,7 @@ const mockData = {
 
   // Company
   company_name: 'Tesoro CRM',
-  company_email: 'info@tesorocrm.nl',
+  company_email: 'info@quote.tesorhq.io',
   company_phone: '020-1234567',
 
   // Signature
