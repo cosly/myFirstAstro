@@ -1,0 +1,372 @@
+---
+import DashboardLayout from '../../../layouts/DashboardLayout.astro';
+import { createDb, emailTemplates } from '../../../lib/db';
+import { defaultTemplates } from '../../../lib/email';
+import { eq } from 'drizzle-orm';
+
+const { type } = Astro.params;
+
+const validTypes = ['quote_sent', 'quote_reminder', 'quote_accepted', 'quote_declined', 'payment_received', 'question_received'];
+
+if (!type || !validTypes.includes(type)) {
+  return Astro.redirect('/instellingen?tab=emails');
+}
+
+const templateNames: Record<string, { name: string; description: string }> = {
+  quote_sent: { name: 'Offerte verstuurd', description: 'Wanneer een offerte naar de klant wordt verstuurd' },
+  quote_reminder: { name: 'Herinnering', description: 'Automatische herinnering voor verlopen offerte' },
+  quote_accepted: { name: 'Offerte geaccepteerd', description: 'Bevestiging wanneer klant accepteert' },
+  quote_declined: { name: 'Offerte afgewezen', description: 'Notificatie wanneer klant afwijst' },
+  payment_received: { name: 'Betaling ontvangen', description: 'Bevestiging van betaling' },
+  question_received: { name: 'Vraag ontvangen', description: 'Wanneer klant een vraag stelt' },
+};
+
+const templateInfo = templateNames[type];
+
+interface EmailTemplate {
+  subject: string;
+  bodyHtml: string;
+  bodyText: string;
+  isCustomized: boolean;
+}
+
+let template: EmailTemplate = {
+  subject: '',
+  bodyHtml: '',
+  bodyText: '',
+  isCustomized: false,
+};
+
+try {
+  const db = createDb(Astro.locals.runtime.env.DB);
+
+  const dbTemplate = await db.query.emailTemplates.findFirst({
+    where: eq(emailTemplates.type, type as typeof emailTemplates.type.enumValues[number]),
+  });
+
+  if (dbTemplate) {
+    template = {
+      subject: dbTemplate.subject,
+      bodyHtml: dbTemplate.bodyHtml,
+      bodyText: dbTemplate.bodyText,
+      isCustomized: true,
+    };
+  } else {
+    // Use default template
+    const defaultTemplate = defaultTemplates[type as keyof typeof defaultTemplates];
+    if (defaultTemplate) {
+      template = {
+        subject: defaultTemplate.subject,
+        bodyHtml: defaultTemplate.bodyHtml,
+        bodyText: defaultTemplate.bodyText,
+        isCustomized: false,
+      };
+    }
+  }
+} catch (error) {
+  console.error('Failed to fetch email template:', error);
+}
+
+const availableVariables = [
+  { name: 'quote_number', description: 'Offerte nummer' },
+  { name: 'quote_title', description: 'Offerte titel' },
+  { name: 'quote_total', description: 'Totaalbedrag' },
+  { name: 'quote_valid_until', description: 'Geldig tot datum' },
+  { name: 'quote_url', description: 'Link naar offerte' },
+  { name: 'customer_name', description: 'Contactpersoon' },
+  { name: 'customer_company', description: 'Bedrijfsnaam klant' },
+  { name: 'customer_email', description: 'Email klant' },
+  { name: 'company_name', description: 'Uw bedrijfsnaam' },
+  { name: 'company_email', description: 'Uw email' },
+  { name: 'company_phone', description: 'Uw telefoon' },
+  { name: 'signed_by', description: 'Ondertekend door' },
+  { name: 'signed_at', description: 'Ondertekend op' },
+];
+---
+
+<DashboardLayout title={`${templateInfo.name} - Email Template`}>
+  <div class="max-w-4xl space-y-6">
+    <!-- Header -->
+    <div class="flex items-center gap-4">
+      <a href="/instellingen?tab=emails" class="rounded-lg p-2 hover:bg-muted">
+        <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+        </svg>
+      </a>
+      <div class="flex-1">
+        <h1 class="text-2xl font-bold">{templateInfo.name}</h1>
+        <p class="text-muted-foreground">{templateInfo.description}</p>
+      </div>
+      <div class="flex items-center gap-2">
+        {template.isCustomized ? (
+          <span class="rounded-full bg-tesoro-100 px-3 py-1 text-xs font-medium text-tesoro-700">
+            Aangepast
+          </span>
+        ) : (
+          <span class="rounded-full bg-gray-100 px-3 py-1 text-xs font-medium text-gray-700">
+            Standaard
+          </span>
+        )}
+        <button
+          id="preview-btn"
+          class="inline-flex items-center gap-2 rounded-lg border px-4 py-2 text-sm font-medium hover:bg-muted"
+        >
+          <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+          </svg>
+          Preview
+        </button>
+      </div>
+    </div>
+
+    <!-- Form -->
+    <form id="template-form" class="space-y-6">
+      <input type="hidden" name="type" value={type} />
+
+      <!-- Subject -->
+      <div class="rounded-xl border bg-card p-6">
+        <h2 class="font-semibold mb-4">Onderwerp</h2>
+        <input
+          type="text"
+          id="template-subject"
+          name="subject"
+          value={template.subject}
+          required
+          class="flex h-10 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          placeholder="Bijv: Uw offerte van Tesoro CRM - {{quote_number}}"
+        />
+      </div>
+
+      <!-- HTML Content -->
+      <div class="rounded-xl border bg-card p-6">
+        <div class="flex items-center justify-between mb-4">
+          <h2 class="font-semibold">HTML Inhoud</h2>
+          <div class="flex gap-2">
+            <button type="button" id="toggle-editor" class="text-sm text-muted-foreground hover:text-foreground">
+              Editor/Code
+            </button>
+          </div>
+        </div>
+        <textarea
+          id="template-body-html"
+          name="bodyHtml"
+          rows="20"
+          required
+          class="flex w-full rounded-lg border border-input bg-background px-3 py-2 text-sm font-mono focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          placeholder="HTML template..."
+        >{template.bodyHtml}</textarea>
+      </div>
+
+      <!-- Plain Text -->
+      <div class="rounded-xl border bg-card p-6">
+        <h2 class="font-semibold mb-4">Platte tekst (fallback)</h2>
+        <p class="text-sm text-muted-foreground mb-4">
+          Deze versie wordt getoond als de email client geen HTML ondersteunt.
+        </p>
+        <textarea
+          id="template-body-text"
+          name="bodyText"
+          rows="8"
+          class="flex w-full rounded-lg border border-input bg-background px-3 py-2 text-sm font-mono focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          placeholder="Platte tekst versie..."
+        >{template.bodyText}</textarea>
+      </div>
+
+      <!-- Variables Reference -->
+      <div class="rounded-xl border bg-card p-6">
+        <h2 class="font-semibold mb-4">Beschikbare variabelen</h2>
+        <p class="text-sm text-muted-foreground mb-4">
+          Klik op een variabele om deze te kopieren. Gebruik variabelen in je template met dubbele accolades.
+        </p>
+        <div class="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+          {availableVariables.map((v) => (
+            <button
+              type="button"
+              class="var-copy flex items-center gap-2 rounded-lg border p-3 text-left hover:bg-muted transition-colors"
+              data-var={v.name}
+            >
+              <code class="rounded bg-muted px-2 py-1 text-xs font-mono">{`{{${v.name}}}`}</code>
+              <span class="text-xs text-muted-foreground">{v.description}</span>
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <!-- Actions -->
+      <div class="flex items-center justify-between pt-4">
+        <button
+          type="button"
+          id="reset-btn"
+          class="text-sm text-muted-foreground hover:text-destructive"
+        >
+          Reset naar standaard
+        </button>
+        <div class="flex gap-3">
+          <a
+            href="/instellingen?tab=emails"
+            class="rounded-lg border px-4 py-2 text-sm font-medium hover:bg-muted"
+          >
+            Annuleren
+          </a>
+          <button
+            type="submit"
+            class="rounded-lg bg-tesoro-500 px-4 py-2 text-sm font-medium text-white hover:bg-tesoro-600"
+          >
+            Opslaan
+          </button>
+        </div>
+      </div>
+    </form>
+  </div>
+
+  <!-- Preview Modal -->
+  <div id="preview-modal" class="fixed inset-0 z-50 hidden">
+    <div class="fixed inset-0 bg-black/50" id="preview-backdrop"></div>
+    <div class="fixed inset-0 flex items-center justify-center p-4 overflow-y-auto">
+      <div class="relative w-full max-w-4xl rounded-2xl bg-card shadow-xl my-8">
+        <div class="flex items-center justify-between border-b px-6 py-4">
+          <div>
+            <h2 class="text-xl font-semibold">Email Preview</h2>
+            <p id="preview-subject" class="text-sm text-muted-foreground mt-1"></p>
+          </div>
+          <button id="close-preview" class="p-2 hover:bg-muted rounded-lg">
+            <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+        <div class="border-b bg-blue-50 px-6 py-3">
+          <p class="text-sm text-blue-800">
+            <strong>Preview met voorbeelddata:</strong> Klant: Jan de Vries (Voorbeeld BV) | Offerte: OFF-2024-0042
+          </p>
+        </div>
+        <div class="p-6">
+          <div class="border rounded-lg overflow-hidden bg-white">
+            <iframe id="preview-iframe" class="w-full" style="height: 500px; border: none;"></iframe>
+          </div>
+        </div>
+        <div class="flex justify-end border-t px-6 py-4">
+          <button id="close-preview-btn" class="rounded-lg border px-4 py-2 text-sm font-medium hover:bg-muted">
+            Sluiten
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</DashboardLayout>
+
+<script define:vars={{ templateType: type }}>
+  const form = document.getElementById('template-form');
+  const subjectInput = document.getElementById('template-subject');
+  const bodyHtmlInput = document.getElementById('template-body-html');
+  const bodyTextInput = document.getElementById('template-body-text');
+  const previewBtn = document.getElementById('preview-btn');
+  const resetBtn = document.getElementById('reset-btn');
+
+  // Preview Modal
+  const previewModal = document.getElementById('preview-modal');
+  const previewSubject = document.getElementById('preview-subject');
+  const previewIframe = document.getElementById('preview-iframe');
+
+  // Mock data for preview
+  const mockData = {
+    quote_number: 'OFF-2024-0042',
+    quote_title: 'Website Redesign & Development',
+    quote_total: '€ 4.750,00',
+    quote_valid_until: '15 januari 2025',
+    quote_url: 'https://quote.tesorohq.io/offerte/abc123',
+    customer_name: 'Jan de Vries',
+    customer_company: 'Voorbeeld BV',
+    customer_email: 'jan@voorbeeld.nl',
+    company_name: 'Tesoro CRM',
+    company_email: 'info@quote.tesorohq.io',
+    company_phone: '020-1234567',
+    signed_by: 'Jan de Vries',
+    signed_at: '10 januari 2025',
+  };
+
+  function replaceVariables(template, variables) {
+    return template.replace(/\{\{(\w+)\}\}/g, (_, key) => {
+      return variables[key] || `{{${key}}}`;
+    });
+  }
+
+  function showPreview() {
+    const subject = replaceVariables(subjectInput.value, mockData);
+    const html = replaceVariables(bodyHtmlInput.value, mockData);
+
+    if (previewSubject) previewSubject.textContent = `Onderwerp: ${subject}`;
+    if (previewIframe) previewIframe.srcdoc = html;
+
+    previewModal?.classList.remove('hidden');
+  }
+
+  function hidePreview() {
+    previewModal?.classList.add('hidden');
+    if (previewIframe) previewIframe.srcdoc = '';
+  }
+
+  previewBtn?.addEventListener('click', showPreview);
+  document.getElementById('close-preview')?.addEventListener('click', hidePreview);
+  document.getElementById('close-preview-btn')?.addEventListener('click', hidePreview);
+  document.getElementById('preview-backdrop')?.addEventListener('click', hidePreview);
+
+  // Copy variable
+  document.querySelectorAll('.var-copy').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const varName = btn.getAttribute('data-var');
+      if (varName) {
+        navigator.clipboard.writeText(`{{${varName}}}`);
+        btn.classList.add('bg-green-50', 'border-green-300');
+        setTimeout(() => btn.classList.remove('bg-green-50', 'border-green-300'), 500);
+      }
+    });
+  });
+
+  // Form submit
+  form?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+
+    try {
+      const response = await fetch(`/api/email-templates/${templateType}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          subject: subjectInput.value,
+          bodyHtml: bodyHtmlInput.value,
+          bodyText: bodyTextInput.value,
+        }),
+      });
+
+      if (response.ok) {
+        // Show success and redirect
+        window.location.href = '/instellingen?tab=emails&saved=true';
+      } else {
+        const error = await response.json();
+        alert(error.error || 'Er is iets misgegaan bij het opslaan');
+      }
+    } catch {
+      alert('Er is iets misgegaan bij het opslaan');
+    }
+  });
+
+  // Reset to default
+  resetBtn?.addEventListener('click', async () => {
+    if (!confirm('Weet je zeker dat je dit template wilt resetten naar de standaard? Alle aanpassingen gaan verloren.')) {
+      return;
+    }
+
+    try {
+      const response = await fetch(`/api/email-templates/${templateType}`, { method: 'DELETE' });
+
+      if (response.ok) {
+        window.location.reload();
+      } else {
+        alert('Er is iets misgegaan bij het resetten');
+      }
+    } catch {
+      alert('Er is iets misgegaan bij het resetten');
+    }
+  });
+</script>

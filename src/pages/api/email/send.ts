@@ -93,13 +93,20 @@ export const POST: APIRoute = async ({ request, locals }) => {
 
     // Update quote status and sentAt if this is a quote_sent email
     if (type === 'quote_sent') {
+      // Only update status to 'sent' if it was a draft
+      // For resends (status is already sent/viewed), keep the current status
+      const updateData: Record<string, unknown> = {
+        sentAt: new Date(),
+        updatedAt: new Date(),
+      };
+
+      if (quote.status === 'draft') {
+        updateData.status = 'sent';
+      }
+
       await db
         .update(quotes)
-        .set({
-          status: 'sent',
-          sentAt: new Date(),
-          updatedAt: new Date(),
-        })
+        .set(updateData)
         .where(eq(quotes.id, quoteId));
     }
 
