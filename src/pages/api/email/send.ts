@@ -46,14 +46,20 @@ export const POST: APIRoute = async ({ request, locals }) => {
       });
     }
 
-    // Get Resend API key from environment or settings
-    const resendApiKey = locals.runtime.env.RESEND_API_KEY;
+    // Get Resend API key from environment or KV settings
+    let resendApiKey: string | undefined = locals.runtime.env.RESEND_API_KEY;
+
+    // If not in env, try to get from KV
+    if (!resendApiKey && locals.runtime.env.KV) {
+      const kvKey = await locals.runtime.env.KV.get('api_key_resend');
+      if (kvKey) resendApiKey = kvKey;
+    }
 
     if (!resendApiKey) {
       console.warn('RESEND_API_KEY not configured, email not sent');
       return new Response(JSON.stringify({
         success: false,
-        error: 'Email service not configured. Configureer RESEND_API_KEY in de instellingen.',
+        error: 'Email service niet geconfigureerd. Configureer de Resend API key in Instellingen > Integraties.',
         skipped: true
       }), {
         status: 200,

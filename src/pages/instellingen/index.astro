@@ -321,68 +321,94 @@ const autoRemindersEnabled = (settings.auto_reminders_enabled as boolean) ?? tru
 
       <!-- Integraties -->
       <div id="tab-integraties" class="hidden space-y-6">
-        <div class="grid gap-6 lg:grid-cols-2">
-          <!-- Stripe -->
-          <div class="rounded-xl border bg-card p-6">
-            <div class="flex items-start justify-between mb-4">
-              <div class="flex items-center gap-3">
-                <div class="flex h-12 w-12 items-center justify-center rounded-lg bg-[#635bff]/10">
-                  <span class="text-2xl">💳</span>
-                </div>
-                <div>
-                  <h3 class="font-semibold">Stripe</h3>
-                  <p class="text-sm text-muted-foreground">Betalingen verwerken</p>
-                </div>
-              </div>
-              <span class="rounded-full bg-yellow-100 px-2.5 py-0.5 text-xs font-medium text-yellow-800">
-                Niet geconfigureerd
-              </span>
-            </div>
-            <button class="w-full rounded-lg border px-4 py-2 text-sm font-medium hover:bg-muted">
-              Configureren
-            </button>
-          </div>
+        <div class="rounded-xl border bg-card p-6">
+          <h3 class="font-semibold mb-4">API Keys</h3>
+          <p class="text-sm text-muted-foreground mb-6">Configureer de API keys voor externe diensten. De keys worden veilig opgeslagen en zijn niet zichtbaar na opslaan.</p>
 
-          <!-- Claude AI -->
-          <div class="rounded-xl border bg-card p-6">
-            <div class="flex items-start justify-between mb-4">
-              <div class="flex items-center gap-3">
-                <div class="flex h-12 w-12 items-center justify-center rounded-lg bg-orange-100">
-                  <span class="text-2xl">🤖</span>
+          <div class="space-y-6">
+            <!-- Resend -->
+            <div class="border rounded-lg p-4" data-api-key="resend">
+              <div class="flex items-center justify-between mb-3">
+                <div class="flex items-center gap-3">
+                  <div class="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-100">
+                    <span class="text-xl">✉️</span>
+                  </div>
+                  <div>
+                    <h4 class="font-medium">Resend</h4>
+                    <p class="text-xs text-muted-foreground">Email verzending</p>
+                  </div>
                 </div>
-                <div>
-                  <h3 class="font-semibold">Claude AI</h3>
-                  <p class="text-sm text-muted-foreground">Tekst assistentie</p>
-                </div>
+                <span class="api-key-status rounded-full px-2.5 py-0.5 text-xs font-medium">Laden...</span>
               </div>
-              <span class="rounded-full bg-yellow-100 px-2.5 py-0.5 text-xs font-medium text-yellow-800">
-                Niet geconfigureerd
-              </span>
+              <div class="flex gap-2">
+                <input type="password" class="api-key-input flex-1 h-9 rounded-lg border border-input bg-background px-3 text-sm" placeholder="re_xxxxxxxx..." />
+                <button class="api-key-save rounded-lg bg-tesoro-500 px-3 py-1.5 text-sm font-medium text-white hover:bg-tesoro-600">Opslaan</button>
+                <button class="api-key-delete hidden rounded-lg border border-red-300 px-3 py-1.5 text-sm font-medium text-red-600 hover:bg-red-50">Verwijderen</button>
+              </div>
             </div>
-            <button class="w-full rounded-lg border px-4 py-2 text-sm font-medium hover:bg-muted">
-              Configureren
-            </button>
-          </div>
 
-          <!-- Resend -->
-          <div class="rounded-xl border bg-card p-6">
-            <div class="flex items-start justify-between mb-4">
-              <div class="flex items-center gap-3">
-                <div class="flex h-12 w-12 items-center justify-center rounded-lg bg-blue-100">
-                  <span class="text-2xl">✉️</span>
+            <!-- Stripe Secret Key -->
+            <div class="border rounded-lg p-4" data-api-key="stripe">
+              <div class="flex items-center justify-between mb-3">
+                <div class="flex items-center gap-3">
+                  <div class="flex h-10 w-10 items-center justify-center rounded-lg bg-[#635bff]/10">
+                    <span class="text-xl">💳</span>
+                  </div>
+                  <div>
+                    <h4 class="font-medium">Stripe Secret Key</h4>
+                    <p class="text-xs text-muted-foreground">Betalingen verwerken (server-side)</p>
+                  </div>
                 </div>
-                <div>
-                  <h3 class="font-semibold">Resend</h3>
-                  <p class="text-sm text-muted-foreground">Email verzending</p>
-                </div>
+                <span class="api-key-status rounded-full px-2.5 py-0.5 text-xs font-medium">Laden...</span>
               </div>
-              <span class="rounded-full bg-yellow-100 px-2.5 py-0.5 text-xs font-medium text-yellow-800">
-                Niet geconfigureerd
-              </span>
+              <div class="flex gap-2">
+                <input type="password" class="api-key-input flex-1 h-9 rounded-lg border border-input bg-background px-3 text-sm" placeholder="sk_live_xxxxxxxx..." />
+                <button class="api-key-save rounded-lg bg-tesoro-500 px-3 py-1.5 text-sm font-medium text-white hover:bg-tesoro-600">Opslaan</button>
+                <button class="api-key-delete hidden rounded-lg border border-red-300 px-3 py-1.5 text-sm font-medium text-red-600 hover:bg-red-50">Verwijderen</button>
+              </div>
             </div>
-            <button class="w-full rounded-lg border px-4 py-2 text-sm font-medium hover:bg-muted">
-              Configureren
-            </button>
+
+            <!-- Stripe Publishable Key -->
+            <div class="border rounded-lg p-4" data-api-key="stripe_publishable">
+              <div class="flex items-center justify-between mb-3">
+                <div class="flex items-center gap-3">
+                  <div class="flex h-10 w-10 items-center justify-center rounded-lg bg-[#635bff]/10">
+                    <span class="text-xl">💳</span>
+                  </div>
+                  <div>
+                    <h4 class="font-medium">Stripe Publishable Key</h4>
+                    <p class="text-xs text-muted-foreground">Betalingen verwerken (client-side)</p>
+                  </div>
+                </div>
+                <span class="api-key-status rounded-full px-2.5 py-0.5 text-xs font-medium">Laden...</span>
+              </div>
+              <div class="flex gap-2">
+                <input type="password" class="api-key-input flex-1 h-9 rounded-lg border border-input bg-background px-3 text-sm" placeholder="pk_live_xxxxxxxx..." />
+                <button class="api-key-save rounded-lg bg-tesoro-500 px-3 py-1.5 text-sm font-medium text-white hover:bg-tesoro-600">Opslaan</button>
+                <button class="api-key-delete hidden rounded-lg border border-red-300 px-3 py-1.5 text-sm font-medium text-red-600 hover:bg-red-50">Verwijderen</button>
+              </div>
+            </div>
+
+            <!-- Anthropic (Claude) -->
+            <div class="border rounded-lg p-4" data-api-key="anthropic">
+              <div class="flex items-center justify-between mb-3">
+                <div class="flex items-center gap-3">
+                  <div class="flex h-10 w-10 items-center justify-center rounded-lg bg-orange-100">
+                    <span class="text-xl">🤖</span>
+                  </div>
+                  <div>
+                    <h4 class="font-medium">Anthropic (Claude)</h4>
+                    <p class="text-xs text-muted-foreground">AI tekst assistentie</p>
+                  </div>
+                </div>
+                <span class="api-key-status rounded-full px-2.5 py-0.5 text-xs font-medium">Laden...</span>
+              </div>
+              <div class="flex gap-2">
+                <input type="password" class="api-key-input flex-1 h-9 rounded-lg border border-input bg-background px-3 text-sm" placeholder="sk-ant-xxxxxxxx..." />
+                <button class="api-key-save rounded-lg bg-tesoro-500 px-3 py-1.5 text-sm font-medium text-white hover:bg-tesoro-600">Opslaan</button>
+                <button class="api-key-delete hidden rounded-lg border border-red-300 px-3 py-1.5 text-sm font-medium text-red-600 hover:bg-red-50">Verwijderen</button>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -1189,4 +1215,105 @@ const autoRemindersEnabled = (settings.auto_reminders_enabled as boolean) ?? tru
 
   // Load on page load
   loadTextTemplates();
+
+  // =====================
+  // API Key Management
+  // =====================
+  async function loadApiKeyStatus() {
+    try {
+      const response = await fetch('/api/settings/api-keys');
+      if (!response.ok) throw new Error('Failed to load API keys');
+
+      const status = await response.json();
+
+      Object.entries(status).forEach(([key, data]: [string, any]) => {
+        const container = document.querySelector(`[data-api-key="${key}"]`);
+        if (!container) return;
+
+        const statusEl = container.querySelector('.api-key-status');
+        const deleteBtn = container.querySelector('.api-key-delete');
+
+        if (data.configured) {
+          if (statusEl) {
+            statusEl.textContent = 'Geconfigureerd';
+            statusEl.className = 'api-key-status rounded-full bg-green-100 px-2.5 py-0.5 text-xs font-medium text-green-800';
+          }
+          if (deleteBtn) deleteBtn.classList.remove('hidden');
+        } else {
+          if (statusEl) {
+            statusEl.textContent = 'Niet geconfigureerd';
+            statusEl.className = 'api-key-status rounded-full bg-yellow-100 px-2.5 py-0.5 text-xs font-medium text-yellow-800';
+          }
+          if (deleteBtn) deleteBtn.classList.add('hidden');
+        }
+      });
+    } catch (error) {
+      console.error('Failed to load API key status:', error);
+    }
+  }
+
+  // Save API key
+  document.querySelectorAll('.api-key-save').forEach((btn) => {
+    btn.addEventListener('click', async () => {
+      const container = btn.closest('[data-api-key]');
+      if (!container) return;
+
+      const type = container.getAttribute('data-api-key');
+      const input = container.querySelector('.api-key-input') as HTMLInputElement;
+      const apiKey = input?.value;
+
+      if (!apiKey) {
+        alert('Voer een API key in');
+        return;
+      }
+
+      try {
+        const response = await fetch('/api/settings/api-keys', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ type, apiKey }),
+        });
+
+        if (!response.ok) throw new Error('Failed to save API key');
+
+        input.value = '';
+        await loadApiKeyStatus();
+        alert('API key opgeslagen!');
+      } catch (error) {
+        console.error('Failed to save API key:', error);
+        alert('Fout bij opslaan van API key');
+      }
+    });
+  });
+
+  // Delete API key
+  document.querySelectorAll('.api-key-delete').forEach((btn) => {
+    btn.addEventListener('click', async () => {
+      const container = btn.closest('[data-api-key]');
+      if (!container) return;
+
+      const type = container.getAttribute('data-api-key');
+
+      if (!confirm('Weet je zeker dat je deze API key wilt verwijderen?')) return;
+
+      try {
+        const response = await fetch('/api/settings/api-keys', {
+          method: 'DELETE',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ type }),
+        });
+
+        if (!response.ok) throw new Error('Failed to delete API key');
+
+        await loadApiKeyStatus();
+        alert('API key verwijderd!');
+      } catch (error) {
+        console.error('Failed to delete API key:', error);
+        alert('Fout bij verwijderen van API key');
+      }
+    });
+  });
+
+  // Load API key status on page load
+  loadApiKeyStatus();
 </script>
