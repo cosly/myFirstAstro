@@ -436,6 +436,92 @@ const autoRemindersEnabled = (settings.auto_reminders_enabled as boolean) ?? tru
                 <button class="api-key-delete hidden rounded-lg border border-red-300 px-3 py-1.5 text-sm font-medium text-red-600 hover:bg-red-50">Verwijderen</button>
               </div>
             </div>
+
+            <!-- OpenAI (GPT) -->
+            <div class="border rounded-lg p-4" data-api-key="openai">
+              <div class="flex items-center justify-between mb-3">
+                <div class="flex items-center gap-3">
+                  <div class="flex h-10 w-10 items-center justify-center rounded-lg bg-emerald-100">
+                    <span class="text-xl">🧠</span>
+                  </div>
+                  <div>
+                    <h4 class="font-medium">OpenAI (GPT)</h4>
+                    <p class="text-xs text-muted-foreground">AI tekst assistentie</p>
+                  </div>
+                </div>
+                <span class="api-key-status rounded-full px-2.5 py-0.5 text-xs font-medium">Laden...</span>
+              </div>
+              <div class="flex gap-2">
+                <input type="password" class="api-key-input flex-1 h-9 rounded-lg border border-input bg-background px-3 text-sm" placeholder="sk-xxxxxxxx..." />
+                <button class="api-key-save rounded-lg bg-tesoro-500 px-3 py-1.5 text-sm font-medium text-white hover:bg-tesoro-600">Opslaan</button>
+                <button class="api-key-delete hidden rounded-lg border border-red-300 px-3 py-1.5 text-sm font-medium text-red-600 hover:bg-red-50">Verwijderen</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- AI Provider Selection -->
+        <div class="rounded-xl border bg-card p-6">
+          <div class="flex items-center gap-3 mb-4">
+            <div class="flex h-10 w-10 items-center justify-center rounded-lg bg-purple-100">
+              <span class="text-xl">✨</span>
+            </div>
+            <div>
+              <h3 class="font-semibold">AI Provider</h3>
+              <p class="text-sm text-muted-foreground">Kies welke AI provider gebruikt wordt voor tekst assistentie</p>
+            </div>
+          </div>
+
+          <div id="ai-provider-settings">
+            <div id="ai-provider-loading" class="py-4 text-center text-muted-foreground text-sm">
+              Laden...
+            </div>
+
+            <div id="ai-provider-form" class="hidden space-y-4">
+              <div class="grid gap-3 sm:grid-cols-2">
+                <!-- Anthropic Option -->
+                <label class="ai-provider-option relative flex cursor-pointer rounded-lg border p-4 hover:border-tesoro-300" data-provider="anthropic">
+                  <input type="radio" name="ai_provider" value="anthropic" class="sr-only" />
+                  <div class="flex items-start gap-3">
+                    <div class="flex h-10 w-10 items-center justify-center rounded-lg bg-orange-100 shrink-0">
+                      <span class="text-xl">🤖</span>
+                    </div>
+                    <div>
+                      <p class="font-medium">Anthropic (Claude)</p>
+                      <p class="text-xs text-muted-foreground">Claude Sonnet 4 - Uitstekend voor zakelijke teksten</p>
+                      <span class="ai-provider-status mt-2 inline-block text-xs"></span>
+                    </div>
+                  </div>
+                  <div class="ai-provider-check absolute right-3 top-3 hidden">
+                    <svg class="h-5 w-5 text-tesoro-500" fill="currentColor" viewBox="0 0 20 20">
+                      <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
+                    </svg>
+                  </div>
+                </label>
+
+                <!-- OpenAI Option -->
+                <label class="ai-provider-option relative flex cursor-pointer rounded-lg border p-4 hover:border-tesoro-300" data-provider="openai">
+                  <input type="radio" name="ai_provider" value="openai" class="sr-only" />
+                  <div class="flex items-start gap-3">
+                    <div class="flex h-10 w-10 items-center justify-center rounded-lg bg-emerald-100 shrink-0">
+                      <span class="text-xl">🧠</span>
+                    </div>
+                    <div>
+                      <p class="font-medium">OpenAI (GPT)</p>
+                      <p class="text-xs text-muted-foreground">GPT-4o - Veelzijdig en snel</p>
+                      <span class="ai-provider-status mt-2 inline-block text-xs"></span>
+                    </div>
+                  </div>
+                  <div class="ai-provider-check absolute right-3 top-3 hidden">
+                    <svg class="h-5 w-5 text-tesoro-500" fill="currentColor" viewBox="0 0 20 20">
+                      <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
+                    </svg>
+                  </div>
+                </label>
+              </div>
+
+              <p id="ai-provider-error" class="text-sm text-red-600 hidden"></p>
+            </div>
           </div>
         </div>
 
@@ -1734,4 +1820,127 @@ const autoRemindersEnabled = (settings.auto_reminders_enabled as boolean) ?? tru
 
   // Load Discord settings on page load
   loadDiscordSettings();
+
+  // =====================
+  // AI Provider Settings
+  // =====================
+  const aiProviderLoading = document.getElementById('ai-provider-loading');
+  const aiProviderForm = document.getElementById('ai-provider-form');
+  const aiProviderError = document.getElementById('ai-provider-error');
+  const aiProviderOptions = document.querySelectorAll('.ai-provider-option');
+
+  interface AIProviderData {
+    id: string;
+    name: string;
+    description: string;
+    configured: boolean;
+    active: boolean;
+  }
+
+  interface AIProviderResponse {
+    provider: string;
+    providers: AIProviderData[];
+  }
+
+  async function loadAIProviderSettings() {
+    try {
+      const response = await fetch('/api/settings/ai-provider');
+      if (!response.ok) throw new Error('Failed to load AI provider settings');
+
+      const data: AIProviderResponse = await response.json();
+
+      // Update UI for each provider option
+      aiProviderOptions.forEach((option) => {
+        const providerId = option.getAttribute('data-provider');
+        const providerData = data.providers.find(p => p.id === providerId);
+        const statusEl = option.querySelector('.ai-provider-status');
+        const checkEl = option.querySelector('.ai-provider-check');
+        const radioInput = option.querySelector('input[type="radio"]') as HTMLInputElement;
+
+        if (providerData) {
+          // Show configuration status
+          if (statusEl) {
+            if (providerData.configured) {
+              statusEl.textContent = 'API key geconfigureerd';
+              statusEl.className = 'ai-provider-status mt-2 inline-block text-xs text-green-600';
+            } else {
+              statusEl.textContent = 'API key niet geconfigureerd';
+              statusEl.className = 'ai-provider-status mt-2 inline-block text-xs text-yellow-600';
+            }
+          }
+
+          // Show active state
+          if (providerData.active) {
+            option.classList.add('border-tesoro-500', 'bg-tesoro-50');
+            checkEl?.classList.remove('hidden');
+            if (radioInput) radioInput.checked = true;
+          } else {
+            option.classList.remove('border-tesoro-500', 'bg-tesoro-50');
+            checkEl?.classList.add('hidden');
+            if (radioInput) radioInput.checked = false;
+          }
+
+          // Disable if not configured
+          if (!providerData.configured) {
+            option.classList.add('opacity-60');
+          } else {
+            option.classList.remove('opacity-60');
+          }
+        }
+      });
+
+      // Show form, hide loading
+      aiProviderLoading?.classList.add('hidden');
+      aiProviderForm?.classList.remove('hidden');
+    } catch (error) {
+      console.error('Failed to load AI provider settings:', error);
+      if (aiProviderLoading) {
+        aiProviderLoading.textContent = 'Kon instellingen niet laden';
+      }
+    }
+  }
+
+  async function selectAIProvider(provider: string) {
+    if (aiProviderError) {
+      aiProviderError.classList.add('hidden');
+      aiProviderError.textContent = '';
+    }
+
+    try {
+      const response = await fetch('/api/settings/ai-provider', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ provider }),
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to update provider');
+      }
+
+      // Reload to show updated state
+      await loadAIProviderSettings();
+    } catch (error: any) {
+      console.error('Failed to select AI provider:', error);
+      if (aiProviderError) {
+        aiProviderError.textContent = error.message || 'Fout bij selecteren van provider';
+        aiProviderError.classList.remove('hidden');
+      }
+      // Reload to reset UI state
+      await loadAIProviderSettings();
+    }
+  }
+
+  // Click handlers for provider options
+  aiProviderOptions.forEach((option) => {
+    option.addEventListener('click', () => {
+      const provider = option.getAttribute('data-provider');
+      if (provider) {
+        selectAIProvider(provider);
+      }
+    });
+  });
+
+  // Load AI provider settings on page load
+  loadAIProviderSettings();
 </script>
