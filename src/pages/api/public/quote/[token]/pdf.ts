@@ -30,6 +30,11 @@ export const GET: APIRoute = async ({ params, locals }) => {
       return new Response('Quote not found', { status: 404 });
     }
 
+    // Only allow PDF access for accepted quotes via public endpoint
+    if (quote.status !== 'accepted') {
+      return new Response('PDF not available for this quote', { status: 403 });
+    }
+
     // Generate HTML
     const html = generateQuotePdfHtml(quote as any);
 

@@ -255,6 +255,8 @@
       "function": "Functie",
       "signedOn": "Ondertekend op",
       "quoteNumber": "Offertenummer",
+      "signature": "Handtekening",
+      "signatureAlt": "Handtekening van de klant",
       "contactUs": "Contact",
       "contactDescription": "Heeft u vragen over uw offerte of het project? Neem gerust contact met ons op."
     }
