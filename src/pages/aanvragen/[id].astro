@@ -3,6 +3,8 @@ import DashboardLayout from '../../layouts/DashboardLayout.astro';
 import { createDb, quoteRequests, customers } from '../../lib/db';
 import { eq } from 'drizzle-orm';
 import { QuoteRequestAnalysisPanel } from '../../components/quote-request/QuoteRequestAnalysisPanel';
+import { SimilarQuotesPanel } from '../../components/quote-request/SimilarQuotesPanel';
+import { isEmailVerified } from '../../lib/email-verification';
 
 const { id } = Astro.params;
 
@@ -11,6 +13,7 @@ if (!id) {
 }
 
 const db = createDb(Astro.locals.runtime.env.DB);
+const kv = Astro.locals.runtime.env.KV;
 
 const request = await db.query.quoteRequests.findFirst({
   where: eq(quoteRequests.id, id),
@@ -27,13 +30,16 @@ if (!request) {
 // Try to get AI analysis from KV
 let aiAnalysis = null;
 try {
-  const analysisData = await Astro.locals.runtime.env.KV.get(`quote_request_ai:${id}`);
+  const analysisData = await kv.get(`quote_request_ai:${id}`);
   if (analysisData) {
     aiAnalysis = JSON.parse(analysisData);
   }
 } catch (e) {
   console.error('Failed to get AI analysis:', e);
 }
+
+// Check email verification status
+const emailVerified = await isEmailVerified(kv, id);
 
 const statusColors: Record<string, string> = {
   new: 'bg-red-100 text-red-800 border-red-200',
@@ -152,6 +158,12 @@ const formatDate = (date: Date) => {
           requestId={id}
           initialAnalysis={aiAnalysis}
         />
+
+        <!-- Similar Quotes Panel -->
+        <SimilarQuotesPanel
+          client:load
+          requestId={id}
+        />
       </div>
 
       <!-- Sidebar -->
@@ -172,9 +184,26 @@ const formatDate = (date: Date) => {
             )}
             <div>
               <label class="text-xs font-medium text-muted-foreground uppercase tracking-wide">Email</label>
-              <a href={`mailto:${request.contactEmail}`} class="mt-1 block text-tesoro-500 hover:underline">
-                {request.contactEmail}
-              </a>
+              <div class="mt-1 flex items-center gap-2">
+                <a href={`mailto:${request.contactEmail}`} class="text-tesoro-500 hover:underline">
+                  {request.contactEmail}
+                </a>
+                {emailVerified ? (
+                  <span class="inline-flex items-center gap-1 rounded-full bg-green-100 px-2 py-0.5 text-xs font-medium text-green-700" title="E-mail geverifieerd">
+                    <svg class="h-3 w-3" fill="currentColor" viewBox="0 0 20 20">
+                      <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
+                    </svg>
+                    Geverifieerd
+                  </span>
+                ) : (
+                  <span class="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-700" title="E-mail niet geverifieerd">
+                    <svg class="h-3 w-3" fill="currentColor" viewBox="0 0 20 20">
+                      <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
+                    </svg>
+                    Niet geverifieerd
+                  </span>
+                )}
+              </div>
             </div>
             {request.phone && (
               <div>

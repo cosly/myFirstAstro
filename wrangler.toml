@@ -19,6 +19,11 @@ bucket_name = "tesoro-quotes-storage"
 binding = "KV"
 id = "4a9874c88031497dbfea85f916cbb8ca"
 
+# Vectorize Index (voor RAG en semantic search)
+[[vectorize]]
+binding = "VECTORIZE"
+index_name = "tesoro-quotes-index"
+
 # Note: Durable Objects are not directly supported in Pages.
 # To use real-time presence tracking, deploy the QuotePresence Durable Object
 # as a separate Worker and reference it here with script_name.
