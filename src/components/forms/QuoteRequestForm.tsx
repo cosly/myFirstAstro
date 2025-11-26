@@ -675,7 +675,7 @@ export function QuoteRequestForm({ turnstileSiteKey }: QuoteRequestFormProps) {
               !formData.companyName ||
               !formData.contactName ||
               !formData.email ||
-              (turnstileSiteKey && !turnstileToken)
+              (!!turnstileSiteKey && !turnstileToken)
             }
           >
             {isSubmitting ? (
