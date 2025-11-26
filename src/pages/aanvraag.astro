@@ -1,6 +1,10 @@
 ---
 import Layout from '../layouts/Layout.astro';
 import { QuoteRequestForm } from '../components/forms/QuoteRequestForm';
+
+// Get Turnstile site key from KV or environment
+const turnstileSiteKey = await Astro.locals.runtime.env.KV.get('turnstile_site_key') ||
+                         Astro.locals.runtime.env.TURNSTILE_SITE_KEY || '';
 ---
 
 <Layout title="Offerte Aanvragen">
@@ -38,7 +42,7 @@ import { QuoteRequestForm } from '../components/forms/QuoteRequestForm';
 
         <!-- Form Card -->
         <div class="rounded-2xl border bg-white p-6 shadow-lg sm:p-8">
-          <QuoteRequestForm client:load />
+          <QuoteRequestForm client:load turnstileSiteKey={turnstileSiteKey} />
         </div>
 
         <!-- Trust indicators -->

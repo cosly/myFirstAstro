@@ -1,10 +1,31 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
+
+// Turnstile script loader
+declare global {
+  interface Window {
+    turnstile?: {
+      render: (container: string | HTMLElement, options: TurnstileOptions) => string;
+      reset: (widgetId: string) => void;
+      remove: (widgetId: string) => void;
+    };
+    onTurnstileLoad?: () => void;
+  }
+}
+
+interface TurnstileOptions {
+  sitekey: string;
+  callback?: (token: string) => void;
+  'error-callback'?: () => void;
+  'expired-callback'?: () => void;
+  theme?: 'light' | 'dark' | 'auto';
+  size?: 'normal' | 'compact';
+}
 
 const serviceTypes = [
   {
@@ -50,12 +71,26 @@ interface FormData {
   email: string;
   phone: string;
   isTesororClient: boolean;
+  // Honeypot fields (should remain empty)
+  website: string;
+  fax_number: string;
 }
 
-export function QuoteRequestForm() {
+interface QuoteRequestFormProps {
+  turnstileSiteKey?: string;
+}
+
+export function QuoteRequestForm({ turnstileSiteKey }: QuoteRequestFormProps) {
   const [step, setStep] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
+  const [turnstileError, setTurnstileError] = useState(false);
+  const [formStartTime] = useState(Date.now());
+  const turnstileWidgetId = useRef<string | null>(null);
+  const turnstileContainerRef = useRef<HTMLDivElement>(null);
+
   const [formData, setFormData] = useState<FormData>({
     serviceType: '',
     description: '',
@@ -65,30 +100,108 @@ export function QuoteRequestForm() {
     email: '',
     phone: '',
     isTesororClient: false,
+    // Honeypot fields
+    website: '',
+    fax_number: '',
   });
+
+  // Load Turnstile script
+  useEffect(() => {
+    if (!turnstileSiteKey) return;
+
+    // Check if script already loaded
+    if (window.turnstile) {
+      renderTurnstile();
+      return;
+    }
+
+    // Define callback before loading script
+    window.onTurnstileLoad = () => {
+      renderTurnstile();
+    };
+
+    // Load the script
+    const script = document.createElement('script');
+    script.src = 'https://challenges.cloudflare.com/turnstile/v0/api.js?onload=onTurnstileLoad';
+    script.async = true;
+    script.defer = true;
+    document.head.appendChild(script);
+
+    return () => {
+      if (turnstileWidgetId.current && window.turnstile) {
+        window.turnstile.remove(turnstileWidgetId.current);
+      }
+    };
+  }, [turnstileSiteKey]);
+
+  const renderTurnstile = () => {
+    if (!window.turnstile || !turnstileContainerRef.current || !turnstileSiteKey) return;
+
+    // Remove existing widget if any
+    if (turnstileWidgetId.current) {
+      window.turnstile.remove(turnstileWidgetId.current);
+    }
+
+    turnstileWidgetId.current = window.turnstile.render(turnstileContainerRef.current, {
+      sitekey: turnstileSiteKey,
+      callback: (token: string) => {
+        setTurnstileToken(token);
+        setTurnstileError(false);
+      },
+      'error-callback': () => {
+        setTurnstileError(true);
+        setTurnstileToken(null);
+      },
+      'expired-callback': () => {
+        setTurnstileToken(null);
+      },
+      theme: 'light',
+      size: 'normal',
+    });
+  };
 
   const updateField = <K extends keyof FormData>(field: K, value: FormData[K]) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
+    setError(null);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
+    setError(null);
+
+    // Check if Turnstile is required and token is missing
+    if (turnstileSiteKey && !turnstileToken) {
+      setError('Verificatie vereist. Wacht tot de verificatie is voltooid.');
+      setIsSubmitting(false);
+      return;
+    }
 
     try {
       const response = await fetch('/api/quote-requests', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData),
+        body: JSON.stringify({
+          ...formData,
+          turnstileToken,
+          _formStartTime: formStartTime,
+        }),
       });
+
+      const data = await response.json();
 
       if (response.ok) {
         setIsSubmitted(true);
       } else {
-        alert('Er is iets misgegaan. Probeer het opnieuw.');
+        setError(data.error || 'Er is iets misgegaan. Probeer het opnieuw.');
+        // Reset Turnstile on error
+        if (turnstileWidgetId.current && window.turnstile) {
+          window.turnstile.reset(turnstileWidgetId.current);
+          setTurnstileToken(null);
+        }
       }
     } catch {
-      alert('Er is iets misgegaan. Probeer het opnieuw.');
+      setError('Er is iets misgegaan. Controleer uw internetverbinding en probeer het opnieuw.');
     } finally {
       setIsSubmitting(false);
     }
@@ -113,6 +226,42 @@ export function QuoteRequestForm() {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-8">
+      {/* Error message */}
+      {error && (
+        <div className="rounded-lg bg-red-50 border border-red-200 p-4 text-sm text-red-700">
+          <div className="flex items-center gap-2">
+            <svg className="h-5 w-5 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            {error}
+          </div>
+        </div>
+      )}
+
+      {/* Honeypot fields - hidden from real users, bots will fill these */}
+      <div className="hidden" aria-hidden="true">
+        <label htmlFor="website">Website (leave empty)</label>
+        <input
+          type="text"
+          id="website"
+          name="website"
+          value={formData.website}
+          onChange={(e) => updateField('website', e.target.value)}
+          tabIndex={-1}
+          autoComplete="off"
+        />
+        <label htmlFor="fax_number">Fax (leave empty)</label>
+        <input
+          type="text"
+          id="fax_number"
+          name="fax_number"
+          value={formData.fax_number}
+          onChange={(e) => updateField('fax_number', e.target.value)}
+          tabIndex={-1}
+          autoComplete="off"
+        />
+      </div>
+
       {/* Step 1: Service Type */}
       {step >= 1 && (
         <div className="space-y-4">
@@ -253,12 +402,31 @@ export function QuoteRequestForm() {
             <span className="text-sm">Ik ben al klant bij Tesoro CRM</span>
           </label>
 
+          {/* Turnstile widget */}
+          {turnstileSiteKey && (
+            <div className="flex flex-col items-center gap-2 py-2">
+              <div ref={turnstileContainerRef} />
+              {turnstileError && (
+                <p className="text-sm text-red-600">
+                  Verificatie mislukt. Vernieuw de pagina om opnieuw te proberen.
+                </p>
+              )}
+            </div>
+          )}
+
           <Button
             type="submit"
             variant="tesoro"
             size="lg"
             className="w-full"
-            disabled={isSubmitting || !formData.description || !formData.companyName || !formData.contactName || !formData.email}
+            disabled={
+              isSubmitting ||
+              !formData.description ||
+              !formData.companyName ||
+              !formData.contactName ||
+              !formData.email ||
+              (turnstileSiteKey && !turnstileToken)
+            }
           >
             {isSubmitting ? (
               <>
@@ -272,6 +440,11 @@ export function QuoteRequestForm() {
               'Verstuur Aanvraag'
             )}
           </Button>
+
+          <p className="text-xs text-center text-muted-foreground">
+            Door uw aanvraag te versturen gaat u akkoord met onze{' '}
+            <a href="/privacy" className="underline hover:text-tesoro-500">privacyvoorwaarden</a>.
+          </p>
         </div>
       )}
     </form>
