@@ -100,6 +100,10 @@ export const POST: APIRoute = async ({ request, locals }) => {
     const fingerprint = generateFingerprint(request);
     const clientIP = getClientIP(request);
 
+    // Validate and normalize locale
+    const validLocales = ['nl', 'en', 'es'] as const;
+    const locale = validLocales.includes(body.preferredLocale) ? body.preferredLocale : 'nl';
+
     // Create quote request
     const requestId = generateId();
     await db.insert(quoteRequests).values({
@@ -112,6 +116,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
       serviceType: body.serviceType,
       description: body.description,
       budgetIndication: body.budgetIndication,
+      locale,
       status: 'new',
     });
 
@@ -122,6 +127,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
         ip: clientIP,
         fingerprint,
         userAgent: request.headers.get('User-Agent'),
+        locale,
         submittedAt: new Date().toISOString(),
       }),
       { expirationTtl: 60 * 60 * 24 * 30 } // 30 days

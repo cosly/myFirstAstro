@@ -65,6 +65,12 @@ const typeLabels: Record<string, string> = {
   other: 'Overig',
 };
 
+const localeLabels: Record<string, { name: string; flag: string }> = {
+  nl: { name: 'Nederlands', flag: '🇳🇱' },
+  en: { name: 'English', flag: '🇬🇧' },
+  es: { name: 'Español', flag: '🇪🇸' },
+};
+
 const formatDate = (date: Date) => {
   return date.toLocaleDateString('nl-NL', {
     year: 'numeric',
@@ -124,9 +130,18 @@ const formatDate = (date: Date) => {
                 <p class="mt-1">{request.budgetIndication}</p>
               </div>
             )}
-            <div>
-              <label class="text-sm font-medium text-muted-foreground">Ontvangen op</label>
-              <p class="mt-1">{formatDate(request.createdAt)}</p>
+            <div class="grid gap-4 sm:grid-cols-2">
+              <div>
+                <label class="text-sm font-medium text-muted-foreground">Voorkeurstaal</label>
+                <p class="mt-1 flex items-center gap-2">
+                  <span>{localeLabels[request.locale || 'nl']?.flag}</span>
+                  {localeLabels[request.locale || 'nl']?.name || 'Nederlands'}
+                </p>
+              </div>
+              <div>
+                <label class="text-sm font-medium text-muted-foreground">Ontvangen op</label>
+                <p class="mt-1">{formatDate(request.createdAt)}</p>
+              </div>
             </div>
           </div>
         </div>

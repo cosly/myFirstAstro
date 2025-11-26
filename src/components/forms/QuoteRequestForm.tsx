@@ -27,40 +27,180 @@ interface TurnstileOptions {
   size?: 'normal' | 'compact';
 }
 
-const serviceTypes = [
-  {
-    id: 'website',
-    icon: '🌐',
-    title: 'Website',
-    description: 'Aanpassingen, nieuwe pagina\'s, redesign',
-  },
-  {
-    id: 'crm_setup',
-    icon: '⚙️',
-    title: 'CRM Setup',
-    description: 'Tesoro CRM inrichten & configureren',
-  },
-  {
-    id: 'marketing',
-    icon: '🎨',
-    title: 'Marketing',
-    description: 'Window cards, flyers, branding',
-  },
-  {
-    id: 'support',
-    icon: '🔧',
-    title: 'Support',
-    description: 'Ondersteuning & onderhoud',
-  },
+// Supported languages
+type SupportedLocale = 'nl' | 'en' | 'es';
+
+const SUPPORTED_LOCALES: { id: SupportedLocale; name: string; flag: string; nativeName: string }[] = [
+  { id: 'nl', name: 'Nederlands', flag: '🇳🇱', nativeName: 'Dutch' },
+  { id: 'en', name: 'English', flag: '🇬🇧', nativeName: 'English' },
+  { id: 'es', name: 'Español', flag: '🇪🇸', nativeName: 'Spanish' },
 ];
 
-const budgetOptions = [
-  { id: 'under_500', label: '< €500' },
-  { id: '500_1000', label: '€500 - €1.000' },
-  { id: '1000_2500', label: '€1.000 - €2.500' },
-  { id: 'above_2500', label: '€2.500+' },
-  { id: 'unknown', label: 'Weet ik nog niet' },
-];
+// Translations for the form
+const formTranslations: Record<SupportedLocale, {
+  whatCanWeDo: string;
+  selectServiceType: string;
+  describeYourNeeds: string;
+  tellUsWhatYouNeed: string;
+  budgetIndication: string;
+  yourDetails: string;
+  soWeCanContact: string;
+  companyName: string;
+  yourCompanyName: string;
+  contactPerson: string;
+  yourName: string;
+  email: string;
+  phone: string;
+  iAmExistingClient: string;
+  submitRequest: string;
+  submitting: string;
+  requestReceived: string;
+  thankYou: string;
+  newRequest: string;
+  privacyConsent: string;
+  privacyPolicy: string;
+  preferredLanguage: string;
+  languageDetected: string;
+  forQuoteAndEmails: string;
+  services: {
+    website: { title: string; description: string };
+    crm_setup: { title: string; description: string };
+    marketing: { title: string; description: string };
+    support: { title: string; description: string };
+  };
+  budgetOptions: {
+    under_500: string;
+    '500_1000': string;
+    '1000_2500': string;
+    above_2500: string;
+    unknown: string;
+  };
+}> = {
+  nl: {
+    whatCanWeDo: 'Wat kunnen we voor u doen?',
+    selectServiceType: 'Selecteer het type dienst',
+    describeYourNeeds: 'Omschrijf uw wensen *',
+    tellUsWhatYouNeed: 'Vertel ons wat u nodig heeft...',
+    budgetIndication: 'Budget indicatie',
+    yourDetails: 'Uw gegevens',
+    soWeCanContact: 'Zodat we contact met u kunnen opnemen',
+    companyName: 'Bedrijfsnaam *',
+    yourCompanyName: 'Uw bedrijfsnaam',
+    contactPerson: 'Contactpersoon *',
+    yourName: 'Uw naam',
+    email: 'Email *',
+    phone: 'Telefoon',
+    iAmExistingClient: 'Ik ben al klant bij Tesoro CRM',
+    submitRequest: 'Verstuur Aanvraag',
+    submitting: 'Bezig met versturen...',
+    requestReceived: 'Aanvraag ontvangen!',
+    thankYou: 'Bedankt voor uw aanvraag. We nemen binnen 24 uur contact met u op.',
+    newRequest: 'Nieuwe aanvraag',
+    privacyConsent: 'Door uw aanvraag te versturen gaat u akkoord met onze',
+    privacyPolicy: 'privacyvoorwaarden',
+    preferredLanguage: 'Voorkeurstaal',
+    languageDetected: 'We hebben gedetecteerd dat u mogelijk {language} spreekt',
+    forQuoteAndEmails: 'Voor de offerte en communicatie',
+    services: {
+      website: { title: 'Website', description: 'Aanpassingen, nieuwe pagina\'s, redesign' },
+      crm_setup: { title: 'CRM Setup', description: 'Tesoro CRM inrichten & configureren' },
+      marketing: { title: 'Marketing', description: 'Window cards, flyers, branding' },
+      support: { title: 'Support', description: 'Ondersteuning & onderhoud' },
+    },
+    budgetOptions: {
+      under_500: '< €500',
+      '500_1000': '€500 - €1.000',
+      '1000_2500': '€1.000 - €2.500',
+      above_2500: '€2.500+',
+      unknown: 'Weet ik nog niet',
+    },
+  },
+  en: {
+    whatCanWeDo: 'What can we do for you?',
+    selectServiceType: 'Select the type of service',
+    describeYourNeeds: 'Describe your needs *',
+    tellUsWhatYouNeed: 'Tell us what you need...',
+    budgetIndication: 'Budget indication',
+    yourDetails: 'Your details',
+    soWeCanContact: 'So we can contact you',
+    companyName: 'Company name *',
+    yourCompanyName: 'Your company name',
+    contactPerson: 'Contact person *',
+    yourName: 'Your name',
+    email: 'Email *',
+    phone: 'Phone',
+    iAmExistingClient: 'I am already a Tesoro CRM customer',
+    submitRequest: 'Submit Request',
+    submitting: 'Submitting...',
+    requestReceived: 'Request received!',
+    thankYou: 'Thank you for your request. We will contact you within 24 hours.',
+    newRequest: 'New request',
+    privacyConsent: 'By submitting your request you agree to our',
+    privacyPolicy: 'privacy policy',
+    preferredLanguage: 'Preferred language',
+    languageDetected: 'We detected that you might speak {language}',
+    forQuoteAndEmails: 'For the quote and communication',
+    services: {
+      website: { title: 'Website', description: 'Modifications, new pages, redesign' },
+      crm_setup: { title: 'CRM Setup', description: 'Set up & configure Tesoro CRM' },
+      marketing: { title: 'Marketing', description: 'Window cards, flyers, branding' },
+      support: { title: 'Support', description: 'Support & maintenance' },
+    },
+    budgetOptions: {
+      under_500: '< €500',
+      '500_1000': '€500 - €1,000',
+      '1000_2500': '€1,000 - €2,500',
+      above_2500: '€2,500+',
+      unknown: 'I don\'t know yet',
+    },
+  },
+  es: {
+    whatCanWeDo: '¿Qué podemos hacer por usted?',
+    selectServiceType: 'Seleccione el tipo de servicio',
+    describeYourNeeds: 'Describa sus necesidades *',
+    tellUsWhatYouNeed: 'Cuéntenos qué necesita...',
+    budgetIndication: 'Indicación de presupuesto',
+    yourDetails: 'Sus datos',
+    soWeCanContact: 'Para que podamos contactarle',
+    companyName: 'Nombre de empresa *',
+    yourCompanyName: 'Su nombre de empresa',
+    contactPerson: 'Persona de contacto *',
+    yourName: 'Su nombre',
+    email: 'Email *',
+    phone: 'Teléfono',
+    iAmExistingClient: 'Ya soy cliente de Tesoro CRM',
+    submitRequest: 'Enviar solicitud',
+    submitting: 'Enviando...',
+    requestReceived: '¡Solicitud recibida!',
+    thankYou: 'Gracias por su solicitud. Nos pondremos en contacto en 24 horas.',
+    newRequest: 'Nueva solicitud',
+    privacyConsent: 'Al enviar su solicitud, acepta nuestra',
+    privacyPolicy: 'política de privacidad',
+    preferredLanguage: 'Idioma preferido',
+    languageDetected: 'Hemos detectado que posiblemente habla {language}',
+    forQuoteAndEmails: 'Para el presupuesto y la comunicación',
+    services: {
+      website: { title: 'Sitio web', description: 'Modificaciones, nuevas páginas, rediseño' },
+      crm_setup: { title: 'Configuración CRM', description: 'Configurar Tesoro CRM' },
+      marketing: { title: 'Marketing', description: 'Tarjetas, folletos, branding' },
+      support: { title: 'Soporte', description: 'Soporte y mantenimiento' },
+    },
+    budgetOptions: {
+      under_500: '< €500',
+      '500_1000': '€500 - €1.000',
+      '1000_2500': '€1.000 - €2.500',
+      above_2500: '€2.500+',
+      unknown: 'Aún no lo sé',
+    },
+  },
+};
+
+const serviceTypeIcons: Record<string, string> = {
+  website: '🌐',
+  crm_setup: '⚙️',
+  marketing: '🎨',
+  support: '🔧',
+};
 
 interface FormData {
   serviceType: string;
@@ -71,6 +211,7 @@ interface FormData {
   email: string;
   phone: string;
   isTesororClient: boolean;
+  preferredLocale: SupportedLocale;
   // Honeypot fields (should remain empty)
   website: string;
   fax_number: string;
@@ -78,6 +219,27 @@ interface FormData {
 
 interface QuoteRequestFormProps {
   turnstileSiteKey?: string;
+}
+
+/**
+ * Detect browser language and match to supported locales
+ */
+function detectBrowserLocale(): { locale: SupportedLocale; wasDetected: boolean } {
+  if (typeof navigator === 'undefined') {
+    return { locale: 'nl', wasDetected: false };
+  }
+
+  const browserLang = navigator.language || (navigator as any).userLanguage || '';
+  const langCode = browserLang.split('-')[0].toLowerCase();
+
+  // Check if browser language matches a supported locale
+  const matched = SUPPORTED_LOCALES.find(l => l.id === langCode);
+  if (matched) {
+    return { locale: matched.id, wasDetected: true };
+  }
+
+  // Default to Dutch
+  return { locale: 'nl', wasDetected: false };
 }
 
 export function QuoteRequestForm({ turnstileSiteKey }: QuoteRequestFormProps) {
@@ -91,6 +253,10 @@ export function QuoteRequestForm({ turnstileSiteKey }: QuoteRequestFormProps) {
   const turnstileWidgetId = useRef<string | null>(null);
   const turnstileContainerRef = useRef<HTMLDivElement>(null);
 
+  // Language detection
+  const [detectedLocale, setDetectedLocale] = useState<{ locale: SupportedLocale; wasDetected: boolean }>({ locale: 'nl', wasDetected: false });
+  const [showLanguageHint, setShowLanguageHint] = useState(false);
+
   const [formData, setFormData] = useState<FormData>({
     serviceType: '',
     description: '',
@@ -100,10 +266,26 @@ export function QuoteRequestForm({ turnstileSiteKey }: QuoteRequestFormProps) {
     email: '',
     phone: '',
     isTesororClient: false,
+    preferredLocale: 'nl',
     // Honeypot fields
     website: '',
     fax_number: '',
   });
+
+  // Get current translations based on selected locale
+  const t = formTranslations[formData.preferredLocale];
+
+  // Detect browser language on mount
+  useEffect(() => {
+    const detected = detectBrowserLocale();
+    setDetectedLocale(detected);
+
+    // If we detected a non-Dutch language, show hint and set it as default
+    if (detected.wasDetected && detected.locale !== 'nl') {
+      setShowLanguageHint(true);
+      setFormData(prev => ({ ...prev, preferredLocale: detected.locale }));
+    }
+  }, []);
 
   // Load Turnstile script
   useEffect(() => {
@@ -215,11 +397,11 @@ export function QuoteRequestForm({ turnstileSiteKey }: QuoteRequestFormProps) {
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
           </svg>
         </div>
-        <h2 className="text-2xl font-bold mb-2">Aanvraag ontvangen!</h2>
+        <h2 className="text-2xl font-bold mb-2">{t.requestReceived}</h2>
         <p className="text-muted-foreground mb-6">
-          Bedankt voor uw aanvraag. We nemen binnen 24 uur contact met u op.
+          {t.thankYou}
         </p>
-        <Button onClick={() => window.location.reload()}>Nieuwe aanvraag</Button>
+        <Button onClick={() => window.location.reload()}>{t.newRequest}</Button>
       </div>
     );
   }
@@ -262,32 +444,76 @@ export function QuoteRequestForm({ turnstileSiteKey }: QuoteRequestFormProps) {
         />
       </div>
 
+      {/* Language Selection Banner */}
+      {showLanguageHint && detectedLocale.wasDetected && (
+        <div className="rounded-lg bg-blue-50 border border-blue-200 p-4 animate-in fade-in">
+          <div className="flex items-start gap-3">
+            <span className="text-2xl">{SUPPORTED_LOCALES.find(l => l.id === detectedLocale.locale)?.flag}</span>
+            <div className="flex-1">
+              <p className="text-sm text-blue-800">
+                {t.languageDetected.replace('{language}', SUPPORTED_LOCALES.find(l => l.id === detectedLocale.locale)?.name || '')}
+              </p>
+              <div className="mt-2 flex flex-wrap gap-2">
+                {SUPPORTED_LOCALES.map((locale) => (
+                  <button
+                    key={locale.id}
+                    type="button"
+                    onClick={() => {
+                      updateField('preferredLocale', locale.id);
+                      setShowLanguageHint(false);
+                    }}
+                    className={cn(
+                      'inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-sm transition-colors',
+                      formData.preferredLocale === locale.id
+                        ? 'bg-blue-600 text-white'
+                        : 'bg-white border border-blue-200 text-blue-700 hover:bg-blue-100'
+                    )}
+                  >
+                    <span>{locale.flag}</span>
+                    {locale.name}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={() => setShowLanguageHint(false)}
+              className="text-blue-400 hover:text-blue-600"
+            >
+              <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Step 1: Service Type */}
       {step >= 1 && (
         <div className="space-y-4">
           <div>
-            <h2 className="text-lg font-semibold">Wat kunnen we voor u doen?</h2>
-            <p className="text-sm text-muted-foreground">Selecteer het type dienst</p>
+            <h2 className="text-lg font-semibold">{t.whatCanWeDo}</h2>
+            <p className="text-sm text-muted-foreground">{t.selectServiceType}</p>
           </div>
 
           <div className="grid gap-4 sm:grid-cols-2">
-            {serviceTypes.map((service) => (
+            {(['website', 'crm_setup', 'marketing', 'support'] as const).map((serviceId) => (
               <Card
-                key={service.id}
+                key={serviceId}
                 className={cn(
                   'cursor-pointer transition-all hover:border-tesoro-300',
-                  formData.serviceType === service.id && 'border-tesoro-500 bg-tesoro-50 ring-2 ring-tesoro-500'
+                  formData.serviceType === serviceId && 'border-tesoro-500 bg-tesoro-50 ring-2 ring-tesoro-500'
                 )}
                 onClick={() => {
-                  updateField('serviceType', service.id);
+                  updateField('serviceType', serviceId);
                   if (step === 1) setStep(2);
                 }}
               >
                 <CardContent className="flex items-start gap-4 p-4">
-                  <span className="text-3xl">{service.icon}</span>
+                  <span className="text-3xl">{serviceTypeIcons[serviceId]}</span>
                   <div>
-                    <h3 className="font-medium">{service.title}</h3>
-                    <p className="text-sm text-muted-foreground">{service.description}</p>
+                    <h3 className="font-medium">{t.services[serviceId].title}</h3>
+                    <p className="text-sm text-muted-foreground">{t.services[serviceId].description}</p>
                   </div>
                 </CardContent>
               </Card>
@@ -300,10 +526,10 @@ export function QuoteRequestForm({ turnstileSiteKey }: QuoteRequestFormProps) {
       {step >= 2 && (
         <div className="space-y-4 animate-in fade-in slide-in-from-bottom-4">
           <div className="space-y-2">
-            <Label htmlFor="description">Omschrijf uw wensen *</Label>
+            <Label htmlFor="description">{t.describeYourNeeds}</Label>
             <Textarea
               id="description"
-              placeholder="Vertel ons wat u nodig heeft..."
+              placeholder={t.tellUsWhatYouNeed}
               rows={5}
               value={formData.description}
               onChange={(e) => updateField('description', e.target.value)}
@@ -312,24 +538,24 @@ export function QuoteRequestForm({ turnstileSiteKey }: QuoteRequestFormProps) {
           </div>
 
           <div className="space-y-2">
-            <Label>Budget indicatie</Label>
+            <Label>{t.budgetIndication}</Label>
             <div className="flex flex-wrap gap-2">
-              {budgetOptions.map((option) => (
+              {(['under_500', '500_1000', '1000_2500', 'above_2500', 'unknown'] as const).map((optionId) => (
                 <button
-                  key={option.id}
+                  key={optionId}
                   type="button"
                   className={cn(
                     'rounded-full border px-4 py-2 text-sm transition-colors',
-                    formData.budgetIndication === option.id
+                    formData.budgetIndication === optionId
                       ? 'border-tesoro-500 bg-tesoro-50 text-tesoro-700'
                       : 'hover:border-tesoro-300'
                   )}
                   onClick={() => {
-                    updateField('budgetIndication', option.id);
+                    updateField('budgetIndication', optionId);
                     if (step === 2) setStep(3);
                   }}
                 >
-                  {option.label}
+                  {t.budgetOptions[optionId]}
                 </button>
               ))}
             </div>
@@ -341,26 +567,26 @@ export function QuoteRequestForm({ turnstileSiteKey }: QuoteRequestFormProps) {
       {step >= 3 && (
         <div className="space-y-4 animate-in fade-in slide-in-from-bottom-4">
           <div>
-            <h2 className="text-lg font-semibold">Uw gegevens</h2>
-            <p className="text-sm text-muted-foreground">Zodat we contact met u kunnen opnemen</p>
+            <h2 className="text-lg font-semibold">{t.yourDetails}</h2>
+            <p className="text-sm text-muted-foreground">{t.soWeCanContact}</p>
           </div>
 
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-2">
-              <Label htmlFor="companyName">Bedrijfsnaam *</Label>
+              <Label htmlFor="companyName">{t.companyName}</Label>
               <Input
                 id="companyName"
-                placeholder="Uw bedrijfsnaam"
+                placeholder={t.yourCompanyName}
                 value={formData.companyName}
                 onChange={(e) => updateField('companyName', e.target.value)}
                 required
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="contactName">Contactpersoon *</Label>
+              <Label htmlFor="contactName">{t.contactPerson}</Label>
               <Input
                 id="contactName"
-                placeholder="Uw naam"
+                placeholder={t.yourName}
                 value={formData.contactName}
                 onChange={(e) => updateField('contactName', e.target.value)}
                 required
@@ -370,26 +596,50 @@ export function QuoteRequestForm({ turnstileSiteKey }: QuoteRequestFormProps) {
 
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-2">
-              <Label htmlFor="email">Email *</Label>
+              <Label htmlFor="email">{t.email}</Label>
               <Input
                 id="email"
                 type="email"
-                placeholder="email@bedrijf.nl"
+                placeholder="email@company.com"
                 value={formData.email}
                 onChange={(e) => updateField('email', e.target.value)}
                 required
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="phone">Telefoon</Label>
+              <Label htmlFor="phone">{t.phone}</Label>
               <Input
                 id="phone"
                 type="tel"
-                placeholder="06 12345678"
+                placeholder="+31 6 12345678"
                 value={formData.phone}
                 onChange={(e) => updateField('phone', e.target.value)}
               />
             </div>
+          </div>
+
+          {/* Language preference */}
+          <div className="space-y-2">
+            <Label htmlFor="preferredLocale">{t.preferredLanguage}</Label>
+            <div className="flex flex-wrap gap-2">
+              {SUPPORTED_LOCALES.map((locale) => (
+                <button
+                  key={locale.id}
+                  type="button"
+                  onClick={() => updateField('preferredLocale', locale.id)}
+                  className={cn(
+                    'inline-flex items-center gap-2 rounded-lg border px-4 py-2 text-sm transition-colors',
+                    formData.preferredLocale === locale.id
+                      ? 'border-tesoro-500 bg-tesoro-50 text-tesoro-700'
+                      : 'hover:border-tesoro-300'
+                  )}
+                >
+                  <span>{locale.flag}</span>
+                  {locale.name}
+                </button>
+              ))}
+            </div>
+            <p className="text-xs text-muted-foreground">{t.forQuoteAndEmails}</p>
           </div>
 
           <label className="flex items-center gap-2 cursor-pointer">
@@ -399,7 +649,7 @@ export function QuoteRequestForm({ turnstileSiteKey }: QuoteRequestFormProps) {
               checked={formData.isTesororClient}
               onChange={(e) => updateField('isTesororClient', e.target.checked)}
             />
-            <span className="text-sm">Ik ben al klant bij Tesoro CRM</span>
+            <span className="text-sm">{t.iAmExistingClient}</span>
           </label>
 
           {/* Turnstile widget */}
@@ -434,16 +684,16 @@ export function QuoteRequestForm({ turnstileSiteKey }: QuoteRequestFormProps) {
                   <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                   <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
                 </svg>
-                Bezig met versturen...
+                {t.submitting}
               </>
             ) : (
-              'Verstuur Aanvraag'
+              t.submitRequest
             )}
           </Button>
 
           <p className="text-xs text-center text-muted-foreground">
-            Door uw aanvraag te versturen gaat u akkoord met onze{' '}
-            <a href="/privacy" className="underline hover:text-tesoro-500">privacyvoorwaarden</a>.
+            {t.privacyConsent}{' '}
+            <a href="/privacy" className="underline hover:text-tesoro-500">{t.privacyPolicy}</a>.
           </p>
         </div>
       )}
