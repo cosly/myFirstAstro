@@ -6,15 +6,35 @@ interface QuoteWithBlocks extends Quote {
   customer: Customer;
 }
 
+interface CompanySettings {
+  company_name?: string;
+  company_email?: string;
+  company_phone?: string;
+  company_address?: string;
+  logo_pdf?: string;
+}
+
 // Generate HTML for PDF
-export function generateQuotePdfHtml(quote: QuoteWithBlocks): string {
+export function generateQuotePdfHtml(quote: QuoteWithBlocks, companySettings?: CompanySettings): string {
+  // Company info with fallbacks
+  const companyName = companySettings?.company_name || 'Tesoro CRM';
+  const companyEmail = companySettings?.company_email || 'info@quote.tesorohq.io';
+  const companyPhone = companySettings?.company_phone || '020-1234567';
+  const logoUrl = companySettings?.logo_pdf;
+
+  // Generate logo HTML
+  const logoHtml = logoUrl
+    ? `<img src="${logoUrl}" alt="${companyName}" style="max-height: 50px; max-width: 180px;" />`
+    : `<span class="logo-text">${companyName}</span>`;
+
   const styles = `
     <style>
       * { margin: 0; padding: 0; box-sizing: border-box; }
       body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; font-size: 12px; line-height: 1.5; color: #333; }
       .page { max-width: 800px; margin: 0 auto; padding: 40px; }
       .header { display: flex; justify-content: space-between; margin-bottom: 40px; padding-bottom: 20px; border-bottom: 2px solid #f97316; }
-      .logo { font-size: 28px; font-weight: bold; color: #f97316; }
+      .logo { display: flex; align-items: center; }
+      .logo-text { font-size: 28px; font-weight: bold; color: #f97316; }
       .quote-info { text-align: right; }
       .quote-number { font-size: 18px; font-weight: bold; }
       .quote-date { color: #666; }
@@ -162,7 +182,7 @@ export function generateQuotePdfHtml(quote: QuoteWithBlocks): string {
     <body>
       <div class="page">
         <div class="header">
-          <div class="logo">Tesoro CRM</div>
+          <div class="logo">${logoHtml}</div>
           <div class="quote-info">
             <div class="quote-number">Offerte ${quote.quoteNumber}</div>
             <div class="quote-date">${formatDate(quote.createdAt)}</div>
@@ -172,9 +192,9 @@ export function generateQuotePdfHtml(quote: QuoteWithBlocks): string {
         <div class="parties">
           <div class="party">
             <div class="party-label">Van</div>
-            <div class="party-name">Tesoro CRM</div>
-            <div>info@quote.tesorohq.io</div>
-            <div>020-1234567</div>
+            <div class="party-name">${companyName}</div>
+            <div>${companyEmail}</div>
+            <div>${companyPhone}</div>
           </div>
           <div class="party">
             <div class="party-label">Aan</div>

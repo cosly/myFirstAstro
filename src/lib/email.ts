@@ -28,6 +28,8 @@ export interface TemplateVariables {
   company_name?: string;
   company_email?: string;
   company_phone?: string;
+  company_logo?: string;
+  company_logo_html?: string;
 
   // Signature
   signed_by?: string;
@@ -42,6 +44,14 @@ function replaceVariables(template: string, variables: TemplateVariables): strin
   return template.replace(/\{\{(\w+)\}\}/g, (_, key) => {
     return variables[key] || `{{${key}}}`;
   });
+}
+
+// Generate logo HTML (image or text fallback)
+function generateLogoHtml(logoUrl: string | undefined, companyName: string): string {
+  if (logoUrl) {
+    return `<img src="${logoUrl}" alt="${companyName}" style="max-height: 48px; max-width: 200px;" />`;
+  }
+  return `<span style="font-size: 24px; font-weight: bold; color: #f97316;">${companyName}</span>`;
 }
 
 // Get company settings from database
@@ -144,7 +154,7 @@ const defaultTemplatesNl = {
 <body>
   <div class="container">
     <div class="header">
-      <div class="logo">Tesoro CRM</div>
+      <div class="logo">{{company_logo_html}}</div>
     </div>
     <div class="content">
       <p>Beste {{customer_name}},</p>
@@ -322,7 +332,7 @@ Dit is een automatisch bericht van Tesoro CRM.
 <body>
   <div class="container">
     <div class="header">
-      <div class="logo">Tesoro CRM</div>
+      <div class="logo">{{company_logo_html}}</div>
     </div>
     <div class="content">
       <p>Beste {{customer_name}},</p>
@@ -499,7 +509,7 @@ Bekijk de vraag en reageer via het dashboard.
 <body>
   <div class="container">
     <div class="header">
-      <div class="logo">Tesoro CRM</div>
+      <div class="logo">{{company_logo_html}}</div>
     </div>
     <div class="content">
       <p>Beste {{customer_name}},</p>
@@ -556,7 +566,7 @@ const defaultTemplatesEn = {
 <body>
   <div class="container">
     <div class="header">
-      <div class="logo">Tesoro CRM</div>
+      <div class="logo">{{company_logo_html}}</div>
     </div>
     <div class="content">
       <p>Dear {{customer_name}},</p>
@@ -732,7 +742,7 @@ This is an automated message from Tesoro CRM.
 <body>
   <div class="container">
     <div class="header">
-      <div class="logo">Tesoro CRM</div>
+      <div class="logo">{{company_logo_html}}</div>
     </div>
     <div class="content">
       <p>Dear {{customer_name}},</p>
@@ -909,7 +919,7 @@ View the question and respond via the dashboard.
 <body>
   <div class="container">
     <div class="header">
-      <div class="logo">Tesoro CRM</div>
+      <div class="logo">{{company_logo_html}}</div>
     </div>
     <div class="content">
       <p>Dear {{customer_name}},</p>
@@ -966,7 +976,7 @@ const defaultTemplatesEs = {
 <body>
   <div class="container">
     <div class="header">
-      <div class="logo">Tesoro CRM</div>
+      <div class="logo">{{company_logo_html}}</div>
     </div>
     <div class="content">
       <p>Estimado/a {{customer_name}},</p>
@@ -1142,7 +1152,7 @@ Este es un mensaje automático de Tesoro CRM.
 <body>
   <div class="container">
     <div class="header">
-      <div class="logo">Tesoro CRM</div>
+      <div class="logo">{{company_logo_html}}</div>
     </div>
     <div class="content">
       <p>Estimado/a {{customer_name}},</p>
@@ -1319,7 +1329,7 @@ Vea la pregunta y responda a través del panel.
 <body>
   <div class="container">
     <div class="header">
-      <div class="logo">Tesoro CRM</div>
+      <div class="logo">{{company_logo_html}}</div>
     </div>
     <div class="content">
       <p>Estimado/a {{customer_name}},</p>
@@ -1441,6 +1451,9 @@ export async function sendQuoteEmail(
   }
 
   // Use locale-aware formatting
+  const companyName = companySettings.company_name || 'Tesoro CRM';
+  const logoUrl = companySettings.logo_email;
+
   const variables: TemplateVariables = {
     quote_number: quote.quoteNumber,
     quote_title: quote.title,
@@ -1452,9 +1465,11 @@ export async function sendQuoteEmail(
     customer_name: customer.contactName,
     customer_company: customer.companyName,
     customer_email: customer.email,
-    company_name: companySettings.company_name || 'Tesoro CRM',
+    company_name: companyName,
     company_email: companySettings.company_email || 'info@quote.tesorohq.io',
     company_phone: companySettings.company_phone || '',
+    company_logo: logoUrl || '',
+    company_logo_html: generateLogoHtml(logoUrl, companyName),
     signed_by: quote.signedByName || '',
     signed_at: quote.signedAt ? formatDateLocale(quote.signedAt, customerLocale, 'long') : '',
   };

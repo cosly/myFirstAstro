@@ -1,5 +1,5 @@
 import type { APIRoute } from 'astro';
-import { analyzeQuoteRequest, type QuoteRequestAnalysis } from '@/lib/quote-request-ai';
+import { analyzeQuoteRequest } from '@/lib/quote-request-ai';
 import { createDb, quoteRequests } from '@/lib/db';
 import { eq } from 'drizzle-orm';
 

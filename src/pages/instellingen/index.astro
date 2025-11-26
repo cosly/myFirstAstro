@@ -76,6 +76,21 @@ const companyBtw = (settings.company_btw as string) || '';
 const quoteValidityDays = (settings.quote_validity_days as number) || 30;
 const quoteNumberPrefix = (settings.quote_number_prefix as string) || '2024-';
 const autoRemindersEnabled = (settings.auto_reminders_enabled as boolean) ?? true;
+
+// Logo settings
+const logoPrimary = (settings.logo_primary as string) || '';
+const logoEmail = (settings.logo_email as string) || '';
+const logoPdf = (settings.logo_pdf as string) || '';
+const logoFavicon = (settings.logo_favicon as string) || '';
+const logoDark = (settings.logo_dark as string) || '';
+
+const logoTypes = [
+  { id: 'logo_primary', label: 'Primair logo', description: 'Hoofdlogo voor dashboard en website', current: logoPrimary },
+  { id: 'logo_email', label: 'Email logo', description: 'Logo in emailberichten naar klanten', current: logoEmail },
+  { id: 'logo_pdf', label: 'PDF logo', description: 'Logo op offerte PDF documenten', current: logoPdf },
+  { id: 'logo_favicon', label: 'Favicon', description: 'Klein icoon in browsertab (.ico of .png)', current: logoFavicon },
+  { id: 'logo_dark', label: 'Donker thema logo', description: 'Logo variant voor donkere achtergronden', current: logoDark },
+];
 ---
 
 <DashboardLayout title="Instellingen">
@@ -142,6 +157,82 @@ const autoRemindersEnabled = (settings.auto_reminders_enabled as boolean) ?? tru
             </button>
             <span id="company-save-status" class="ml-2 text-sm text-green-600 hidden">Opgeslagen!</span>
           </form>
+        </div>
+
+        <!-- Logo Management -->
+        <div class="rounded-xl border bg-card p-6">
+          <h3 class="font-semibold mb-2">Logo's</h3>
+          <p class="text-sm text-muted-foreground mb-6">Upload logo's voor verschillende toepassingen. Aanbevolen formaat: PNG of SVG.</p>
+
+          <div class="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+            {logoTypes.map((logo) => (
+              <div class="border rounded-lg p-4" data-logo-type={logo.id}>
+                <div class="flex items-start justify-between mb-3">
+                  <div>
+                    <h4 class="font-medium text-sm">{logo.label}</h4>
+                    <p class="text-xs text-muted-foreground">{logo.description}</p>
+                  </div>
+                </div>
+
+                <!-- Preview area -->
+                <div class="relative h-24 bg-muted/30 rounded-lg flex items-center justify-center mb-3 overflow-hidden logo-preview-area">
+                  {logo.current ? (
+                    <img
+                      src={logo.current}
+                      alt={logo.label}
+                      class="max-h-20 max-w-full object-contain logo-preview"
+                    />
+                  ) : (
+                    <div class="text-muted-foreground logo-placeholder">
+                      <svg class="h-8 w-8 mx-auto mb-1 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                      </svg>
+                      <span class="text-xs">Geen logo</span>
+                    </div>
+                  )}
+                </div>
+
+                <!-- Actions -->
+                <div class="flex gap-2">
+                  <label class="flex-1 cursor-pointer">
+                    <input
+                      type="file"
+                      class="hidden logo-file-input"
+                      accept="image/png,image/jpeg,image/svg+xml,image/webp,image/x-icon"
+                      data-logo-type={logo.id}
+                    />
+                    <span class="flex items-center justify-center gap-1 rounded-lg border px-3 py-1.5 text-sm hover:bg-muted transition-colors w-full">
+                      <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+                      </svg>
+                      Uploaden
+                    </span>
+                  </label>
+                  <button
+                    class="rounded-lg border px-3 py-1.5 text-sm hover:bg-muted transition-colors text-red-600 hover:text-red-700 logo-delete-btn disabled:opacity-50 disabled:cursor-not-allowed"
+                    data-logo-type={logo.id}
+                    disabled={!logo.current}
+                  >
+                    <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                    </svg>
+                  </button>
+                </div>
+
+                <!-- Upload progress -->
+                <div class="mt-2 hidden logo-upload-progress">
+                  <div class="h-1 bg-muted rounded-full overflow-hidden">
+                    <div class="h-full bg-tesoro-500 transition-all duration-300" style="width: 0%"></div>
+                  </div>
+                  <p class="text-xs text-muted-foreground mt-1">Uploaden...</p>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <p class="text-xs text-muted-foreground mt-4">
+            Ondersteunde formaten: PNG, JPG, SVG, WebP, ICO. Maximale grootte: 5MB.
+          </p>
         </div>
 
         <div class="rounded-xl border bg-card p-6">
@@ -2171,6 +2262,123 @@ const autoRemindersEnabled = (settings.auto_reminders_enabled as boolean) ?? tru
 
   // Load settings on page load
   loadAIGatewaySettings();
+
+  // Logo Upload/Delete functionality
+  const logoFileInputs = document.querySelectorAll('.logo-file-input');
+  const logoDeleteBtns = document.querySelectorAll('.logo-delete-btn');
+
+  logoFileInputs.forEach((input) => {
+    input.addEventListener('change', async (e) => {
+      const target = e.target as HTMLInputElement;
+      const file = target.files?.[0];
+      const logoType = target.dataset.logoType;
+
+      if (!file || !logoType) return;
+
+      const container = document.querySelector(`[data-logo-type="${logoType}"]`);
+      const progressEl = container?.querySelector('.logo-upload-progress') as HTMLElement;
+      const progressBar = progressEl?.querySelector('.h-full') as HTMLElement;
+      const previewArea = container?.querySelector('.logo-preview-area');
+      const deleteBtn = container?.querySelector('.logo-delete-btn') as HTMLButtonElement;
+
+      // Show progress
+      progressEl?.classList.remove('hidden');
+      if (progressBar) progressBar.style.width = '30%';
+
+      try {
+        const formData = new FormData();
+        formData.append('file', file);
+        formData.append('type', logoType);
+
+        if (progressBar) progressBar.style.width = '60%';
+
+        const response = await fetch('/api/settings/logos', {
+          method: 'POST',
+          body: formData,
+        });
+
+        if (progressBar) progressBar.style.width = '90%';
+
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.error || 'Upload failed');
+        }
+
+        const data = await response.json();
+        if (progressBar) progressBar.style.width = '100%';
+
+        // Update preview
+        if (previewArea) {
+          previewArea.innerHTML = `
+            <img src="${data.url}" alt="${logoType}" class="max-h-20 max-w-full object-contain logo-preview" />
+          `;
+        }
+
+        // Enable delete button
+        if (deleteBtn) {
+          deleteBtn.disabled = false;
+        }
+
+        // Reset input
+        target.value = '';
+
+        // Hide progress after animation
+        setTimeout(() => {
+          progressEl?.classList.add('hidden');
+          if (progressBar) progressBar.style.width = '0%';
+        }, 500);
+      } catch (error) {
+        console.error('Logo upload failed:', error);
+        alert(`Upload mislukt: ${error instanceof Error ? error.message : 'Onbekende fout'}`);
+        progressEl?.classList.add('hidden');
+        if (progressBar) progressBar.style.width = '0%';
+        target.value = '';
+      }
+    });
+  });
+
+  logoDeleteBtns.forEach((btn) => {
+    btn.addEventListener('click', async () => {
+      const logoType = (btn as HTMLButtonElement).dataset.logoType;
+      if (!logoType) return;
+
+      if (!confirm('Weet je zeker dat je dit logo wilt verwijderen?')) return;
+
+      const container = document.querySelector(`[data-logo-type="${logoType}"]`);
+      const previewArea = container?.querySelector('.logo-preview-area');
+      const deleteBtn = btn as HTMLButtonElement;
+
+      try {
+        const response = await fetch('/api/settings/logos', {
+          method: 'DELETE',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ type: logoType }),
+        });
+
+        if (!response.ok) {
+          throw new Error('Delete failed');
+        }
+
+        // Update preview to placeholder
+        if (previewArea) {
+          previewArea.innerHTML = `
+            <div class="text-muted-foreground logo-placeholder">
+              <svg class="h-8 w-8 mx-auto mb-1 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+              </svg>
+              <span class="text-xs">Geen logo</span>
+            </div>
+          `;
+        }
+
+        // Disable delete button
+        deleteBtn.disabled = true;
+      } catch (error) {
+        console.error('Logo delete failed:', error);
+        alert('Verwijderen mislukt. Probeer het opnieuw.');
+      }
+    });
+  });
 
   // =====================
   // Turnstile Settings
