@@ -21,6 +21,9 @@ interface Env {
   STRIPE_WEBHOOK_SECRET?: string;
   ANTHROPIC_API_KEY?: string;
   RESEND_API_KEY?: string;
+  // Turnstile spam protection
+  TURNSTILE_SECRET_KEY?: string;
+  TURNSTILE_SITE_KEY?: string;
 }
 
 type Runtime = import('@astrojs/cloudflare').Runtime<Env>;

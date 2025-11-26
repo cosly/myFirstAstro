@@ -81,6 +81,7 @@ export const quoteRequests = sqliteTable('quote_requests', {
   serviceType: text('service_type').notNull(), // website, crm_setup, marketing, support, other
   description: text('description').notNull(),
   budgetIndication: text('budget_indication'), // <500, 500-1000, 1000-2500, 2500+, unknown
+  locale: text('locale', { enum: ['nl', 'en', 'es'] }).default('nl'), // Preferred language for communication
 
   // Status
   status: text('status', {
