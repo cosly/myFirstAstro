@@ -1,0 +1,97 @@
+---
+import DashboardLayout from '../../layouts/DashboardLayout.astro';
+import { verifyToken, isEmailVerified } from '../../lib/email-verification';
+
+const token = Astro.url.searchParams.get('token');
+
+let result: { success: boolean; message: string; requestId?: string } = {
+  success: false,
+  message: 'Geen verificatie token gevonden',
+};
+
+if (token) {
+  const kv = Astro.locals.runtime.env.KV;
+  const verificationResult = await verifyToken(kv, token);
+
+  if (verificationResult.success) {
+    if (verificationResult.alreadyVerified) {
+      result = {
+        success: true,
+        message: 'Uw e-mailadres is al eerder geverifieerd.',
+        requestId: verificationResult.requestId,
+      };
+    } else {
+      result = {
+        success: true,
+        message: 'Uw e-mailadres is succesvol geverifieerd!',
+        requestId: verificationResult.requestId,
+      };
+    }
+  } else {
+    result = {
+      success: false,
+      message: verificationResult.error || 'Verificatie mislukt',
+    };
+  }
+}
+---
+
+<DashboardLayout title="Email Verificatie">
+  <div class="flex items-center justify-center min-h-[60vh]">
+    <div class="max-w-md w-full text-center">
+      {result.success ? (
+        <div class="space-y-6">
+          <div class="inline-flex h-20 w-20 items-center justify-center rounded-full bg-green-100">
+            <svg class="h-10 w-10 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+            </svg>
+          </div>
+          <div>
+            <h1 class="text-2xl font-bold text-green-800">Verificatie Geslaagd</h1>
+            <p class="text-muted-foreground mt-2">{result.message}</p>
+          </div>
+          <p class="text-sm text-muted-foreground">
+            We nemen zo snel mogelijk contact met u op over uw aanvraag.
+          </p>
+          <div class="flex flex-col gap-3">
+            <a
+              href="/"
+              class="inline-flex items-center justify-center gap-2 rounded-lg bg-tesoro-500 px-6 py-3 font-medium text-white transition-colors hover:bg-tesoro-600"
+            >
+              Terug naar Home
+            </a>
+          </div>
+        </div>
+      ) : (
+        <div class="space-y-6">
+          <div class="inline-flex h-20 w-20 items-center justify-center rounded-full bg-red-100">
+            <svg class="h-10 w-10 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </div>
+          <div>
+            <h1 class="text-2xl font-bold text-red-800">Verificatie Mislukt</h1>
+            <p class="text-muted-foreground mt-2">{result.message}</p>
+          </div>
+          <p class="text-sm text-muted-foreground">
+            De verificatielink kan verlopen zijn of al gebruikt zijn.
+          </p>
+          <div class="flex flex-col gap-3">
+            <a
+              href="/offerte-aanvragen"
+              class="inline-flex items-center justify-center gap-2 rounded-lg bg-tesoro-500 px-6 py-3 font-medium text-white transition-colors hover:bg-tesoro-600"
+            >
+              Nieuwe Aanvraag Indienen
+            </a>
+            <a
+              href="/"
+              class="inline-flex items-center justify-center gap-2 rounded-lg border px-6 py-3 font-medium transition-colors hover:bg-muted"
+            >
+              Terug naar Home
+            </a>
+          </div>
+        </div>
+      )}
+    </div>
+  </div>
+</DashboardLayout>

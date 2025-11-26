@@ -5,6 +5,12 @@ import { eq } from 'drizzle-orm';
 import { notifyQuoteRequestReceived } from '@/lib/discord';
 import { performSpamChecks, getClientIP, generateFingerprint } from '@/lib/spam-protection';
 import { analyzeQuoteRequest } from '@/lib/quote-request-ai';
+import { indexQuoteRequest } from '@/lib/vectorize';
+import {
+  createVerificationToken,
+  buildVerificationUrl,
+  getVerificationEmailContent,
+} from '@/lib/email-verification';
 
 export const GET: APIRoute = async ({ locals }) => {
   try {
@@ -166,6 +172,78 @@ export const POST: APIRoute = async ({ request, locals }) => {
     }).catch(err => {
       console.error('Failed to run AI analysis:', err);
     });
+
+    // Index quote request for semantic search (non-blocking)
+    const vectorize = locals.runtime.env.VECTORIZE;
+    if (vectorize) {
+      indexQuoteRequest(vectorize, locals.runtime.env.KV, {
+        id: requestId,
+        serviceType: body.serviceType,
+        description: body.description,
+        companyName: body.companyName,
+        budgetIndication: body.budgetIndication,
+        createdAt: new Date(),
+      }).then((success) => {
+        if (success) {
+          console.log('Quote request indexed for search:', requestId);
+        }
+      }).catch(err => {
+        console.error('Failed to index quote request:', err);
+      });
+    }
+
+    // Send email verification (non-blocking)
+    // Check if email verification is enabled
+    const emailVerificationEnabled = await locals.runtime.env.KV.get('email_verification_enabled');
+    if (emailVerificationEnabled === 'true') {
+      (async () => {
+        try {
+          const kv = locals.runtime.env.KV;
+          const token = await createVerificationToken(kv, requestId, contactEmail);
+          const verificationUrl = buildVerificationUrl(appUrl, token);
+          const emailContent = getVerificationEmailContent(
+            locale,
+            verificationUrl,
+            body.contactName,
+            body.companyName
+          );
+
+          // Send via configured email API
+          const emailApiKey = await kv.get('email_api_key');
+          const emailApiEndpoint = await kv.get('email_api_endpoint');
+
+          if (emailApiKey && emailApiEndpoint) {
+            const emailResponse = await fetch(emailApiEndpoint, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${emailApiKey}`,
+              },
+              body: JSON.stringify({
+                to: contactEmail,
+                subject: emailContent.subject,
+                html: emailContent.html,
+                text: emailContent.text,
+              }),
+            });
+
+            if (emailResponse.ok) {
+              console.log('Verification email sent for request:', requestId);
+            } else {
+              console.error('Failed to send verification email:', await emailResponse.text());
+            }
+          } else {
+            // Log for debugging (no email service configured)
+            console.log('=== VERIFICATION EMAIL (no email service) ===');
+            console.log('To:', contactEmail);
+            console.log('Subject:', emailContent.subject);
+            console.log('URL:', verificationUrl);
+          }
+        } catch (err) {
+          console.error('Failed to send verification email:', err);
+        }
+      })();
+    }
 
     return new Response(
       JSON.stringify({

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -75,6 +75,10 @@ const formTranslations: Record<SupportedLocale, {
     above_2500: string;
     unknown: string;
   };
+  // Budget estimate
+  estimatedBudget: string;
+  basedOnDescription: string;
+  estimating: string;
 }> = {
   nl: {
     whatCanWeDo: 'Wat kunnen we voor u doen?',
@@ -114,6 +118,9 @@ const formTranslations: Record<SupportedLocale, {
       above_2500: '€2.500+',
       unknown: 'Weet ik nog niet',
     },
+    estimatedBudget: 'Geschat budget',
+    basedOnDescription: 'Op basis van uw beschrijving',
+    estimating: 'Bezig met schatten...',
   },
   en: {
     whatCanWeDo: 'What can we do for you?',
@@ -153,6 +160,9 @@ const formTranslations: Record<SupportedLocale, {
       above_2500: '€2,500+',
       unknown: 'I don\'t know yet',
     },
+    estimatedBudget: 'Estimated budget',
+    basedOnDescription: 'Based on your description',
+    estimating: 'Estimating...',
   },
   es: {
     whatCanWeDo: '¿Qué podemos hacer por usted?',
@@ -192,8 +202,19 @@ const formTranslations: Record<SupportedLocale, {
       above_2500: '€2.500+',
       unknown: 'Aún no lo sé',
     },
+    estimatedBudget: 'Presupuesto estimado',
+    basedOnDescription: 'Basado en su descripción',
+    estimating: 'Estimando...',
   },
 };
+
+// Budget estimate interface
+interface BudgetEstimate {
+  min: number;
+  max: number;
+  confidence: number;
+  reasoning: string;
+}
 
 const serviceTypeIcons: Record<string, string> = {
   website: '🌐',
@@ -257,6 +278,11 @@ export function QuoteRequestForm({ turnstileSiteKey }: QuoteRequestFormProps) {
   const [detectedLocale, setDetectedLocale] = useState<{ locale: SupportedLocale; wasDetected: boolean }>({ locale: 'nl', wasDetected: false });
   const [showLanguageHint, setShowLanguageHint] = useState(false);
 
+  // Real-time budget estimation
+  const [budgetEstimate, setBudgetEstimate] = useState<BudgetEstimate | null>(null);
+  const [isEstimating, setIsEstimating] = useState(false);
+  const estimateAbortController = useRef<AbortController | null>(null);
+
   const [formData, setFormData] = useState<FormData>({
     serviceType: '',
     description: '',
@@ -315,6 +341,58 @@ export function QuoteRequestForm({ turnstileSiteKey }: QuoteRequestFormProps) {
       }
     };
   }, [turnstileSiteKey]);
+
+  // Debounced budget estimation when description changes
+  useEffect(() => {
+    // Clear previous estimate if description is too short
+    if (!formData.serviceType || formData.description.length < 20) {
+      setBudgetEstimate(null);
+      return;
+    }
+
+    // Debounce: wait 800ms after user stops typing
+    const debounceTimer = setTimeout(async () => {
+      // Cancel any pending request
+      if (estimateAbortController.current) {
+        estimateAbortController.current.abort();
+      }
+      estimateAbortController.current = new AbortController();
+
+      setIsEstimating(true);
+      try {
+        const response = await fetch('/api/quote-requests/estimate', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            serviceType: formData.serviceType,
+            description: formData.description,
+          }),
+          signal: estimateAbortController.current.signal,
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          if (data.estimate) {
+            setBudgetEstimate(data.estimate);
+          }
+        }
+      } catch (err) {
+        // Ignore abort errors
+        if (err instanceof Error && err.name !== 'AbortError') {
+          console.error('Budget estimation failed:', err);
+        }
+      } finally {
+        setIsEstimating(false);
+      }
+    }, 800);
+
+    return () => {
+      clearTimeout(debounceTimer);
+      if (estimateAbortController.current) {
+        estimateAbortController.current.abort();
+      }
+    };
+  }, [formData.serviceType, formData.description]);
 
   const renderTurnstile = () => {
     if (!window.turnstile || !turnstileContainerRef.current || !turnstileSiteKey) return;
@@ -560,6 +638,50 @@ export function QuoteRequestForm({ turnstileSiteKey }: QuoteRequestFormProps) {
               ))}
             </div>
           </div>
+
+          {/* Real-time Budget Estimate */}
+          {(isEstimating || budgetEstimate) && (
+            <div className="rounded-lg border bg-gradient-to-br from-tesoro-50 to-white p-4 animate-in fade-in">
+              <div className="flex items-start gap-3">
+                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-tesoro-100">
+                  {isEstimating ? (
+                    <svg className="h-5 w-5 animate-spin text-tesoro-600" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                    </svg>
+                  ) : (
+                    <svg className="h-5 w-5 text-tesoro-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                  )}
+                </div>
+                <div className="flex-1">
+                  <h4 className="font-medium text-tesoro-800">{t.estimatedBudget}</h4>
+                  {isEstimating ? (
+                    <p className="text-sm text-muted-foreground">{t.estimating}</p>
+                  ) : budgetEstimate ? (
+                    <div className="space-y-1">
+                      <p className="text-lg font-semibold text-tesoro-700">
+                        €{budgetEstimate.min.toLocaleString('nl-NL')} - €{budgetEstimate.max.toLocaleString('nl-NL')}
+                      </p>
+                      <p className="text-sm text-muted-foreground">{budgetEstimate.reasoning}</p>
+                      <div className="flex items-center gap-1 mt-2">
+                        <div className="h-1.5 w-20 rounded-full bg-gray-200 overflow-hidden">
+                          <div
+                            className="h-full bg-tesoro-500 rounded-full transition-all duration-500"
+                            style={{ width: `${budgetEstimate.confidence * 100}%` }}
+                          />
+                        </div>
+                        <span className="text-xs text-muted-foreground">
+                          {Math.round(budgetEstimate.confidence * 100)}% {t.basedOnDescription.toLowerCase()}
+                        </span>
+                      </div>
+                    </div>
+                  ) : null}
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       )}
 
